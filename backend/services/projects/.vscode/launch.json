@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "projects_flutter",
+            "cwd": "${workspaceFolder}/projects_flutter",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "projects_server",
+            "cwd": "${workspaceFolder}/projects_server",
+            "request": "launch",
+            "type": "dart",
+            "preLaunchTask": "docker_compose_up",
+            "program": "bin/main.dart",
+            "env": {
+                "SERVERPOD_PASSWORD_database": "dpSgDuYgG1V27XVukBaWQJ1Ve5_E1fHE"
+            },
+            "args": [
+                "--apply-migrations"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "projects (full stack)",
+            "configurations": [
+                "projects_server",
+                "projects_flutter"
+            ],
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}
