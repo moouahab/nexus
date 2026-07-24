@@ -17,7 +17,6 @@ services:
         condition: service_healthy
     volumes:
       - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
-      - ../../config/passwords.yaml:/run/config/serverpod-passwords.yaml:ro
       - identity_vault_secrets:/run/vault/secrets:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]

@@ -30,6 +30,8 @@ services:
         target: /vault/templates/postgres_password.ctmpl
       - source: vault_template_redis_password
         target: /vault/templates/redis_password.ctmpl
+      - source: vault_template_serverpod_passwords
+        target: /vault/templates/serverpod-passwords.yaml.ctmpl
     secrets:
       - source: vault_role_id
         target: role_id
@@ -41,7 +43,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres_password && test -s /vault/secrets/redis_password
+        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres_password && test -s /vault/secrets/redis_password && test -s /vault/secrets/serverpod-passwords.yaml
       interval: 5s
       timeout: 3s
       retries: 12
@@ -59,6 +61,9 @@ configs:
 
   vault_template_redis_password:
     file: ../vault/templates/redis_password.ctmpl
+
+  vault_template_serverpod_passwords:
+    file: ../vault/templates/serverpod-passwords.yaml.ctmpl
 
 secrets:
   vault_dev_root_token:

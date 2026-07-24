@@ -154,6 +154,7 @@ After this, Vault Agent runs as the `vault` user and can write:
 - `/vault/token/agent-token`
 - `/vault/secrets/postgres_password`
 - `/vault/secrets/redis_password`
+- `/vault/secrets/serverpod-passwords.yaml`
 
 ## Issue 6. `depends_on` Should Wait For Vault Agent Health
 
@@ -165,6 +166,7 @@ The stack now gives `vault_agent` a healthcheck that verifies:
 - `/vault/token/agent-token`
 - `/vault/secrets/postgres_password`
 - `/vault/secrets/redis_password`
+- `/vault/secrets/serverpod-passwords.yaml`
 
 Postgres, Redis, and API depend on:
 
@@ -181,6 +183,7 @@ Examples:
 ```text
 /run/vault/secrets/postgres_password
 /run/vault/secrets/redis_password
+/run/vault/secrets/serverpod-passwords.yaml
 ```
 
 This makes startup deterministic even when Vault Agent takes a few seconds to
@@ -215,6 +218,55 @@ For a fresh local test, ensure the data volume is new or intentionally reset.
 Do not delete volumes casually in shared environments. In local development, a
 reset is acceptable only when the data can be lost.
 
+If the data volume must be kept, align the existing role password with the
+current Vault secret instead of deleting the volume:
+
+```bash
+docker compose exec -T postgres sh -lc 'new_password=$(cat /run/vault/secrets/postgres_password); psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c "ALTER USER postgres WITH PASSWORD '\''$new_password'\'';"'
+```
+
+## Issue 9. API Passwords Must Come From Vault Only
+
+The development API used to mount:
+
+```text
+config/passwords.yaml -> /run/config/serverpod-passwords.yaml
+```
+
+If `config/passwords.yaml` did not exist on the host, Docker created a directory
+at that path. The API then failed during startup with:
+
+```text
+awk: cmd. line:19: Is a directory
+```
+
+The fix is to remove the host bind mount and make Vault Agent render the full
+Serverpod password file in development too:
+
+```text
+/vault/secrets/serverpod-passwords.yaml
+```
+
+The API entrypoint now waits for this Vault-rendered file and copies it to the
+runtime config path inside the container. There is no fallback to a local
+`config/passwords.yaml` file in Docker.
+
+## Issue 10. Serverpod Auth Requires More Than Database Passwords
+
+`JwtConfigFromPasswords()` and `EmailIdpConfigFromPasswords()` require
+application secrets in addition to Postgres and Redis passwords. The development
+Vault secret must include:
+
+- `postgres_password`
+- `redis_password`
+- `service_secret`
+- `email_secret_hash_pepper`
+- `jwt_hmac_sha512_private_key`
+- `jwt_refresh_token_hash_pepper`
+
+If one is missing, the API starts reading Vault correctly but exits with a
+`PasswordNotFoundException`.
+
 ## Final Verified State
 
 The full stack was tested with:
@@ -234,7 +286,7 @@ Verified result:
 - Vault Agent rendered:
   - `/vault/secrets/postgres_password`
   - `/vault/secrets/redis_password`
-  - `/vault/secrets/serverpod-passwords.yaml` in production
+  - `/vault/secrets/serverpod-passwords.yaml`
 - Serverpod started and applied the migration
 
 The most useful validation commands were:

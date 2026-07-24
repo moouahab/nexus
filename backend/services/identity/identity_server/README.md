@@ -22,6 +22,7 @@ by Postgres, Redis, and the API:
 
 - `postgres_password` from `postgres_password`
 - `redis_password` from `redis_password`
+- `serverpod-passwords.yaml` from the full Serverpod secret set
 
 For an existing Vault, create local AppRole files first:
 
@@ -39,7 +40,13 @@ after creating AppRole:
 Then initialize the local secret, policy, and AppRole:
 
     docker compose exec vault vault login -address=http://127.0.0.1:8200 "$(cat secrets/vault_dev_root_token)"
-    docker compose exec vault vault kv put -address=http://127.0.0.1:8200 secret/nexus/identity postgres_password='postgres-password' redis_password='redis-password'
+    docker compose exec vault vault kv put -address=http://127.0.0.1:8200 secret/nexus/identity \
+      postgres_password='postgres-password' \
+      redis_password='redis-password' \
+      service_secret='<serverpod-service-secret>' \
+      email_secret_hash_pepper='<email-secret-hash-pepper>' \
+      jwt_hmac_sha512_private_key='<jwt-hmac-sha512-private-key>' \
+      jwt_refresh_token_hash_pepper='<jwt-refresh-token-hash-pepper>'
     docker compose exec vault sh -lc "cat > /tmp/identity-policy.hcl <<'EOF'
 path \"secret/data/nexus/identity\" {
   capabilities = [\"read\"]
@@ -51,6 +58,17 @@ vault policy write -address=http://127.0.0.1:8200 identity-read /tmp/identity-po
     docker compose exec vault vault read -address=http://127.0.0.1:8200 -field=role_id auth/approle/role/identity/role-id > secrets/vault_role_id
     docker compose exec vault vault write -address=http://127.0.0.1:8200 -field=secret_id -f auth/approle/role/identity/secret-id > secrets/vault_secret_id
 
+The API does not mount or read `config/passwords.yaml` from the host in Docker.
+It reads `/run/vault/secrets/serverpod-passwords.yaml`, rendered by Vault Agent.
+The local Vault secret must contain all of these keys:
+
+- `postgres_password`
+- `redis_password`
+- `service_secret`
+- `email_secret_hash_pepper`
+- `jwt_hmac_sha512_private_key`
+- `jwt_refresh_token_hash_pepper`
+
 Start the stack:
 
     docker compose up --build --detach
@@ -60,6 +78,10 @@ host and on `http://vault:8200` from Docker Compose.
 
 Postgres, Redis, and the API wait for the rendered Vault Agent files before
 starting.
+
+If an older run created `config/passwords.yaml` as a directory, remove that
+directory. It was created by Docker when a bind mount pointed at a missing host
+file; the current Docker setup no longer uses that mount.
 
 See `docker/vault/docs/generate-approle-secrets.md` for the full reproducible
 procedure.

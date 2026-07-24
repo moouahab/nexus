@@ -42,3 +42,9 @@ template {
   destination = "/vault/secrets/redis_password"
   perms       = "0440"
 }
+
+template {
+  source      = "/vault/templates/serverpod-passwords.yaml.ctmpl"
+  destination = "/vault/secrets/serverpod-passwords.yaml"
+  perms       = "0440"
+}
