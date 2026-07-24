@@ -6,12 +6,6 @@ configs:
     file: ../config/postgres-test.conf
 
 secrets:
-  postgres_dev_password:
-    file: ../../secrets/postgres_dev_password
-
-  redis_dev_password:
-    file: ../../secrets/redis_dev_password
-
   postgres_test_password:
     file: ../../secrets/postgres_test_password
 

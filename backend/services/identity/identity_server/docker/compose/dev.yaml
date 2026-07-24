@@ -3,12 +3,7 @@ services:
     build:
       context: ../../..
       dockerfile: identity_server/docker/api/Dockerfile
-    environment:
-      runmode: development
-      serverid: default
-      logging: normal
-      role: monolith
-      apply_migrations: "true"
+    command: ["development", "default", "normal", "monolith", "true"]
     ports:
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:8181:8081"
@@ -18,14 +13,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    secrets:
-      - source: postgres_dev_password
-        target: postgres_password
-      - source: redis_dev_password
-        target: redis_password
+      vault_agent:
+        condition: service_healthy
     volumes:
       - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
       - ../../config/passwords.yaml:/run/config/serverpod-passwords.yaml:ro
+      - identity_vault_secrets:/run/vault/secrets:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
       interval: 10s
@@ -38,14 +31,15 @@ services:
       context: ../postgres
     ports:
       - "127.0.0.1:8090:5432"
+    depends_on:
+      vault_agent:
+        condition: service_healthy
     configs:
       - source: postgres_dev_config
         target: /run/config/postgres.conf
-    secrets:
-      - source: postgres_dev_password
-        target: postgres_password
     volumes:
       - identity_data:/var/lib/postgresql/data
+      - identity_vault_secrets:/run/vault/secrets:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d identity"]
       interval: 5s
@@ -58,11 +52,13 @@ services:
       context: ../redis
     ports:
       - "127.0.0.1:8091:6379"
-    secrets:
-      - source: redis_dev_password
-        target: redis_password
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    volumes:
+      - identity_vault_secrets:/run/vault/secrets:ro
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/vault/secrets/redis_password)\" ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 5
