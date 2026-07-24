@@ -4,3 +4,7 @@
 
 # Pubspec overrides
 pubspec_overrides.yaml
+
+**/secrets/*
+**/.env
+**/config/passwords.yaml

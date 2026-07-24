@@ -1,0 +1,33 @@
+services:
+  postgres_test:
+    profiles:
+      - test
+    build:
+      context: ../postgres
+    ports:
+      - "127.0.0.1:9090:5432"
+    configs:
+      - source: postgres_test_config
+        target: /run/config/postgres.conf
+    secrets:
+      - source: postgres_test_password
+        target: postgres_password
+    volumes:
+      - identity_test_data:/var/lib/postgresql/data
+
+  redis_test:
+    profiles:
+      - test
+    build:
+      context: ../redis
+    ports:
+      - "127.0.0.1:9091:6379"
+    secrets:
+      - source: redis_test_password
+        target: redis_password
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

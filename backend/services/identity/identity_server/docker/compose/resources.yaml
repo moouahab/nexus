@@ -1,0 +1,23 @@
+configs:
+  postgres_dev_config:
+    file: ../config/postgres-dev.conf
+
+  postgres_test_config:
+    file: ../config/postgres-test.conf
+
+secrets:
+  postgres_dev_password:
+    file: ../../secrets/postgres_dev_password
+
+  redis_dev_password:
+    file: ../../secrets/redis_dev_password
+
+  postgres_test_password:
+    file: ../../secrets/postgres_test_password
+
+  redis_test_password:
+    file: ../../secrets/redis_test_password
+
+volumes:
+  identity_data:
+  identity_test_data:

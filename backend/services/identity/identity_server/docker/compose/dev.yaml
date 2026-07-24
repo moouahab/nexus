@@ -1,0 +1,69 @@
+services:
+  api:
+    build:
+      context: ../../..
+      dockerfile: identity_server/docker/api/Dockerfile
+    environment:
+      runmode: development
+      serverid: default
+      logging: normal
+      role: monolith
+      apply_migrations: "true"
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8181:8081"
+      - "127.0.0.1:8182:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    secrets:
+      - source: postgres_dev_password
+        target: postgres_password
+      - source: redis_dev_password
+        target: redis_password
+    volumes:
+      - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
+      - ../../config/passwords.yaml:/run/config/serverpod-passwords.yaml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  postgres:
+    build:
+      context: ../postgres
+    ports:
+      - "127.0.0.1:8090:5432"
+    configs:
+      - source: postgres_dev_config
+        target: /run/config/postgres.conf
+    secrets:
+      - source: postgres_dev_password
+        target: postgres_password
+    volumes:
+      - identity_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d identity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    build:
+      context: ../redis
+    ports:
+      - "127.0.0.1:8091:6379"
+    secrets:
+      - source: redis_dev_password
+        target: redis_password
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

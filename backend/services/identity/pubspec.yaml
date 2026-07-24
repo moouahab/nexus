@@ -7,5 +7,4 @@ environment:
 workspace:
   - identity_client
   - identity_server
-  - identity_flutter
 
