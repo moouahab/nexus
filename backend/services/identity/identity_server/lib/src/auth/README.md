@@ -1,5 +1,7 @@
 # Identity Auth Structure
 
+Detailed architecture and API documentation: `ARCHITECTURE.md`.
+
 | Layer | Class/File | Main functions | Role |
 | --- | --- | --- | --- |
 | constants | `AuthClaimNames` | claim names | JWT keys: `sub`, `sid`, `iss`, `aud`, `typ`, `iat`, `exp`, `email_verified`, `amr`. |
