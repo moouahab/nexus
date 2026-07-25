@@ -3,12 +3,13 @@ import 'dart:convert';
 
 import 'package:serverpod/serverpod.dart';
 
+import '../application/exceptions/authentication_required_exception.dart';
 import '../application/exceptions/auth_use_case_exception.dart';
 import '../domain/auth_result.dart';
 import 'auth_dependencies.dart';
 
 abstract class AuthJsonRoute extends Route {
-  AuthJsonRoute() : super(methods: const {Method.post});
+  AuthJsonRoute({super.methods = const {Method.post}});
 
   Future<AuthResult> execute(
     Session session,
@@ -26,14 +27,13 @@ abstract class AuthJsonRoute extends Route {
       );
 
       return jsonResponse(
-        {
-          'identityId': result.identityId?.toString(),
-          'authSessionId': result.authSessionId?.toString(),
-        },
+        result.responseBody(),
         headers: result.responseHeaders,
       );
     } on AuthUseCaseException catch (exception) {
       return _authErrorResponse(exception);
+    } on AuthenticationRequiredException catch (exception) {
+      return authenticationRequiredResponse(exception);
     } on FormatException {
       return jsonResponse(
         {'error': 'invalid_request'},
@@ -69,6 +69,15 @@ abstract class AuthJsonRoute extends Route {
       statusCode,
       body: Body.fromString(jsonEncode(body), mimeType: MimeType.json),
       headers: Headers.fromMap(headers),
+    );
+  }
+
+  Response authenticationRequiredResponse(
+    AuthenticationRequiredException exception,
+  ) {
+    return jsonResponse(
+      {'error': exception.code.name},
+      statusCode: 401,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../application/services/auth_token_issuer.dart';
+import '../application/services/require_auth.dart';
 import '../application/use_cases/login_with_username_use_case.dart';
 import '../application/use_cases/logout_use_case.dart';
 import '../application/use_cases/refresh_session_use_case.dart';
@@ -25,6 +26,7 @@ class AuthDependencies {
     required this.loginWithUsername,
     required this.refreshSession,
     required this.logout,
+    required this.requireAuth,
   });
 
   static const _loginAttemptLimiter = RedisLoginAttemptLimiter();
@@ -100,6 +102,12 @@ class AuthDependencies {
         refreshTokenCodec: refreshTokenCodec,
         authCookieService: authCookieService,
       ),
+      requireAuth: RequireAuth(
+        accessTokenService: accessTokenService,
+        authCookieService: authCookieService,
+        authSessionRepository: authSessionRepository,
+        identityRepository: identityRepository,
+      ),
     );
   }
 
@@ -107,6 +115,7 @@ class AuthDependencies {
   final LoginWithUsernameUseCase loginWithUsername;
   final RefreshSessionUseCase refreshSession;
   final LogoutUseCase logout;
+  final RequireAuth requireAuth;
 
   static String _requiredPassword(Session session, String key) {
     final value = session.passwords[key];

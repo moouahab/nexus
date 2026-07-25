@@ -2,6 +2,7 @@ import 'package:serverpod/serverpod.dart';
 
 import 'auth_login_route.dart';
 import 'auth_logout_route.dart';
+import 'auth_me_route.dart';
 import 'auth_refresh_route.dart';
 import 'auth_register_route.dart';
 
@@ -32,6 +33,10 @@ void registerAuthRoutes(Serverpod pod) {
     AuthRouteDefinition(
       path: '/auth/logout',
       route: AuthLogoutRoute(),
+    ),
+    AuthRouteDefinition(
+      path: '/auth/me',
+      route: AuthMeRoute(),
     ),
   ];
 
