@@ -1,0 +1,21 @@
+### Technical identity shared by every login method.
+class: Identity
+serverOnly: true
+table: identity
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  ### Primary email if known, stored normalized.
+  email: String?
+  ### Public/login username if reserved for this identity.
+  username: String?
+  emailVerified: bool, default=false
+  status: IdentityStatus, default=active
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+
+indexes:
+  identity_email_idx:
+    fields: email
+  identity_username_idx:
+    fields: username
+    unique: true

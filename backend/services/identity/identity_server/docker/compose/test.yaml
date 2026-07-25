@@ -5,7 +5,7 @@ services:
     build:
       context: ../postgres
     ports:
-      - "127.0.0.1:9090:5432"
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-9090}:5432"
     configs:
       - source: postgres_test_config
         target: /run/config/postgres.conf
@@ -21,7 +21,7 @@ services:
     build:
       context: ../redis
     ports:
-      - "127.0.0.1:9091:6379"
+      - "127.0.0.1:${REDIS_TEST_PORT:-9091}:6379"
     secrets:
       - source: redis_test_password
         target: redis_password

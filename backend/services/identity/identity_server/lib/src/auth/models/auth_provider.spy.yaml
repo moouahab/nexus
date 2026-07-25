@@ -1,0 +1,10 @@
+enum: AuthProvider
+serialized: byName
+default: username
+values:
+  - username
+  - google
+  - github
+  - apple
+  - email
+

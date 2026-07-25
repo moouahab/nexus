@@ -1,0 +1,19 @@
+### Login session used as the sid claim in access tokens.
+class: AuthSession
+serverOnly: true
+table: auth_session
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  ### The identity this session belongs to.
+  identity: Identity?, relation(onDelete=Cascade)
+  createdAt: DateTime, default=now
+  expiresAt: DateTime
+  lastUsedAt: DateTime?
+  revokedAt: DateTime?
+  authMethod: AuthProvider
+
+indexes:
+  auth_session_identity_idx:
+    fields: identityId
+  auth_session_expires_at_idx:
+    fields: expiresAt

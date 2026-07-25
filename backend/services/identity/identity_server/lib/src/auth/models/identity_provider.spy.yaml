@@ -1,0 +1,28 @@
+### External or federated login provider linked to one identity.
+class: IdentityProvider
+serverOnly: true
+table: identity_provider
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+
+  ### The identity this provider belongs to.
+  identity: Identity?, relation(onDelete=Cascade)
+
+  provider: AuthProvider
+
+  ### Stable user id returned by the provider, for example Google sub or GitHub id.
+  providerUserId: String
+
+  ### Email returned by the provider, if available, stored normalized.
+  email: String?
+
+  emailVerified: bool, default=false
+  createdAt: DateTime, default=now
+  lastUsedAt: DateTime?
+
+indexes:
+  identity_provider_user_idx:
+    fields: identityId
+  identity_provider_provider_user_idx:
+    fields: provider, providerUserId
+    unique: true

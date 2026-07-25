@@ -1,0 +1,9 @@
+enum: IdentityStatus
+serialized: byName
+default: active
+values:
+  - active
+  - pending
+  - disabled
+  - locked
+  - deleted

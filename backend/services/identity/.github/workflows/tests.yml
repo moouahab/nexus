@@ -1,4 +1,4 @@
-name: Tests
+name: Identity CI
 
 on:
   push:
@@ -7,12 +7,16 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
     env:
       VERSION: '3.4.11'
-      SERVERPOD_PASSWORD_database: '4j5blCaxhOL9Ua_5BVSNb3YlACXYA4FK'
-      SERVERPOD_PASSWORD_redis: 'yatGqz2n6-ATEJwLgZt094j9q5N9ZimO'
+      SERVERPOD_PASSWORD_database: 'change-me-postgres-test-password'
+      SERVERPOD_PASSWORD_redis: 'change-me-redis-test-password'
+      SERVERPOD_PASSWORD_emailSecretHashPepper: 'test-email-secret-pepper'
+      SERVERPOD_PASSWORD_jwtHmacSha512PrivateKey: 'test-jwt-hmac-secret'
+      SERVERPOD_PASSWORD_jwtRefreshTokenHashPepper: 'test-refresh-pepper'
+      SERVERPOD_REDIS_ENABLED: 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -21,9 +25,16 @@ jobs:
         with:
           flutter-version: '3.32.8'
 
-      - name: Start containers
+      - name: Create test secrets
         working-directory: identity_server
-        run: docker compose up --quiet-pull --build -d
+        run: |
+          mkdir -p secrets
+          printf '%s' "$SERVERPOD_PASSWORD_database" > secrets/postgres_test_password
+          printf '%s' "$SERVERPOD_PASSWORD_redis" > secrets/redis_test_password
+
+      - name: Start test containers
+        working-directory: identity_server
+        run: docker compose --profile test up --quiet-pull --build -d postgres_test redis_test
 
       - name: Install dependencies
         run: flutter pub get
@@ -34,6 +45,14 @@ jobs:
       - name: Run Serverpod generator
         working-directory: identity_server
         run: serverpod generate
+
+      - name: Check formatting
+        working-directory: identity_server
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze
+        working-directory: identity_server
+        run: dart analyze --fatal-infos
 
       - name: Run tests
         working-directory: identity_server

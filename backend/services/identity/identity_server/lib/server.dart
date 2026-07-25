@@ -6,6 +6,7 @@ import 'package:serverpod_auth_idp_server/providers/email.dart';
 
 import 'src/generated/endpoints.dart';
 import 'src/generated/protocol.dart';
+import 'src/auth/routes/register_auth_routes.dart';
 import 'src/web/routes/app_config_route.dart';
 import 'src/web/routes/root.dart';
 
@@ -49,6 +50,8 @@ void run(List<String> args) async {
     '/app/assets/assets/config.json',
   );
 
+  registerAuthRoutes(pod);
+
   // Checks if the flutter web app has been built and serves it if it has.
   final appDir = Directory(Uri(path: 'web/app').toFilePath());
   if (appDir.existsSync()) {
@@ -72,7 +75,6 @@ void run(List<String> args) async {
       '/app/**',
     );
   }
-
   // Start the server.
   await pod.start();
 }

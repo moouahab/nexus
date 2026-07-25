@@ -1,0 +1,22 @@
+### Refresh token persisted for rotation and revocation.
+class: AuthRefreshToken
+serverOnly: true
+table: auth_refresh_token
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  ### The session this refresh token belongs to.
+  authSession: AuthSession?, relation(onDelete=Cascade)
+  ### Hashed refresh token secret. Never store the raw token.
+  tokenHash: String
+  createdAt: DateTime, default=now
+  expiresAt: DateTime
+  revokedAt: DateTime?
+  rotatedAt: DateTime?
+  replacedByTokenId: UuidValue?
+
+indexes:
+  auth_refresh_token_session_idx:
+    fields: authSessionId
+  auth_refresh_token_expires_at_idx:
+    fields: expiresAt
+
