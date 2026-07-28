@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+readonly SERVER_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+readonly SECRETS_DIR="$SERVER_ROOT/secrets"
+readonly SECRETS_EXAMPLE_DIR="$SERVER_ROOT/secrets_example"
+
+readonly VAULT_ADDRESS="${VAULT_ADDRESS:-http://127.0.0.1:8200}"
+readonly VAULT_POLICY="${VAULT_POLICY:-identity-read}"
+readonly VAULT_ROLE="${VAULT_ROLE:-identity}"
+readonly VAULT_SECRET_PATH="${VAULT_SECRET_PATH:-secret/nexus/identity}"
+
+readonly ROOT_TOKEN_FILE="$SECRETS_DIR/vault_dev_root_token"
+readonly ROLE_ID_FILE="$SECRETS_DIR/vault_role_id"
+readonly SECRET_ID_FILE="$SECRETS_DIR/vault_secret_id"
+readonly POSTGRES_PASSWORD_FILE="$SECRETS_DIR/postgres_password"
+readonly REDIS_PASSWORD_FILE="$SECRETS_DIR/redis_password"
+readonly SERVICE_SECRET_FILE="$SECRETS_DIR/service_secret"
+readonly EMAIL_SECRET_HASH_PEPPER_FILE="$SECRETS_DIR/email_secret_hash_pepper"
+readonly JWT_HMAC_PRIVATE_KEY_FILE="$SECRETS_DIR/jwt_hmac_sha512_private_key"
+readonly JWT_REFRESH_HASH_PEPPER_FILE="$SECRETS_DIR/jwt_refresh_token_hash_pepper"
+
+setup_environment() {
+  cd "$SERVER_ROOT"
+  umask 077
+
+  if [[ ! -f "$SERVER_ROOT/docker-compose.yaml" ]]; then
+    error "docker-compose.yaml not found in: $SERVER_ROOT"
+    exit 1
+  fi
+}

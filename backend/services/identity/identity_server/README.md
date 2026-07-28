@@ -31,32 +31,14 @@ For an existing Vault, create local AppRole files first:
     printf '%s' '<secret-id>' > secrets/vault_secret_id
 
 For a fresh local development Vault, start Vault first and generate these files
-after creating AppRole:
+after creating AppRole. The reproducible local procedure is automated by:
 
-    cp -r secrets_example secrets
-    printf '%s' '<dev-root-token>' > secrets/vault_dev_root_token
-    docker compose up --build --detach vault
+    ./docker/script/setup_vault_approle.sh
 
-Then initialize the local secret, policy, and AppRole:
-
-    docker compose exec vault vault login -address=http://127.0.0.1:8200 "$(cat secrets/vault_dev_root_token)"
-    docker compose exec vault vault kv put -address=http://127.0.0.1:8200 secret/nexus/identity \
-      postgres_password='postgres-password' \
-      redis_password='redis-password' \
-      service_secret='<serverpod-service-secret>' \
-      email_secret_hash_pepper='<email-secret-hash-pepper>' \
-      jwt_hmac_sha512_private_key='<jwt-hmac-sha512-private-key>' \
-      jwt_refresh_token_hash_pepper='<jwt-refresh-token-hash-pepper>'
-    docker compose exec vault sh -lc "cat > /tmp/identity-policy.hcl <<'EOF'
-path \"secret/data/nexus/identity\" {
-  capabilities = [\"read\"]
-}
-EOF
-vault policy write -address=http://127.0.0.1:8200 identity-read /tmp/identity-policy.hcl"
-    docker compose exec vault vault auth enable -address=http://127.0.0.1:8200 approle
-    docker compose exec vault vault write -address=http://127.0.0.1:8200 auth/approle/role/identity policies=identity-read token_ttl=1h token_max_ttl=4h
-    docker compose exec vault vault read -address=http://127.0.0.1:8200 -field=role_id auth/approle/role/identity/role-id > secrets/vault_role_id
-    docker compose exec vault vault write -address=http://127.0.0.1:8200 -field=secret_id -f auth/approle/role/identity/secret-id > secrets/vault_secret_id
+The script creates missing local secrets, starts Vault, writes the Identity
+runtime secret, configures the read policy, configures AppRole, generates
+`vault_role_id` and `vault_secret_id`, starts the full Docker stack, and verifies
+Vault Agent output.
 
 The API does not mount or read `config/passwords.yaml` from the host in Docker.
 It reads `/run/vault/secrets/serverpod-passwords.yaml`, rendered by Vault Agent.
@@ -69,7 +51,9 @@ The local Vault secret must contain all of these keys:
 - `jwt_hmac_sha512_private_key`
 - `jwt_refresh_token_hash_pepper`
 
-Start the stack:
+If you use `./docker/script/setup_vault_approle.sh`, the stack is already
+started by the script. If you inject AppRole files manually for an existing
+Vault, start the stack with:
 
     docker compose up --build --detach
 
