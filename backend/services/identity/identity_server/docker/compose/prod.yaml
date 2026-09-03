@@ -13,6 +13,8 @@ services:
         condition: service_healthy
     volumes:
       - identity_vault_secrets:/run/vault/secrets:ro
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
       interval: 10s
@@ -44,6 +46,8 @@ services:
     volumes:
       - identity_vault_agent:/vault/token
       - identity_vault_secrets:/vault/secrets
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         - CMD-SHELL

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+
+<defs>
+  <linearGradient id="redA" x1="0" y1="0" x2="0.8" y2="1">
+    <stop offset="0%" stop-color="#ff3137"/>
+    <stop offset="58%" stop-color="#f21f28"/>
+    <stop offset="100%" stop-color="#d50f18"/>
+  </linearGradient>
+  <linearGradient id="redB" x1="0" y1="0" x2="1" y2="0.8">
+    <stop offset="0%" stop-color="#ff3137"/>
+    <stop offset="55%" stop-color="#ec1c25"/>
+    <stop offset="100%" stop-color="#8e0b12"/>
+  </linearGradient>
+</defs>
+
+<rect width="1600" height="1000" fill="#0c0c0e"/>
+<text x="100" y="100" fill="#f5f5f6" font-family="Arial,sans-serif" font-size="36" font-weight="700">NEXUS — VECTOR MASTER V2</text>
+<text x="100" y="150" fill="#8f9098" font-family="Arial,sans-serif" font-size="24">Clean vector redraw — no pixelation</text>
+<g transform="translate(130,240) scale(4.8)">
+  <polygon points="17,13 18,86 26,82 27,30 65,57 65,48" fill="url(#redA)"/>
+  <polygon points="81,18 80,75 42,48 41,57 90,93 90,18" fill="url(#redB)"/>
+</g>
+<g transform="translate(800,280) scale(3.2)">
+  <polygon points="17,13 18,86 26,82 27,30 65,57 65,48" fill="#ffffff"/>
+  <polygon points="81,18 80,75 42,48 41,57 90,93 90,18" fill="#ffffff"/>
+</g>
+<rect x="100" y="760" width="1400" height="1" fill="#25262b"/>
+<text x="100" y="830" fill="#f5f5f6" font-family="Arial,sans-serif" font-size="22">Includes SVG masters + transparent PNG 4096 px + UI icons</text>
+</svg>

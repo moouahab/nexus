@@ -1,0 +1,16 @@
+NEXUS LOGIN — DESIGN NOTES
+
+Breakpoints conseillés
+- Mobile small: 0–399 px
+- Mobile: 400–767 px
+- Tablet portrait: 768–1023 px
+- Tablet landscape: 1024–1439 px
+- Desktop: 1440 px et +
+
+Principes
+- Conserver le fond comme élément d'identité.
+- Ne pas ajouter de carte blanche/noire autour du formulaire.
+- Garder les champs sous forme de lignes fines.
+- Rouge uniquement pour les points d'action et la marque.
+- Google reste monochrome.
+- En mobile/tablette portrait, la marque passe au-dessus du formulaire.

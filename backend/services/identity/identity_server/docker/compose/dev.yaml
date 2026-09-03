@@ -18,6 +18,8 @@ services:
     volumes:
       - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
       - identity_vault_secrets:/run/vault/secrets:ro
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
       interval: 10s
@@ -28,6 +30,7 @@ services:
   postgres:
     build:
       context: ../postgres
+    user: "0:0"
     ports:
       - "127.0.0.1:8090:5432"
     depends_on:
@@ -49,6 +52,7 @@ services:
   redis:
     build:
       context: ../redis
+    user: "0:0"
     ports:
       - "127.0.0.1:8091:6379"
     depends_on:
@@ -56,6 +60,8 @@ services:
         condition: service_healthy
     volumes:
       - identity_vault_secrets:/run/vault/secrets:ro
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/vault/secrets/redis_password)\" ping | grep -q PONG"]
       interval: 10s

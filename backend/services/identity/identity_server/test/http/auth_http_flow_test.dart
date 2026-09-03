@@ -55,6 +55,7 @@ void main() {
         expect(registered.jsonBody['authSessionId'], isA<String>());
         expect(client.cookies, contains('access_token'));
         expect(client.cookies, contains('refresh_token'));
+        expect(client.cookies, contains('csrf_token'));
 
         final me = await client.get('/auth/me');
 
@@ -108,6 +109,7 @@ void main() {
         );
         expect(client.cookies, contains('access_token'));
         expect(client.cookies, contains('refresh_token'));
+        expect(client.cookies, contains('csrf_token'));
 
         final meAfterRefresh = await client.get('/auth/me');
 
@@ -127,6 +129,7 @@ void main() {
         );
         expect(client.cookies, isNot(contains('access_token')));
         expect(client.cookies, isNot(contains('refresh_token')));
+        expect(client.cookies, isNot(contains('csrf_token')));
 
         final meAfterLogout = await client.get('/auth/me');
 
@@ -136,6 +139,107 @@ void main() {
         });
       },
     );
+
+    test('supports body tokens and bearer auth for apps', () async {
+      if (!runHttpTests) {
+        expect(
+          runHttpTests,
+          isFalse,
+          reason: 'Set IDENTITY_RUN_HTTP_TESTS=true to run HTTP auth flow.',
+        );
+        return;
+      }
+
+      final registered = await client.postJson(
+        '/auth/register',
+        {
+          'username': username,
+          'password': password,
+          'email': '$username@example.com',
+        },
+        headers: const {
+          'X-Auth-Token-Transport': 'body',
+        },
+      );
+
+      expect(registered.statusCode, 200);
+      expect(registered.jsonBody['identityId'], isA<String>());
+      expect(registered.jsonBody['authSessionId'], isA<String>());
+      expect(registered.jsonBody['tokenType'], 'Bearer');
+      expect(registered.jsonBody['accessToken'], isA<String>());
+      expect(registered.jsonBody['refreshToken'], isA<String>());
+      expect(client.cookies, isNot(contains('access_token')));
+      expect(client.cookies, isNot(contains('refresh_token')));
+
+      final bearerMe = await client.get(
+        '/auth/me',
+        headers: {
+          'Authorization': 'Bearer ${registered.jsonBody['accessToken']}',
+        },
+      );
+
+      expect(bearerMe.statusCode, 200);
+      expect(
+        bearerMe.jsonBody['identityId'],
+        registered.jsonBody['identityId'],
+      );
+      expect(bearerMe.jsonBody['sid'], registered.jsonBody['authSessionId']);
+
+      final refreshed = await client.postJson('/auth/refresh', {
+        'refreshToken': registered.jsonBody['refreshToken'],
+        'tokenTransport': 'body',
+      });
+
+      expect(refreshed.statusCode, 200);
+      expect(
+        refreshed.jsonBody['identityId'],
+        registered.jsonBody['identityId'],
+      );
+      expect(refreshed.jsonBody['accessToken'], isA<String>());
+      expect(refreshed.jsonBody['refreshToken'], isA<String>());
+      expect(
+        refreshed.jsonBody['refreshToken'],
+        isNot(registered.jsonBody['refreshToken']),
+      );
+
+      final oldRefreshReuse = await client.postJson('/auth/refresh', {
+        'refreshToken': registered.jsonBody['refreshToken'],
+        'tokenTransport': 'body',
+      });
+
+      expect(oldRefreshReuse.statusCode, 401);
+      expect(oldRefreshReuse.jsonBody, {
+        'error': 'invalidRefreshToken',
+      });
+    });
+
+    test('rejects auth requests from untrusted browser origins', () async {
+      if (!runHttpTests) {
+        expect(
+          runHttpTests,
+          isFalse,
+          reason: 'Set IDENTITY_RUN_HTTP_TESTS=true to run HTTP auth flow.',
+        );
+        return;
+      }
+
+      final response = await client.postJson(
+        '/auth/register',
+        {
+          'username': username,
+          'password': password,
+          'email': '$username@example.com',
+        },
+        headers: const {
+          'Origin': 'https://evil.example',
+        },
+      );
+
+      expect(response.statusCode, 400);
+      expect(response.jsonBody, {
+        'error': 'invalid_request',
+      });
+    });
   });
 }
 
@@ -146,17 +250,23 @@ class _AuthHttpClient {
   final HttpClient _client = HttpClient();
   final Map<String, String> cookies = {};
 
-  Future<_HttpResponse> get(String path) async {
+  Future<_HttpResponse> get(
+    String path, {
+    Map<String, String> headers = const {},
+  }) async {
     final request = await _open('GET', path);
+    _setHeaders(request, headers);
     return _send(request);
   }
 
   Future<_HttpResponse> postJson(
     String path,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    Map<String, String> headers = const {},
+  }) async {
     final request = await _open('POST', path);
     request.headers.contentType = ContentType.json;
+    _setHeaders(request, headers);
     request.write(jsonEncode(body));
     return _send(request);
   }
@@ -178,6 +288,17 @@ class _AuthHttpClient {
     }
 
     return request;
+  }
+
+  void _setHeaders(HttpClientRequest request, Map<String, String> headers) {
+    final csrfToken = cookies['csrf_token'];
+    if (csrfToken != null && !headers.containsKey('X-CSRF-Token')) {
+      request.headers.set('X-CSRF-Token', csrfToken);
+    }
+
+    for (final entry in headers.entries) {
+      request.headers.set(entry.key, entry.value);
+    }
   }
 
   Future<_HttpResponse> _send(HttpClientRequest request) async {

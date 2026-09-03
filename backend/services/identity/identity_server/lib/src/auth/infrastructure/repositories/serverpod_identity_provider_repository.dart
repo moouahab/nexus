@@ -51,6 +51,27 @@ class ServerpodIdentityProviderRepository
   }
 
   @override
+  Future<List<protocol.IdentityProvider>> updateEmailForIdentity(
+    Session session, {
+    required UuidValue identityId,
+    required String email,
+    required bool emailVerified,
+  }) async {
+    final providers = await findByIdentityId(session, identityId);
+    return protocol.IdentityProvider.db.update(
+      session,
+      [
+        for (final provider in providers)
+          provider.copyWith(email: email, emailVerified: emailVerified),
+      ],
+      columns: (t) => [
+        t.email,
+        t.emailVerified,
+      ],
+    );
+  }
+
+  @override
   Future<protocol.IdentityProvider?> markUsed(Session session, UuidValue id) {
     return protocol.IdentityProvider.db.updateById(
       session,

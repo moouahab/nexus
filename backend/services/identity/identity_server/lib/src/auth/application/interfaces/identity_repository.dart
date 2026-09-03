@@ -23,5 +23,12 @@ abstract interface class IdentityRepository {
     protocol.IdentityStatus status,
   );
 
+  Future<protocol.Identity?> updateEmail(
+    Session session, {
+    required UuidValue id,
+    required String email,
+    required bool emailVerified,
+  });
+
   Future<protocol.Identity?> markEmailVerified(Session session, UuidValue id);
 }

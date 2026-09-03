@@ -1,28 +1,27 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../../../generated/protocol.dart' as protocol;
-import '../../constants/auth_cookie_names.dart';
 import '../../domain/authenticated_request.dart';
 import '../../domain/auth_claims.dart';
 import '../exceptions/authentication_required_exception.dart';
+import '../interfaces/access_token_reader.dart';
 import '../interfaces/access_token_service.dart';
-import '../interfaces/auth_cookie_service.dart';
 import '../interfaces/auth_session_repository.dart';
 import '../interfaces/identity_repository.dart';
 
 class RequireAuth {
   const RequireAuth({
     required AccessTokenService accessTokenService,
-    required AuthCookieService authCookieService,
+    required AccessTokenReader accessTokenReader,
     required AuthSessionRepository authSessionRepository,
     required IdentityRepository identityRepository,
   }) : _accessTokenService = accessTokenService,
-       _authCookieService = authCookieService,
+       _accessTokenReader = accessTokenReader,
        _authSessionRepository = authSessionRepository,
        _identityRepository = identityRepository;
 
   final AccessTokenService _accessTokenService;
-  final AuthCookieService _authCookieService;
+  final AccessTokenReader _accessTokenReader;
   final AuthSessionRepository _authSessionRepository;
   final IdentityRepository _identityRepository;
 
@@ -45,9 +44,8 @@ class RequireAuth {
   }
 
   String _readAccessToken(Map<String, List<String>> headers) {
-    final accessToken = _authCookieService.readCookie(
+    final accessToken = _accessTokenReader.readAccessToken(
       headers: headers,
-      name: AuthCookieNames.accessToken,
     );
     if (accessToken != null && accessToken.isNotEmpty) return accessToken;
 

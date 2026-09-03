@@ -23,5 +23,12 @@ abstract interface class IdentityProviderRepository {
     UuidValue identityId,
   );
 
+  Future<List<protocol.IdentityProvider>> updateEmailForIdentity(
+    Session session, {
+    required UuidValue identityId,
+    required String email,
+    required bool emailVerified,
+  });
+
   Future<protocol.IdentityProvider?> markUsed(Session session, UuidValue id);
 }

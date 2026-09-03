@@ -5,6 +5,7 @@ import '../../constants/auth_cookie_names.dart';
 import '../../constants/auth_token_defaults.dart';
 import '../../domain/auth_claims.dart';
 import '../../domain/auth_result.dart';
+import '../../domain/auth_token_transport.dart';
 import '../../domain/refresh_token_cookie_value.dart';
 import '../exceptions/auth_use_case_exception.dart';
 import '../interfaces/access_token_service.dart';
@@ -14,6 +15,7 @@ import '../interfaces/auth_session_repository.dart';
 import '../interfaces/identity_repository.dart';
 import '../interfaces/refresh_token_codec.dart';
 import '../interfaces/refresh_token_secret_service.dart';
+import '../services/auth_audit.dart';
 import '../validation/termination_rule.dart';
 
 class RefreshSessionUseCase {
@@ -44,11 +46,15 @@ class RefreshSessionUseCase {
   Future<AuthResult> execute(
     Session session, {
     required Map<String, List<String>> requestHeaders,
+    String? refreshToken,
+    AuthTokenTransport tokenTransport = AuthTokenTransport.cookie,
   }) async {
-    final refreshCookie = _authCookieService.readCookie(
-      headers: requestHeaders,
-      name: AuthCookieNames.refreshToken,
-    );
+    final refreshCookie =
+        refreshToken ??
+        _authCookieService.readCookie(
+          headers: requestHeaders,
+          name: AuthCookieNames.refreshToken,
+        );
     TerminationRule.validateAll([
       TerminationRule(
         shouldTerminate: () => refreshCookie == null,
@@ -59,30 +65,41 @@ class RefreshSessionUseCase {
     ]);
 
     final parsedRefreshToken = _decodeRefreshToken(refreshCookie!);
-    final refreshToken = await _authRefreshTokenRepository.findActiveById(
+    final activeRefreshToken = await _authRefreshTokenRepository.findActiveById(
       session,
       parsedRefreshToken.refreshTokenId,
     );
-    TerminationRule.validateAll([
-      TerminationRule(
-        shouldTerminate: () => refreshToken == null,
-        exception: const AuthUseCaseException(
-          AuthUseCaseExceptionCode.invalidRefreshToken,
-        ),
-      ),
-    ]);
+    if (activeRefreshToken == null) {
+      AuthAudit.log(
+        session,
+        event: 'refresh',
+        outcome: 'failure',
+        reasonCode: AuthUseCaseExceptionCode.invalidRefreshToken.name,
+      );
+      throw const AuthUseCaseException(
+        AuthUseCaseExceptionCode.invalidRefreshToken,
+      );
+    }
 
     final secretIsValid = await _refreshTokenSecretService.verifySecret(
       rawSecret: parsedRefreshToken.secret,
-      secretHash: refreshToken!.tokenHash,
+      secretHash: activeRefreshToken.tokenHash,
     );
     await AsyncTerminationRule.validateAll([
       AsyncTerminationRule(
         shouldTerminate: () async => !secretIsValid,
-        beforeThrow: () => _authRefreshTokenRepository.revoke(
-          session,
-          parsedRefreshToken.refreshTokenId,
-        ),
+        beforeThrow: () async {
+          await _authRefreshTokenRepository.revoke(
+            session,
+            parsedRefreshToken.refreshTokenId,
+          );
+          AuthAudit.log(
+            session,
+            event: 'refresh',
+            outcome: 'failure',
+            reasonCode: AuthUseCaseExceptionCode.invalidRefreshToken.name,
+          );
+        },
         exception: const AuthUseCaseException(
           AuthUseCaseExceptionCode.invalidRefreshToken,
         ),
@@ -91,7 +108,7 @@ class RefreshSessionUseCase {
 
     final authSession = await _authSessionRepository.findActiveById(
       session,
-      refreshToken.authSessionId,
+      activeRefreshToken.authSessionId,
     );
     TerminationRule.validateAll([
       TerminationRule(
@@ -162,14 +179,29 @@ class RefreshSessionUseCase {
       secret: newSecret.raw,
     );
 
-    return AuthResult(
+    final result = AuthResult(
       identityId: identity.id!,
       authSessionId: authSession.id!,
-      responseHeaders: _authCookieService.createAuthCookies(
-        accessToken: accessToken,
-        refreshToken: refreshCookieValue,
-      ),
+      accessToken: accessToken,
+      refreshToken: refreshCookieValue,
+      includeTokensInBody: tokenTransport == AuthTokenTransport.body,
+      responseHeaders: switch (tokenTransport) {
+        AuthTokenTransport.cookie => _authCookieService.createAuthCookies(
+          accessToken: accessToken,
+          refreshToken: refreshCookieValue,
+        ),
+        AuthTokenTransport.body => const {},
+      },
     );
+    AuthAudit.log(
+      session,
+      event: 'refresh',
+      outcome: 'success',
+      identityId: result.identityId,
+      authSessionId: result.authSessionId,
+      tokenTransport: tokenTransport.name,
+    );
+    return result;
   }
 
   RefreshTokenCookieValue _decodeRefreshToken(String refreshCookie) {

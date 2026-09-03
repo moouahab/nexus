@@ -16,7 +16,15 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
-  gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+  GtkWindow* window = GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+#ifdef GDK_WINDOWING_X11
+  GdkScreen* position_screen = gtk_window_get_screen(window);
+  if (GDK_IS_X11_SCREEN(position_screen)) {
+    gtk_window_move(window, 80, 80);
+  }
+#endif
+  gtk_window_present(window);
+  gtk_widget_show(GTK_WIDGET(window));
 }
 
 // Implements GApplication::activate.
@@ -45,14 +53,21 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "app");
+    gtk_header_bar_set_title(header_bar, "Nexus");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "app");
+    gtk_window_set_title(window, "Nexus");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  gtk_window_set_default_size(window, 1366, 900);
+  gtk_window_set_position(window, GTK_WIN_POS_CENTER);
+#ifdef GDK_WINDOWING_X11
+  GdkScreen* initial_position_screen = gtk_window_get_screen(window);
+  if (GDK_IS_X11_SCREEN(initial_position_screen)) {
+    gtk_window_move(window, 80, 80);
+  }
+#endif
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

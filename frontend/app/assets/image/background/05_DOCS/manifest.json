@@ -1,0 +1,32 @@
+{
+  "bg_hero_light": {
+    "width": 1672,
+    "height": 941,
+    "relative_path": "01_BG_HERO/LIGHT/nexus_bg_hero_light.png"
+  },
+  "bg_hero_dark": {
+    "width": 1672,
+    "height": 941,
+    "relative_path": "01_BG_HERO/DARK/nexus_bg_hero_dark.png"
+  },
+  "bg_page_light": {
+    "width": 1672,
+    "height": 941,
+    "relative_path": "02_BG_PAGE/LIGHT/nexus_bg_page_light.png"
+  },
+  "bg_page_dark": {
+    "width": 1672,
+    "height": 941,
+    "relative_path": "02_BG_PAGE/DARK/nexus_bg_page_dark.png"
+  },
+  "bg_clean_light": {
+    "width": 1672,
+    "height": 941,
+    "relative_path": "03_BG_CLEAN/LIGHT/nexus_bg_clean_light.png"
+  },
+  "bg_clean_dark": {
+    "width": 1672,
+    "height": 941,
+    "relative_path": "03_BG_CLEAN/DARK/nexus_bg_clean_dark.png"
+  }
+}

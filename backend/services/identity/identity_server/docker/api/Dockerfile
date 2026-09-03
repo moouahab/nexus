@@ -49,10 +49,16 @@ COPY --from=build /app/identity_server/migrations/ migrations/
 # This file is required to enable the endpoint log filter in Insights.
 COPY --from=build /app/identity_server/lib/src/generated/protocol.yaml lib/src/generated/protocol.yaml
 
+RUN addgroup -S identity \
+  && adduser -S -G identity -H -h /app identity \
+  && chown -R identity:identity /app
+
 # Expose ports
 EXPOSE 8080
 EXPOSE 8081
 EXPOSE 8082
+
+USER identity
 
 # Define the entrypoint command
 ENTRYPOINT ["/usr/local/bin/identity-server-entrypoint"]

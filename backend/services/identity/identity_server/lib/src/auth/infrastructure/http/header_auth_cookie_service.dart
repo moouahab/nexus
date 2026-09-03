@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import '../../application/interfaces/auth_cookie_service.dart';
 import '../../constants/auth_cookie_names.dart';
 import '../../domain/auth_cookie_options.dart';
@@ -5,12 +8,15 @@ import '../../domain/auth_cookie_options.dart';
 class HeaderAuthCookieService implements AuthCookieService {
   HeaderAuthCookieService({
     required AuthCookieOptions options,
-  }) : _options = options;
+    Random? random,
+  }) : _options = options,
+       _random = random ?? Random.secure();
 
   static const _setCookieHeader = 'set-cookie';
   static const _cookieHeader = 'cookie';
 
   final AuthCookieOptions _options;
+  final Random _random;
 
   @override
   Map<String, List<String>> createAuthCookies({
@@ -30,6 +36,13 @@ class HeaderAuthCookieService implements AuthCookieService {
           value: refreshToken,
           path: _options.refreshTokenPath,
           maxAge: _options.refreshTokenMaxAge,
+        ),
+        _buildCookie(
+          name: AuthCookieNames.csrfToken,
+          value: _generateCsrfToken(),
+          path: _options.accessTokenPath,
+          maxAge: _options.refreshTokenMaxAge,
+          httpOnly: false,
         ),
       ],
     };
@@ -51,6 +64,13 @@ class HeaderAuthCookieService implements AuthCookieService {
           path: _options.refreshTokenPath,
           maxAge: Duration.zero,
         ),
+        _buildCookie(
+          name: AuthCookieNames.csrfToken,
+          value: '',
+          path: _options.accessTokenPath,
+          maxAge: Duration.zero,
+          httpOnly: false,
+        ),
       ],
     };
   }
@@ -60,9 +80,14 @@ class HeaderAuthCookieService implements AuthCookieService {
     required Map<String, List<String>> headers,
     required String name,
   }) {
-    final cookieValues =
-        headers[_cookieHeader] ?? headers[_cookieHeader.toUpperCase()];
-    if (cookieValues == null) return null;
+    final cookieValues = <String>[];
+    for (final entry in headers.entries) {
+      if (entry.key.toLowerCase() == _cookieHeader) {
+        cookieValues.addAll(entry.value);
+      }
+    }
+
+    if (cookieValues.isEmpty) return null;
     for (final header in cookieValues) {
       for (final part in header.split(';')) {
         final separatorIndex = part.indexOf('=');
@@ -81,17 +106,23 @@ class HeaderAuthCookieService implements AuthCookieService {
     required String value,
     required String path,
     required Duration maxAge,
+    bool httpOnly = true,
   }) {
     final parts = [
       '$name=$value',
       'Path=$path',
       'Max-Age=${maxAge.inSeconds}',
-      'HttpOnly',
+      if (httpOnly) 'HttpOnly',
       'SameSite=${_options.sameSite}',
       if (_options.secure) 'Secure',
       if (_options.domain != null) 'Domain=${_options.domain}',
     ];
 
     return parts.join('; ');
+  }
+
+  String _generateCsrfToken() {
+    final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
+    return base64UrlEncode(bytes).replaceAll('=', '');
   }
 }

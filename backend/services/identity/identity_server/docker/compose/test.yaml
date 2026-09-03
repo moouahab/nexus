@@ -4,6 +4,7 @@ services:
       - test
     build:
       context: ../postgres
+    user: "0:0"
     ports:
       - "127.0.0.1:${POSTGRES_TEST_PORT:-9090}:5432"
     configs:
@@ -20,11 +21,14 @@ services:
       - test
     build:
       context: ../redis
+    user: "0:0"
     ports:
       - "127.0.0.1:${REDIS_TEST_PORT:-9091}:6379"
     secrets:
       - source: redis_test_password
         target: redis_password
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
       interval: 10s

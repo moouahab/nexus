@@ -312,6 +312,7 @@ Reponse:
 Erreurs principales:
 
 - `409 usernameAlreadyExists`;
+- `409 emailAlreadyExists`;
 - `400 invalid_request`;
 - `500 missingGeneratedId`.
 
@@ -399,6 +400,12 @@ GET /auth/me
 Cookie: access_token=...
 ```
 
+Pour les clients app/mobile/desktop, la meme route accepte aussi:
+
+```http
+Authorization: Bearer <access_token>
+```
+
 Succes:
 
 ```json
@@ -422,9 +429,83 @@ Erreurs:
 - `401 identityNotFound`;
 - `403 identityNotActive`.
 
+## Transport Web Et App
+
+Le transport par defaut est `cookie`.
+
+Web:
+
+- `register`, `login` et `refresh` renvoient `Set-Cookie`;
+- `access_token` et `refresh_token` sont `HttpOnly`;
+- le front appelle l'API avec `credentials: include`;
+- le JWT n'est pas lisible par JavaScript.
+
+App/mobile/desktop:
+
+- le client demande `body` avec `X-Auth-Token-Transport: body`;
+- ou ajoute `"tokenTransport": "body"` dans le JSON;
+- `register`, `login` et `refresh` renvoient les tokens dans le body;
+- les routes protegees acceptent `Authorization: Bearer <access_token>`;
+- le refresh token est envoye a `/auth/refresh` dans le body JSON.
+
+Exemple register app:
+
+```http
+POST /auth/register
+Content-Type: application/json
+X-Auth-Token-Transport: body
+```
+
+```json
+{
+  "username": "noxe",
+  "password": "test-password",
+  "email": "noxe@example.com"
+}
+```
+
+Reponse app:
+
+```json
+{
+  "identityId": "...",
+  "authSessionId": "...",
+  "tokenType": "Bearer",
+  "accessToken": "...",
+  "refreshToken": "...",
+  "expiresIn": 900,
+  "refreshExpiresIn": 2592000
+}
+```
+
+Exemple refresh app:
+
+```http
+POST /auth/refresh
+Content-Type: application/json
+```
+
+```json
+{
+  "refreshToken": "...",
+  "tokenTransport": "body"
+}
+```
+
+Regles de securite app:
+
+- garder l'access token en memoire;
+- stocker le refresh token dans le secure storage de l'OS;
+- ne pas mettre les tokens dans les logs;
+- ne jamais stocker le refresh token dans un fichier texte ou preferences non
+  chiffrees;
+- la rotation refresh reste obligatoire, donc un ancien refresh token reutilise
+  est refuse.
+
 ## JWT
 
-Le access token est un JWT HS256 stocke dans le cookie `access_token`.
+Le access token est un JWT HS256 transporte par cookie `access_token` en web ou
+par `Authorization: Bearer` en app.
 
 Claims:
 
@@ -446,7 +527,8 @@ bonne.
 
 ## Refresh Token
 
-Le refresh token est stocke dans le cookie `refresh_token`.
+Le refresh token est stocke dans le cookie `refresh_token` en web, ou dans le
+secure storage du client app.
 
 Format:
 
@@ -462,7 +544,8 @@ Rotation:
 2. Le service verifie l'ancien token.
 3. Le service cree un nouveau refresh token.
 4. L'ancien token est marque comme rotate.
-5. Le client recoit de nouveaux cookies.
+5. Le client recoit de nouveaux cookies en mode web, ou de nouveaux tokens dans
+   le body en mode app.
 
 Un ancien refresh token ne doit pas etre reutilisable.
 
@@ -506,8 +589,40 @@ Secrets utilises par l'auth:
 - `emailSecretHashPepper`;
 - `jwtHmacSha512PrivateKey`;
 - `jwtRefreshTokenHashPepper`;
+- `authAllowedOrigins`;
+- `mailFromAddress`;
+- `mailFromName`;
+- `mailSupportAddress`;
+- `smtpHost`;
+- `smtpPort`;
+- `smtpUsername`;
+- `smtpPassword`;
 - `database`;
 - `redis`.
+
+Secrets OAuth prepares mais desactives par defaut:
+
+- `googleOAuthEnabled`;
+- `googleOAuthClientId`;
+- `googleOAuthClientSecret`;
+- `githubOAuthEnabled`;
+- `githubOAuthClientId`;
+- `githubOAuthClientSecret`;
+- `appleOAuthEnabled`;
+- `appleOAuthClientId`;
+- `appleOAuthClientSecret`.
+
+Un provider OAuth n'est active que si son flag vaut `true` et que son client id
+et client secret sont presents. Apple reste donc desactive par defaut, mais le
+backend verifie maintenant la signature et les claims du `id_token` Apple via
+JWKS avant d'accepter un login.
+
+Le client HTTP OAuth applique des timeouts bornes pour eviter qu'un provider
+externe bloque durablement les workers d'auth.
+
+`authAllowedOrigins` contient la liste separee par virgules des origins web
+autorisees sur les routes auth. Les clients mobile/serveur sans header `Origin`
+ne sont pas bloques par cette garde.
 
 Dans GitHub Actions, le job cree uniquement des secrets de test ephemeres dans
 `identity_server/secrets/`. Ce n'est pas la procedure dev/prod avec Vault; c'est
@@ -581,6 +696,18 @@ Commandes:
 ```sh
 dart analyze --fatal-infos
 ```
+
+Commande recommandee:
+
+```sh
+./docker/script/run_serverpod_tests.sh
+```
+
+Ce script demarre le profil Docker `test`, injecte les variables Serverpod
+necessaires, puis lance `dart test`. Sans ces services et variables, les tests
+qui utilisent `withServerpod` peuvent echouer pendant le chargement du fichier.
+
+Equivalent manuel:
 
 ```sh
 SERVERPOD_DATABASE_PORT=9190 \

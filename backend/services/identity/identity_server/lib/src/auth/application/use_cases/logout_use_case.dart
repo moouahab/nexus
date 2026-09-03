@@ -8,6 +8,7 @@ import '../interfaces/auth_cookie_service.dart';
 import '../interfaces/auth_refresh_token_repository.dart';
 import '../interfaces/auth_session_repository.dart';
 import '../interfaces/refresh_token_codec.dart';
+import '../services/auth_audit.dart';
 
 class LogoutUseCase {
   const LogoutUseCase({
@@ -35,6 +36,12 @@ class LogoutUseCase {
     );
 
     if (refreshCookie == null) {
+      AuthAudit.log(
+        session,
+        event: 'logout',
+        outcome: 'success',
+        reasonCode: 'missing_refresh_cookie',
+      );
       return _clearedResult();
     }
 
@@ -45,6 +52,12 @@ class LogoutUseCase {
     );
 
     if (refreshToken == null) {
+      AuthAudit.log(
+        session,
+        event: 'logout',
+        outcome: 'success',
+        reasonCode: 'refresh_token_not_found',
+      );
       return _clearedResult();
     }
 
@@ -54,6 +67,12 @@ class LogoutUseCase {
     );
     await _authSessionRepository.revoke(session, refreshToken.authSessionId);
 
+    AuthAudit.log(
+      session,
+      event: 'logout',
+      outcome: 'success',
+      authSessionId: refreshToken.authSessionId,
+    );
     return AuthResult(
       authSessionId: refreshToken.authSessionId,
       responseHeaders: _authCookieService.clearAuthCookies(),
@@ -70,6 +89,7 @@ class LogoutUseCase {
     try {
       return _refreshTokenCodec.decode(refreshCookie);
     } on FormatException {
+      // The raw refresh token is deliberately not logged.
       throw const AuthUseCaseException(
         AuthUseCaseExceptionCode.invalidRefreshToken,
       );

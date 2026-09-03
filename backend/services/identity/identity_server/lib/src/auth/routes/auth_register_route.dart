@@ -15,9 +15,10 @@ class AuthRegisterRoute extends AuthJsonRoute {
 
     return dependencies.registerWithUsername.execute(
       session,
-      username: body['username'] as String,
-      password: body['password'] as String,
-      email: body['email'] as String?,
+      username: readStringBodyField(body, 'username'),
+      password: readStringBodyField(body, 'password'),
+      email: readOptionalStringBodyField(body, 'email'),
+      tokenTransport: tokenTransport(request, body: body),
     );
   }
 }

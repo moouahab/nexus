@@ -15,8 +15,9 @@ class AuthLoginRoute extends AuthJsonRoute {
 
     return dependencies.loginWithUsername.execute(
       session,
-      username: body['username'] as String,
-      password: body['password'] as String,
+      username: readStringBodyField(body, 'username'),
+      password: readStringBodyField(body, 'password'),
+      tokenTransport: tokenTransport(request, body: body),
     );
   }
 }

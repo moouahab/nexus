@@ -4,6 +4,7 @@ import '../../../generated/protocol.dart' as protocol;
 import '../../constants/auth_token_defaults.dart';
 import '../../domain/auth_claims.dart';
 import '../../domain/auth_result.dart';
+import '../../domain/auth_token_transport.dart';
 import '../exceptions/auth_use_case_exception.dart';
 import '../interfaces/access_token_service.dart';
 import '../interfaces/auth_cookie_service.dart';
@@ -38,6 +39,7 @@ class AuthTokenIssuer {
     Session session, {
     required protocol.Identity identity,
     required protocol.AuthProvider authMethod,
+    AuthTokenTransport tokenTransport = AuthTokenTransport.cookie,
   }) async {
     final identityId = identity.id;
     if (identityId == null) {
@@ -94,10 +96,16 @@ class AuthTokenIssuer {
     return AuthResult(
       identityId: identityId,
       authSessionId: authSessionId,
-      responseHeaders: _authCookieService.createAuthCookies(
-        accessToken: accessToken,
-        refreshToken: refreshCookieValue,
-      ),
+      accessToken: accessToken,
+      refreshToken: refreshCookieValue,
+      includeTokensInBody: tokenTransport == AuthTokenTransport.body,
+      responseHeaders: switch (tokenTransport) {
+        AuthTokenTransport.cookie => _authCookieService.createAuthCookies(
+          accessToken: accessToken,
+          refreshToken: refreshCookieValue,
+        ),
+        AuthTokenTransport.body => const {},
+      },
     );
   }
 }

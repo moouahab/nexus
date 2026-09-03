@@ -34,6 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +62,31 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/image/auth_preview/00_REFERENCE/
+    - assets/image/auth_preview/01_DESKTOP/DARK/
+    - assets/image/auth_preview/01_DESKTOP/LIGHT/
+    - assets/image/auth_preview/02_TABLET/LANDSCAPE/DARK/
+    - assets/image/auth_preview/02_TABLET/LANDSCAPE/LIGHT/
+    - assets/image/auth_preview/02_TABLET/PORTRAIT/DARK/
+    - assets/image/auth_preview/02_TABLET/PORTRAIT/LIGHT/
+    - assets/image/auth_preview/03_MOBILE/DARK/
+    - assets/image/auth_preview/03_MOBILE/LIGHT/
+    - assets/image/auth_preview/04_EXPORTS_WEBP/
+    - assets/image/background/00_OVERVIEW/
+    - assets/image/background/01_BG_HERO/DARK/
+    - assets/image/background/01_BG_HERO/LIGHT/
+    - assets/image/background/02_BG_PAGE/DARK/
+    - assets/image/background/02_BG_PAGE/LIGHT/
+    - assets/image/background/03_BG_CLEAN/DARK/
+    - assets/image/background/03_BG_CLEAN/LIGHT/
+    - assets/image/background/04_WEBP_EXPORTS/
+    - assets/image/logo_kit/00_REFERENCE/
+    - assets/image/logo_kit/01_MASTER_SVG/
+    - assets/image/logo_kit/02_PNG_TRANSPARENT/
+    - assets/image/logo_kit/03_APP_READY/
+    - assets/image/logo_kit/04_UI_ICONS/
+    - assets/image/logo_kit/05_BRAND_GUIDE/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

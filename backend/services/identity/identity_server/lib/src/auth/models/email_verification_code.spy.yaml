@@ -1,0 +1,22 @@
+### Short-lived code used to verify an identity email address.
+class: EmailVerificationCode
+serverOnly: true
+table: email_verification_code
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  identity: Identity?, relation(onDelete=Cascade)
+  email: String
+  ### Hashed verification code. Never store the raw code.
+  codeHash: String
+  createdAt: DateTime, default=now
+  expiresAt: DateTime
+  consumedAt: DateTime?
+  failedAttempts: int, default=0
+
+indexes:
+  email_verification_code_identity_idx:
+    fields: identityId
+  email_verification_code_email_idx:
+    fields: email
+  email_verification_code_expires_at_idx:
+    fields: expiresAt

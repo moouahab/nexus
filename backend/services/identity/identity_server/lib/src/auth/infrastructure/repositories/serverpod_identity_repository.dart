@@ -61,6 +61,24 @@ class ServerpodIdentityRepository implements IdentityRepository {
   }
 
   @override
+  Future<protocol.Identity?> updateEmail(
+    Session session, {
+    required UuidValue id,
+    required String email,
+    required bool emailVerified,
+  }) {
+    return protocol.Identity.db.updateById(
+      session,
+      id,
+      columnValues: (t) => [
+        t.email(email),
+        t.emailVerified(emailVerified),
+        t.updatedAt(DateTime.now().toUtc()),
+      ],
+    );
+  }
+
+  @override
   Future<protocol.Identity?> markEmailVerified(Session session, UuidValue id) {
     return protocol.Identity.db.updateById(
       session,

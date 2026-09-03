@@ -12,25 +12,27 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
-import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
-    as _i3;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
-    as _i4;
-import 'auth/models/auth_provider.dart' as _i5;
-import 'auth/models/auth_refresh_token.dart' as _i6;
-import 'auth/models/auth_session.dart' as _i7;
+    as _i3;
+import 'auth/models/auth_provider.dart' as _i4;
+import 'auth/models/auth_refresh_token.dart' as _i5;
+import 'auth/models/auth_session.dart' as _i6;
+import 'auth/models/email_verification_code.dart' as _i7;
 import 'auth/models/identity.dart' as _i8;
 import 'auth/models/identity_provider.dart' as _i9;
 import 'auth/models/identity_status.dart' as _i10;
 import 'auth/models/password_credential.dart' as _i11;
-import 'greetings/greeting.dart' as _i12;
+import 'auth/models/password_reset_code.dart' as _i12;
+import 'greetings/greeting.dart' as _i13;
 export 'auth/models/auth_provider.dart';
 export 'auth/models/auth_refresh_token.dart';
 export 'auth/models/auth_session.dart';
+export 'auth/models/email_verification_code.dart';
 export 'auth/models/identity.dart';
 export 'auth/models/identity_provider.dart';
 export 'auth/models/identity_status.dart';
 export 'auth/models/password_credential.dart';
+export 'auth/models/password_reset_code.dart';
 export 'greetings/greeting.dart';
 
 class Protocol extends _i1.SerializationManagerServer {
@@ -260,6 +262,132 @@ class Protocol extends _i1.SerializationManagerServer {
       managed: true,
     ),
     _i2.TableDefinition(
+      name: 'email_verification_code',
+      dartName: 'EmailVerificationCode',
+      schema: 'public',
+      module: 'identity',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue?',
+          columnDefault: 'gen_random_uuid_v7()',
+        ),
+        _i2.ColumnDefinition(
+          name: 'identityId',
+          columnType: _i2.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue',
+        ),
+        _i2.ColumnDefinition(
+          name: 'email',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'codeHash',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+          columnDefault: 'CURRENT_TIMESTAMP',
+        ),
+        _i2.ColumnDefinition(
+          name: 'expiresAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+        _i2.ColumnDefinition(
+          name: 'consumedAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: true,
+          dartType: 'DateTime?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'failedAttempts',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+          columnDefault: '0',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'email_verification_code_fk_0',
+          columns: ['identityId'],
+          referenceTable: 'identity',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _i2.ForeignKeyAction.noAction,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'email_verification_code_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'email_verification_code_identity_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'identityId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'email_verification_code_email_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'email',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'email_verification_code_expires_at_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'expiresAt',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
+    _i2.TableDefinition(
       name: 'identity',
       dartName: 'Identity',
       schema: 'public',
@@ -337,7 +465,7 @@ class Protocol extends _i1.SerializationManagerServer {
             ),
           ],
           type: 'btree',
-          isUnique: false,
+          isUnique: true,
           isPrimary: false,
         ),
         _i2.IndexDefinition(
@@ -560,8 +688,133 @@ class Protocol extends _i1.SerializationManagerServer {
       ],
       managed: true,
     ),
+    _i2.TableDefinition(
+      name: 'password_reset_code',
+      dartName: 'PasswordResetCode',
+      schema: 'public',
+      module: 'identity',
+      columns: [
+        _i2.ColumnDefinition(
+          name: 'id',
+          columnType: _i2.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue?',
+          columnDefault: 'gen_random_uuid_v7()',
+        ),
+        _i2.ColumnDefinition(
+          name: 'identityId',
+          columnType: _i2.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue',
+        ),
+        _i2.ColumnDefinition(
+          name: 'email',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'codeHash',
+          columnType: _i2.ColumnType.text,
+          isNullable: false,
+          dartType: 'String',
+        ),
+        _i2.ColumnDefinition(
+          name: 'createdAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+          columnDefault: 'CURRENT_TIMESTAMP',
+        ),
+        _i2.ColumnDefinition(
+          name: 'expiresAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: false,
+          dartType: 'DateTime',
+        ),
+        _i2.ColumnDefinition(
+          name: 'consumedAt',
+          columnType: _i2.ColumnType.timestampWithoutTimeZone,
+          isNullable: true,
+          dartType: 'DateTime?',
+        ),
+        _i2.ColumnDefinition(
+          name: 'failedAttempts',
+          columnType: _i2.ColumnType.bigint,
+          isNullable: false,
+          dartType: 'int',
+          columnDefault: '0',
+        ),
+      ],
+      foreignKeys: [
+        _i2.ForeignKeyDefinition(
+          constraintName: 'password_reset_code_fk_0',
+          columns: ['identityId'],
+          referenceTable: 'identity',
+          referenceTableSchema: 'public',
+          referenceColumns: ['id'],
+          onUpdate: _i2.ForeignKeyAction.noAction,
+          onDelete: _i2.ForeignKeyAction.cascade,
+          matchType: null,
+        ),
+      ],
+      indexes: [
+        _i2.IndexDefinition(
+          indexName: 'password_reset_code_pkey',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'id',
+            ),
+          ],
+          type: 'btree',
+          isUnique: true,
+          isPrimary: true,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'password_reset_code_identity_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'identityId',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'password_reset_code_email_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'email',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+        _i2.IndexDefinition(
+          indexName: 'password_reset_code_expires_at_idx',
+          tableSpace: null,
+          elements: [
+            _i2.IndexElementDefinition(
+              type: _i2.IndexElementDefinitionType.column,
+              definition: 'expiresAt',
+            ),
+          ],
+          type: 'btree',
+          isUnique: false,
+          isPrimary: false,
+        ),
+      ],
+      managed: true,
+    ),
     ..._i3.Protocol.targetTableDefinitions,
-    ..._i4.Protocol.targetTableDefinitions,
     ..._i2.Protocol.targetTableDefinitions,
   ];
 
@@ -592,14 +845,17 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
 
-    if (t == _i5.AuthProvider) {
-      return _i5.AuthProvider.fromJson(data) as T;
+    if (t == _i4.AuthProvider) {
+      return _i4.AuthProvider.fromJson(data) as T;
     }
-    if (t == _i6.AuthRefreshToken) {
-      return _i6.AuthRefreshToken.fromJson(data) as T;
+    if (t == _i5.AuthRefreshToken) {
+      return _i5.AuthRefreshToken.fromJson(data) as T;
     }
-    if (t == _i7.AuthSession) {
-      return _i7.AuthSession.fromJson(data) as T;
+    if (t == _i6.AuthSession) {
+      return _i6.AuthSession.fromJson(data) as T;
+    }
+    if (t == _i7.EmailVerificationCode) {
+      return _i7.EmailVerificationCode.fromJson(data) as T;
     }
     if (t == _i8.Identity) {
       return _i8.Identity.fromJson(data) as T;
@@ -613,17 +869,24 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i11.PasswordCredential) {
       return _i11.PasswordCredential.fromJson(data) as T;
     }
-    if (t == _i12.Greeting) {
-      return _i12.Greeting.fromJson(data) as T;
+    if (t == _i12.PasswordResetCode) {
+      return _i12.PasswordResetCode.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i5.AuthProvider?>()) {
-      return (data != null ? _i5.AuthProvider.fromJson(data) : null) as T;
+    if (t == _i13.Greeting) {
+      return _i13.Greeting.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i6.AuthRefreshToken?>()) {
-      return (data != null ? _i6.AuthRefreshToken.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i4.AuthProvider?>()) {
+      return (data != null ? _i4.AuthProvider.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i7.AuthSession?>()) {
-      return (data != null ? _i7.AuthSession.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i5.AuthRefreshToken?>()) {
+      return (data != null ? _i5.AuthRefreshToken.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i6.AuthSession?>()) {
+      return (data != null ? _i6.AuthSession.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i7.EmailVerificationCode?>()) {
+      return (data != null ? _i7.EmailVerificationCode.fromJson(data) : null)
+          as T;
     }
     if (t == _i1.getType<_i8.Identity?>()) {
       return (data != null ? _i8.Identity.fromJson(data) : null) as T;
@@ -638,14 +901,14 @@ class Protocol extends _i1.SerializationManagerServer {
       return (data != null ? _i11.PasswordCredential.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i12.Greeting?>()) {
-      return (data != null ? _i12.Greeting.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i12.PasswordResetCode?>()) {
+      return (data != null ? _i12.PasswordResetCode.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i13.Greeting?>()) {
+      return (data != null ? _i13.Greeting.fromJson(data) : null) as T;
     }
     try {
       return _i3.Protocol().deserialize<T>(data, t);
-    } on _i1.DeserializationTypeNotFoundException catch (_) {}
-    try {
-      return _i4.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     try {
       return _i2.Protocol().deserialize<T>(data, t);
@@ -655,14 +918,16 @@ class Protocol extends _i1.SerializationManagerServer {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
-      _i5.AuthProvider => 'AuthProvider',
-      _i6.AuthRefreshToken => 'AuthRefreshToken',
-      _i7.AuthSession => 'AuthSession',
+      _i4.AuthProvider => 'AuthProvider',
+      _i5.AuthRefreshToken => 'AuthRefreshToken',
+      _i6.AuthSession => 'AuthSession',
+      _i7.EmailVerificationCode => 'EmailVerificationCode',
       _i8.Identity => 'Identity',
       _i9.IdentityProvider => 'IdentityProvider',
       _i10.IdentityStatus => 'IdentityStatus',
       _i11.PasswordCredential => 'PasswordCredential',
-      _i12.Greeting => 'Greeting',
+      _i12.PasswordResetCode => 'PasswordResetCode',
+      _i13.Greeting => 'Greeting',
       _ => null,
     };
   }
@@ -677,12 +942,14 @@ class Protocol extends _i1.SerializationManagerServer {
     }
 
     switch (data) {
-      case _i5.AuthProvider():
+      case _i4.AuthProvider():
         return 'AuthProvider';
-      case _i6.AuthRefreshToken():
+      case _i5.AuthRefreshToken():
         return 'AuthRefreshToken';
-      case _i7.AuthSession():
+      case _i6.AuthSession():
         return 'AuthSession';
+      case _i7.EmailVerificationCode():
+        return 'EmailVerificationCode';
       case _i8.Identity():
         return 'Identity';
       case _i9.IdentityProvider():
@@ -691,7 +958,9 @@ class Protocol extends _i1.SerializationManagerServer {
         return 'IdentityStatus';
       case _i11.PasswordCredential():
         return 'PasswordCredential';
-      case _i12.Greeting():
+      case _i12.PasswordResetCode():
+        return 'PasswordResetCode';
+      case _i13.Greeting():
         return 'Greeting';
     }
     className = _i2.Protocol().getClassNameForObject(data);
@@ -699,10 +968,6 @@ class Protocol extends _i1.SerializationManagerServer {
       return 'serverpod.$className';
     }
     className = _i3.Protocol().getClassNameForObject(data);
-    if (className != null) {
-      return 'serverpod_auth_idp.$className';
-    }
-    className = _i4.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth_core.$className';
     }
@@ -716,13 +981,16 @@ class Protocol extends _i1.SerializationManagerServer {
       return super.deserializeByClassName(data);
     }
     if (dataClassName == 'AuthProvider') {
-      return deserialize<_i5.AuthProvider>(data['data']);
+      return deserialize<_i4.AuthProvider>(data['data']);
     }
     if (dataClassName == 'AuthRefreshToken') {
-      return deserialize<_i6.AuthRefreshToken>(data['data']);
+      return deserialize<_i5.AuthRefreshToken>(data['data']);
     }
     if (dataClassName == 'AuthSession') {
-      return deserialize<_i7.AuthSession>(data['data']);
+      return deserialize<_i6.AuthSession>(data['data']);
+    }
+    if (dataClassName == 'EmailVerificationCode') {
+      return deserialize<_i7.EmailVerificationCode>(data['data']);
     }
     if (dataClassName == 'Identity') {
       return deserialize<_i8.Identity>(data['data']);
@@ -736,20 +1004,19 @@ class Protocol extends _i1.SerializationManagerServer {
     if (dataClassName == 'PasswordCredential') {
       return deserialize<_i11.PasswordCredential>(data['data']);
     }
+    if (dataClassName == 'PasswordResetCode') {
+      return deserialize<_i12.PasswordResetCode>(data['data']);
+    }
     if (dataClassName == 'Greeting') {
-      return deserialize<_i12.Greeting>(data['data']);
+      return deserialize<_i13.Greeting>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
       return _i2.Protocol().deserializeByClassName(data);
     }
-    if (dataClassName.startsWith('serverpod_auth_idp.')) {
-      data['className'] = dataClassName.substring(19);
-      return _i3.Protocol().deserializeByClassName(data);
-    }
     if (dataClassName.startsWith('serverpod_auth_core.')) {
       data['className'] = dataClassName.substring(20);
-      return _i4.Protocol().deserializeByClassName(data);
+      return _i3.Protocol().deserializeByClassName(data);
     }
     return super.deserializeByClassName(data);
   }
@@ -763,28 +1030,26 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
     {
-      var table = _i4.Protocol().getTableForType(t);
-      if (table != null) {
-        return table;
-      }
-    }
-    {
       var table = _i2.Protocol().getTableForType(t);
       if (table != null) {
         return table;
       }
     }
     switch (t) {
-      case _i6.AuthRefreshToken:
-        return _i6.AuthRefreshToken.t;
-      case _i7.AuthSession:
-        return _i7.AuthSession.t;
+      case _i5.AuthRefreshToken:
+        return _i5.AuthRefreshToken.t;
+      case _i6.AuthSession:
+        return _i6.AuthSession.t;
+      case _i7.EmailVerificationCode:
+        return _i7.EmailVerificationCode.t;
       case _i8.Identity:
         return _i8.Identity.t;
       case _i9.IdentityProvider:
         return _i9.IdentityProvider.t;
       case _i11.PasswordCredential:
         return _i11.PasswordCredential.t;
+      case _i12.PasswordResetCode:
+        return _i12.PasswordResetCode.t;
     }
     return null;
   }
@@ -807,9 +1072,6 @@ class Protocol extends _i1.SerializationManagerServer {
     }
     try {
       return _i3.Protocol().mapRecordToJson(record);
-    } catch (_) {}
-    try {
-      return _i4.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

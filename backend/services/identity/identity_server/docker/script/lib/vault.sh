@@ -30,6 +30,18 @@ vault_login() {
   success "Vault login succeeded."
 }
 
+read_secret_file_or_default() {
+  local path="$1"
+  local default_value="${2:-}"
+
+  if [[ -e "$path" ]]; then
+    cat "$path"
+    return 0
+  fi
+
+  printf '%s' "$default_value"
+}
+
 write_identity_runtime_secrets() {
   info "Writing Identity runtime secrets to Vault..."
   docker compose exec -T vault \
@@ -40,6 +52,23 @@ write_identity_runtime_secrets() {
     email_secret_hash_pepper="$(cat "$EMAIL_SECRET_HASH_PEPPER_FILE")" \
     jwt_hmac_sha512_private_key="$(cat "$JWT_HMAC_PRIVATE_KEY_FILE")" \
     jwt_refresh_token_hash_pepper="$(cat "$JWT_REFRESH_HASH_PEPPER_FILE")" \
+    auth_allowed_origins="$(read_secret_file_or_default "$AUTH_ALLOWED_ORIGINS_FILE" "")" \
+    mail_from_address="$(read_secret_file_or_default "$MAIL_FROM_ADDRESS_FILE" "no-reply@nexus.example")" \
+    mail_from_name="$(read_secret_file_or_default "$MAIL_FROM_NAME_FILE" "Nexus")" \
+    mail_support_address="$(read_secret_file_or_default "$MAIL_SUPPORT_ADDRESS_FILE" "support@nexus.example")" \
+    smtp_host="$(read_secret_file_or_default "$SMTP_HOST_FILE" "")" \
+    smtp_port="$(read_secret_file_or_default "$SMTP_PORT_FILE" "587")" \
+    smtp_username="$(read_secret_file_or_default "$SMTP_USERNAME_FILE" "")" \
+    smtp_password="$(read_secret_file_or_default "$SMTP_PASSWORD_FILE" "")" \
+    google_oauth_enabled="${GOOGLE_OAUTH_ENABLED:-false}" \
+    google_oauth_client_id="${GOOGLE_OAUTH_CLIENT_ID:-}" \
+    google_oauth_client_secret="${GOOGLE_OAUTH_CLIENT_SECRET:-}" \
+    github_oauth_enabled="${GITHUB_OAUTH_ENABLED:-false}" \
+    github_oauth_client_id="${GITHUB_OAUTH_CLIENT_ID:-}" \
+    github_oauth_client_secret="${GITHUB_OAUTH_CLIENT_SECRET:-}" \
+    apple_oauth_enabled="${APPLE_OAUTH_ENABLED:-false}" \
+    apple_oauth_client_id="${APPLE_OAUTH_CLIENT_ID:-}" \
+    apple_oauth_client_secret="${APPLE_OAUTH_CLIENT_SECRET:-}" \
     >/dev/null
   success "Runtime secrets written to Vault."
 }

@@ -34,6 +34,17 @@ class ServerpodPasswordCredentialRepository
   }
 
   @override
+  Future<protocol.PasswordCredential?> findByIdentityId(
+    Session session,
+    UuidValue identityId,
+  ) {
+    return protocol.PasswordCredential.db.findFirstRow(
+      session,
+      where: (t) => t.identityId.equals(identityId),
+    );
+  }
+
+  @override
   Future<protocol.PasswordCredential?> updatePasswordHash(
     Session session, {
     required UuidValue id,

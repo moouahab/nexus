@@ -11,9 +11,14 @@ class AuthLogoutRoute extends AuthJsonRoute {
     Request request,
     AuthDependencies dependencies,
   ) {
+    final headers = requestHeaders(request);
+    if (dependencies.csrfProtection.requiresProtection(headers)) {
+      dependencies.csrfProtection.requireValid(headers);
+    }
+
     return dependencies.logout.execute(
       session,
-      requestHeaders: requestHeaders(request),
+      requestHeaders: headers,
     );
   }
 }

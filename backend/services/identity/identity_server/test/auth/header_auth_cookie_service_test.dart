@@ -16,7 +16,7 @@ void main() {
       );
 
       final cookies = headers['set-cookie']!;
-      expect(cookies, hasLength(2));
+      expect(cookies, hasLength(3));
       expect(cookies[0], contains('${AuthCookieNames.accessToken}=access.jwt'));
       expect(cookies[0], contains('Path=/'));
       expect(cookies[0], contains('HttpOnly'));
@@ -24,6 +24,9 @@ void main() {
       expect(cookies[1], contains('${AuthCookieNames.refreshToken}='));
       expect(cookies[1], contains('Path=/auth'));
       expect(cookies[1], contains('HttpOnly'));
+      expect(cookies[2], contains('${AuthCookieNames.csrfToken}='));
+      expect(cookies[2], contains('Path=/'));
+      expect(cookies[2], isNot(contains('HttpOnly')));
     });
 
     test('adds Secure flag in production', () {
@@ -50,7 +53,7 @@ void main() {
 
       final cookies = service.clearAuthCookies()['set-cookie']!;
 
-      expect(cookies, hasLength(2));
+      expect(cookies, hasLength(3));
       expect(cookies.every((cookie) => cookie.contains('Max-Age=0')), isTrue);
     });
 
@@ -69,6 +72,23 @@ void main() {
       );
 
       expect(value, 'refresh-value');
+    });
+
+    test('reads cookies from request headers regardless of header case', () {
+      final service = HeaderAuthCookieService(
+        options: AuthCookieOptions.development(),
+      );
+
+      final value = service.readCookie(
+        headers: {
+          'Cookie': [
+            'theme=dark; ${AuthCookieNames.accessToken}=access-value',
+          ],
+        },
+        name: AuthCookieNames.accessToken,
+      );
+
+      expect(value, 'access-value');
     });
   });
 }

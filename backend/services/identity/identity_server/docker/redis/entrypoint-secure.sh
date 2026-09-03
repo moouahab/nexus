@@ -31,4 +31,12 @@ if [ -z "$redis_password" ]; then
   exit 1
 fi
 
-exec redis-server --requirepass "$redis_password"
+config_file="/tmp/redis-secure.conf"
+rm -f "$config_file"
+printf 'requirepass %s\n' "$redis_password" > "$config_file"
+if [ "$(id -u)" = "0" ]; then
+  chown redis:redis "$config_file"
+fi
+chmod 0400 "$config_file"
+
+exec /usr/local/bin/docker-entrypoint.sh redis-server "$config_file"

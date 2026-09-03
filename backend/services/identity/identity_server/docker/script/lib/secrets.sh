@@ -39,6 +39,22 @@ ensure_secret_file() {
   success "$label created."
 }
 
+ensure_config_file() {
+  local path="$1"
+  local label="$2"
+  local value="${3:-}"
+
+  if [[ -e "$path" ]]; then
+    info "$label already exists."
+    chmod 600 "$path"
+    return 0
+  fi
+
+  printf '%s' "$value" > "$path"
+  chmod 600 "$path"
+  success "$label created."
+}
+
 prepare_local_secrets() {
   copy_examples_if_needed
   mkdir -p "$SECRETS_DIR"
@@ -53,6 +69,14 @@ prepare_local_secrets() {
   ensure_secret_file "$EMAIL_SECRET_HASH_PEPPER_FILE" "Email/password hash pepper"
   ensure_secret_file "$JWT_HMAC_PRIVATE_KEY_FILE" "JWT HMAC private key"
   ensure_secret_file "$JWT_REFRESH_HASH_PEPPER_FILE" "JWT refresh token hash pepper"
+  ensure_config_file "$AUTH_ALLOWED_ORIGINS_FILE" "Auth allowed origins" ""
+  ensure_config_file "$MAIL_FROM_ADDRESS_FILE" "Mail from address" "no-reply@nexus.example"
+  ensure_config_file "$MAIL_FROM_NAME_FILE" "Mail from name" "Nexus"
+  ensure_config_file "$MAIL_SUPPORT_ADDRESS_FILE" "Mail support address" "support@nexus.example"
+  ensure_config_file "$SMTP_HOST_FILE" "SMTP host" ""
+  ensure_config_file "$SMTP_PORT_FILE" "SMTP port" "587"
+  ensure_config_file "$SMTP_USERNAME_FILE" "SMTP username" ""
+  ensure_config_file "$SMTP_PASSWORD_FILE" "SMTP password" ""
 
   require_file "$ROOT_TOKEN_FILE"
   require_file "$POSTGRES_PASSWORD_FILE"
@@ -61,6 +85,10 @@ prepare_local_secrets() {
   require_file "$EMAIL_SECRET_HASH_PEPPER_FILE"
   require_file "$JWT_HMAC_PRIVATE_KEY_FILE"
   require_file "$JWT_REFRESH_HASH_PEPPER_FILE"
+  require_file "$MAIL_FROM_ADDRESS_FILE"
+  require_file "$MAIL_FROM_NAME_FILE"
+  require_file "$MAIL_SUPPORT_ADDRESS_FILE"
+  require_file "$SMTP_PORT_FILE"
 }
 
 print_success_summary() {
@@ -79,6 +107,14 @@ Runtime secret source files:
   - secrets/email_secret_hash_pepper
   - secrets/jwt_hmac_sha512_private_key
   - secrets/jwt_refresh_token_hash_pepper
+  - secrets/auth_allowed_origins
+  - secrets/mail_from_address
+  - secrets/mail_from_name
+  - secrets/mail_support_address
+  - secrets/smtp_host
+  - secrets/smtp_port
+  - secrets/smtp_username
+  - secrets/smtp_password
 
 Files rendered by Vault Agent:
   - /vault/secrets/postgres_password

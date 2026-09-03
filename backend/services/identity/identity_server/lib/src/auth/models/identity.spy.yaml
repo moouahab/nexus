@@ -16,6 +16,7 @@ fields:
 indexes:
   identity_email_idx:
     fields: email
+    unique: true
   identity_username_idx:
     fields: username
     unique: true

@@ -15,6 +15,11 @@ abstract interface class PasswordCredentialRepository {
     String username,
   );
 
+  Future<protocol.PasswordCredential?> findByIdentityId(
+    Session session,
+    UuidValue identityId,
+  );
+
   Future<protocol.PasswordCredential?> updatePasswordHash(
     Session session, {
     required UuidValue id,

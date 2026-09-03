@@ -13,8 +13,8 @@ auto_auth {
     mount_path = "auth/approle"
 
     config = {
-      role_id_file_path                   = "/run/secrets/role_id"
-      secret_id_file_path                 = "/run/secrets/secret_id"
+      role_id_file_path                   = "/vault/runtime/role_id"
+      secret_id_file_path                 = "/vault/runtime/secret_id"
       remove_secret_id_file_after_reading = false
     }
   }
@@ -40,11 +40,11 @@ template {
 template {
   source      = "/vault/templates/redis_password.ctmpl"
   destination = "/vault/secrets/redis_password"
-  perms       = "0440"
+  perms       = "0444"
 }
 
 template {
   source      = "/vault/templates/serverpod-passwords.yaml.ctmpl"
   destination = "/vault/secrets/serverpod-passwords.yaml"
-  perms       = "0440"
+  perms       = "0444"
 }

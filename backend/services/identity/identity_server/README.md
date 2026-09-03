@@ -50,6 +50,36 @@ The local Vault secret must contain all of these keys:
 - `email_secret_hash_pepper`
 - `jwt_hmac_sha512_private_key`
 - `jwt_refresh_token_hash_pepper`
+- `auth_allowed_origins`
+- `mail_from_address`
+- `mail_from_name`
+- `mail_support_address`
+- `smtp_host`
+- `smtp_port`
+- `smtp_username`
+- `smtp_password`
+
+OAuth provider keys are prepared but disabled by default:
+
+- `google_oauth_enabled`
+- `google_oauth_client_id`
+- `google_oauth_client_secret`
+- `github_oauth_enabled`
+- `github_oauth_client_id`
+- `github_oauth_client_secret`
+- `apple_oauth_enabled`
+- `apple_oauth_client_id`
+- `apple_oauth_client_secret`
+
+Set a provider's `_enabled` value to `true` only after its external OAuth app,
+secret, and redirect URI are ready.
+
+Set `auth_allowed_origins` to a comma-separated browser origin allowlist, for
+example `https://app.nexus.example`. Auth requests with an `Origin` header
+outside this allowlist are rejected by the API.
+
+See `docker/proxy/Caddyfile.example` for a staging/production reverse proxy
+template with HTTPS, security headers, and credentialed CORS for `/auth/*`.
 
 If you use `./docker/script/setup_vault_approle.sh`, the stack is already
 started by the script. If you inject AppRole files manually for an existing

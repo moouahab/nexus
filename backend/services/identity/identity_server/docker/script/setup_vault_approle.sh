@@ -36,6 +36,7 @@ main() {
 
   start_full_stack
   verify_vault_agent_rendered_files
+  sync_postgres_password_from_vault
   print_success_summary
 }
 

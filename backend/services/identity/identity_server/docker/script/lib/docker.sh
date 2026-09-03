@@ -20,6 +20,20 @@ start_full_stack() {
   success "Docker stack started."
 }
 
+sync_postgres_password_from_vault() {
+  info "Synchronizing PostgreSQL role password with Vault-rendered secret..."
+
+  docker compose exec -T postgres sh -lc '
+    pw="$(cat /run/vault/secrets/postgres_password)"
+    psql -U postgres -d postgres -v ON_ERROR_STOP=1 -v pw="$pw" <<'"'"'SQL'"'"' >/dev/null
+ALTER USER postgres WITH PASSWORD :'"'"'pw'"'"';
+SQL
+  '
+
+  docker compose restart api >/dev/null
+  success "PostgreSQL password synchronized and API restarted."
+}
+
 verify_vault_agent_rendered_files() {
   info "Checking files rendered by Vault Agent..."
 

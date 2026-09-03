@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1000" viewBox="0 0 1200 1000">
+
+<defs>
+  <linearGradient id="redA" x1="0" y1="0" x2="0.8" y2="1">
+    <stop offset="0%" stop-color="#ff3137"/>
+    <stop offset="58%" stop-color="#f21f28"/>
+    <stop offset="100%" stop-color="#d50f18"/>
+  </linearGradient>
+  <linearGradient id="redB" x1="0" y1="0" x2="1" y2="0.8">
+    <stop offset="0%" stop-color="#ff3137"/>
+    <stop offset="55%" stop-color="#ec1c25"/>
+    <stop offset="100%" stop-color="#8e0b12"/>
+  </linearGradient>
+</defs>
+
+
+    <g transform="translate(390,100) scale(4.2)">
+      <polygon points="17,13 18,86 26,82 27,30 65,57 65,48" fill="url(#redA)"/>
+      <polygon points="81,18 80,75 42,48 41,57 90,93 90,18" fill="url(#redB)"/>
+    </g>
+<path d="M180 0H371V850C371 922 364 1071 356 1262C472 1055 529 955 597 848L1137 0H1363V1490H1173V576C1173 496 1174 369 1186 225C1118 360 1050 474 1010 537L404 1490H180Z" fill="#0c0c0e" transform="translate(281.727,710) scale(0.0577181,-0.0577181)"/><path d="M180 0H1097V168H370V668H1039V836H370V1322H1088V1490H180Z" fill="#0c0c0e" transform="translate(428.786,710) scale(0.0577181,-0.0577181)"/><path d="M57 0H273L536 378C613 488 650 546 699 640C749 542 785 487 860 378L1121 0H1340L811 770L1312 1490H1097L878 1174C790 1047 754 989 701 885C647 990 612 1046 525 1174L310 1490H90L591 763Z" fill="#ff3137" transform="translate(557.837,710) scale(0.0577181,-0.0577181)"/><path d="M763 -24C1114 -24 1344 200 1344 507V1490H1154V522C1154 308 1006 152 763 152C519 152 370 308 370 522V1490H180V507C180 200 410 -24 763 -24Z" fill="#0c0c0e" transform="translate(696.469,710) scale(0.0577181,-0.0577181)"/><path d="M657 -26C1001 -26 1198 162 1198 406C1198 684 936 774 776 818L627 859C518 889 343 944 343 1100C343 1240 471 1342 664 1342C841 1342 975 1259 992 1114H1178C1169 1339 964 1510 670 1510C382 1510 158 1343 158 1091C158 893 298 770 538 702L718 651C877 606 1013 553 1013 409C1013 250 859 144 657 144C482 144 326 221 311 390H116C133 140 334 -26 657 -26Z" fill="#0c0c0e" transform="translate(842.432,710) scale(0.0577181,-0.0577181)"/>
+<rect x="538.0" y="790" width="124" height="3" rx="1.5" fill="#ff3137"/>
+</svg>

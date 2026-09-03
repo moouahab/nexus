@@ -3,6 +3,7 @@ import 'package:identity_server/src/auth/application/services/require_auth.dart'
 import 'package:identity_server/src/auth/constants/auth_cookie_names.dart';
 import 'package:identity_server/src/auth/domain/auth_claims.dart';
 import 'package:identity_server/src/auth/domain/auth_cookie_options.dart';
+import 'package:identity_server/src/auth/infrastructure/http/header_access_token_reader.dart';
 import 'package:identity_server/src/auth/infrastructure/http/header_auth_cookie_service.dart';
 import 'package:identity_server/src/auth/infrastructure/security/hmac_sha256_access_token_service.dart';
 import 'package:identity_server/src/generated/protocol.dart' as protocol;
@@ -29,8 +30,10 @@ void main() {
       sessions = FakeAuthSessionRepository();
       requireAuth = RequireAuth(
         accessTokenService: accessTokenService,
-        authCookieService: HeaderAuthCookieService(
-          options: AuthCookieOptions.development(),
+        accessTokenReader: HeaderAccessTokenReader(
+          authCookieService: HeaderAuthCookieService(
+            options: AuthCookieOptions.development(),
+          ),
         ),
         authSessionRepository: sessions,
         identityRepository: identities,
@@ -252,6 +255,76 @@ void main() {
         ]);
       },
     );
+
+    test('allows bearer access token when no access cookie exists', () async {
+      final token = accessTokenService.createAccessToken(
+        AuthClaims.access(
+          identityId: identityId,
+          sessionId: authSessionId,
+          emailVerified: true,
+          authenticationMethods: [protocol.AuthProvider.username],
+        ),
+      );
+      final authSession = protocol.AuthSession(
+        id: authSessionId,
+        identityId: identityId,
+        expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 5)),
+        authMethod: protocol.AuthProvider.username,
+      );
+      final identity = protocol.Identity(
+        id: identityId,
+        username: 'noxe',
+        status: protocol.IdentityStatus.active,
+      );
+      sessions.byId[authSessionId] = authSession;
+      identities.byId[identityId] = identity;
+
+      final authenticated = await requireAuth.fromHeaders(
+        session,
+        headers: {
+          'authorization': ['Bearer $token'],
+        },
+      );
+
+      expect(authenticated.identityId, identityId);
+      expect(authenticated.authSessionId, authSessionId);
+    });
+
+    test('cookie token is preferred over bearer token', () async {
+      final cookieToken = _accessToken(
+        accessTokenService,
+        identityId: identityId,
+        authSessionId: authSessionId,
+      );
+      final bearerSessionId = const Uuid().v7obj();
+      final bearerToken = _accessToken(
+        accessTokenService,
+        identityId: identityId,
+        authSessionId: bearerSessionId,
+      );
+      final authSession = protocol.AuthSession(
+        id: authSessionId,
+        identityId: identityId,
+        expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 5)),
+        authMethod: protocol.AuthProvider.username,
+      );
+      sessions.byId[authSessionId] = authSession;
+      identities.byId[identityId] = protocol.Identity(
+        id: identityId,
+        username: 'noxe',
+        status: protocol.IdentityStatus.active,
+      );
+
+      final authenticated = await requireAuth.fromHeaders(
+        session,
+        headers: {
+          ..._accessCookieHeaders(cookieToken),
+          'authorization': ['Bearer $bearerToken'],
+        },
+      );
+
+      expect(authenticated.authSessionId, authSessionId);
+    });
   });
 }
 

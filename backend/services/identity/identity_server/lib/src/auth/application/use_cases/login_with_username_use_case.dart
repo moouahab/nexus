@@ -2,11 +2,13 @@ import 'package:serverpod/serverpod.dart';
 
 import '../../../generated/protocol.dart' as protocol;
 import '../../domain/auth_result.dart';
+import '../../domain/auth_token_transport.dart';
 import '../exceptions/auth_use_case_exception.dart';
 import '../interfaces/identity_repository.dart';
 import '../interfaces/login_attempt_limiter.dart';
 import '../interfaces/password_credential_repository.dart';
 import '../interfaces/password_hasher.dart';
+import '../services/auth_audit.dart';
 import '../services/auth_token_issuer.dart';
 import '../validation/termination_rule.dart';
 
@@ -33,20 +35,25 @@ class LoginWithUsernameUseCase {
     Session session, {
     required String username,
     required String password,
+    AuthTokenTransport tokenTransport = AuthTokenTransport.cookie,
   }) async {
     final normalizedUsername = username.trim().toLowerCase();
     final isBlocked = await _loginAttemptLimiter.isBlocked(
       session,
       username: normalizedUsername,
     );
-    TerminationRule.validateAll([
-      TerminationRule(
-        shouldTerminate: () => isBlocked,
-        exception: const AuthUseCaseException(
-          AuthUseCaseExceptionCode.tooManyAttempts,
-        ),
-      ),
-    ]);
+    if (isBlocked) {
+      AuthAudit.log(
+        session,
+        event: 'login',
+        outcome: 'blocked',
+        reasonCode: AuthUseCaseExceptionCode.tooManyAttempts.name,
+        subject: normalizedUsername,
+      );
+      throw const AuthUseCaseException(
+        AuthUseCaseExceptionCode.tooManyAttempts,
+      );
+    }
 
     final credential = await _passwordCredentialRepository.findByUsername(
       session,
@@ -55,6 +62,13 @@ class LoginWithUsernameUseCase {
 
     if (credential == null) {
       await _registerFailedAttempt(session, normalizedUsername);
+      AuthAudit.log(
+        session,
+        event: 'login',
+        outcome: 'failure',
+        reasonCode: AuthUseCaseExceptionCode.invalidCredentials.name,
+        subject: normalizedUsername,
+      );
       throw const AuthUseCaseException(
         AuthUseCaseExceptionCode.invalidCredentials,
       );
@@ -66,6 +80,13 @@ class LoginWithUsernameUseCase {
     );
     if (!passwordIsValid) {
       await _registerFailedAttempt(session, normalizedUsername);
+      AuthAudit.log(
+        session,
+        event: 'login',
+        outcome: 'failure',
+        reasonCode: AuthUseCaseExceptionCode.invalidCredentials.name,
+        subject: normalizedUsername,
+      );
       throw const AuthUseCaseException(
         AuthUseCaseExceptionCode.invalidCredentials,
       );
@@ -96,11 +117,23 @@ class LoginWithUsernameUseCase {
       username: normalizedUsername,
     );
 
-    return _authTokenIssuer.issue(
+    final result = await _authTokenIssuer.issue(
       session,
       identity: identity!,
       authMethod: protocol.AuthProvider.username,
+      tokenTransport: tokenTransport,
     );
+    AuthAudit.log(
+      session,
+      event: 'login',
+      outcome: 'success',
+      identityId: result.identityId,
+      authSessionId: result.authSessionId,
+      provider: protocol.AuthProvider.username.name,
+      tokenTransport: tokenTransport.name,
+      subject: normalizedUsername,
+    );
+    return result;
   }
 
   Future<void> _registerFailedAttempt(

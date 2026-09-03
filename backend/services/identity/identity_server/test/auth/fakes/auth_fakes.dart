@@ -1,11 +1,18 @@
 import 'package:identity_server/src/auth/application/interfaces/auth_refresh_token_repository.dart';
 import 'package:identity_server/src/auth/application/interfaces/auth_session_repository.dart';
+import 'package:identity_server/src/auth/application/interfaces/email_verification_code_repository.dart';
+import 'package:identity_server/src/auth/application/interfaces/email_verification_sender.dart';
 import 'package:identity_server/src/auth/application/interfaces/identity_provider_repository.dart';
 import 'package:identity_server/src/auth/application/interfaces/identity_repository.dart';
 import 'package:identity_server/src/auth/application/interfaces/login_attempt_limiter.dart';
+import 'package:identity_server/src/auth/application/interfaces/otp_rate_limiter.dart';
 import 'package:identity_server/src/auth/application/interfaces/password_credential_repository.dart';
 import 'package:identity_server/src/auth/application/interfaces/password_hasher.dart';
+import 'package:identity_server/src/auth/application/interfaces/password_reset_code_repository.dart';
+import 'package:identity_server/src/auth/application/interfaces/password_reset_sender.dart';
 import 'package:identity_server/src/auth/application/interfaces/refresh_token_secret_service.dart';
+import 'package:identity_server/src/auth/application/interfaces/secret_hasher.dart';
+import 'package:identity_server/src/auth/application/interfaces/verification_code_generator.dart';
 import 'package:identity_server/src/auth/domain/refresh_token_secret.dart';
 import 'package:identity_server/src/generated/protocol.dart' as protocol;
 import 'package:serverpod/serverpod.dart';
@@ -44,6 +51,54 @@ class FakeRefreshTokenSecretService implements RefreshTokenSecretService {
   }
 }
 
+class FakeSecretHasher implements SecretHasher {
+  @override
+  Future<String> hashSecret(String secret) async => 'hash:$secret';
+
+  @override
+  Future<bool> verifySecret({
+    required String secret,
+    required String secretHash,
+  }) async {
+    return secretHash == 'hash:$secret';
+  }
+}
+
+class FakeVerificationCodeGenerator implements VerificationCodeGenerator {
+  FakeVerificationCodeGenerator({this.nextCode = '12345678'});
+
+  String nextCode;
+
+  @override
+  String generate() => nextCode;
+}
+
+class FakeEmailVerificationSender implements EmailVerificationSender {
+  final sentCodes = <String, String>{};
+
+  @override
+  Future<void> sendVerificationCode(
+    Session session, {
+    required String email,
+    required String code,
+  }) async {
+    sentCodes[email] = code;
+  }
+}
+
+class FakePasswordResetSender implements PasswordResetSender {
+  final sentCodes = <String, String>{};
+
+  @override
+  Future<void> sendResetCode(
+    Session session, {
+    required String email,
+    required String code,
+  }) async {
+    sentCodes[email] = code;
+  }
+}
+
 class FakeLoginAttemptLimiter implements LoginAttemptLimiter {
   FakeLoginAttemptLimiter({this.maxAttempts = 5});
 
@@ -72,6 +127,175 @@ class FakeLoginAttemptLimiter implements LoginAttemptLimiter {
     required String username,
   }) async {
     failedAttempts.remove(username);
+  }
+}
+
+class FakeOtpRateLimiter implements OtpRateLimiter {
+  FakeOtpRateLimiter({this.maxAttempts = 3});
+
+  final int maxAttempts;
+  final Map<String, int> attempts = {};
+
+  @override
+  Future<bool> isBlocked(
+    Session session, {
+    required String action,
+    required String subject,
+  }) async {
+    return (attempts[_key(action, subject)] ?? 0) >= maxAttempts;
+  }
+
+  @override
+  Future<void> registerAttempt(
+    Session session, {
+    required String action,
+    required String subject,
+  }) async {
+    final key = _key(action, subject);
+    attempts[key] = (attempts[key] ?? 0) + 1;
+  }
+
+  String _key(String action, String subject) {
+    return '${action.trim().toLowerCase()}:${subject.trim().toLowerCase()}';
+  }
+}
+
+class FakeEmailVerificationCodeRepository
+    implements EmailVerificationCodeRepository {
+  final Map<UuidValue, protocol.EmailVerificationCode> byId = {};
+
+  @override
+  Future<protocol.EmailVerificationCode> create(
+    Session session, {
+    required UuidValue identityId,
+    required String email,
+    required String codeHash,
+    required DateTime expiresAt,
+  }) async {
+    final code = protocol.EmailVerificationCode(
+      id: newUuid(),
+      identityId: identityId,
+      email: email,
+      codeHash: codeHash,
+      expiresAt: expiresAt,
+    );
+    byId[code.id!] = code;
+    return code;
+  }
+
+  @override
+  Future<protocol.EmailVerificationCode?> findActiveByIdentityId(
+    Session session,
+    UuidValue identityId,
+  ) async {
+    final now = DateTime.now().toUtc();
+    final active =
+        byId.values
+            .where(
+              (code) =>
+                  code.identityId == identityId &&
+                  code.consumedAt == null &&
+                  code.expiresAt.isAfter(now),
+            )
+            .toList()
+          ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    return active.firstOrNull;
+  }
+
+  @override
+  Future<void> markConsumed(Session session, UuidValue id) async {
+    final code = byId[id];
+    if (code == null) return;
+    byId[id] = code.copyWith(consumedAt: DateTime.now().toUtc());
+  }
+
+  @override
+  Future<void> registerFailedAttempt(Session session, UuidValue id) async {
+    final code = byId[id];
+    if (code == null) return;
+    byId[id] = code.copyWith(failedAttempts: code.failedAttempts + 1);
+  }
+
+  @override
+  Future<void> revokeActiveForIdentity(
+    Session session,
+    UuidValue identityId,
+  ) async {
+    final now = DateTime.now().toUtc();
+    for (final code in byId.values.where(
+      (code) => code.identityId == identityId && code.consumedAt == null,
+    )) {
+      byId[code.id!] = code.copyWith(consumedAt: now);
+    }
+  }
+}
+
+class FakePasswordResetCodeRepository implements PasswordResetCodeRepository {
+  final Map<UuidValue, protocol.PasswordResetCode> byId = {};
+
+  @override
+  Future<protocol.PasswordResetCode> create(
+    Session session, {
+    required UuidValue identityId,
+    required String email,
+    required String codeHash,
+    required DateTime expiresAt,
+  }) async {
+    final code = protocol.PasswordResetCode(
+      id: newUuid(),
+      identityId: identityId,
+      email: email,
+      codeHash: codeHash,
+      expiresAt: expiresAt,
+    );
+    byId[code.id!] = code;
+    return code;
+  }
+
+  @override
+  Future<protocol.PasswordResetCode?> findActiveByIdentityId(
+    Session session,
+    UuidValue identityId,
+  ) async {
+    final now = DateTime.now().toUtc();
+    final active =
+        byId.values
+            .where(
+              (code) =>
+                  code.identityId == identityId &&
+                  code.consumedAt == null &&
+                  code.expiresAt.isAfter(now),
+            )
+            .toList()
+          ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    return active.firstOrNull;
+  }
+
+  @override
+  Future<void> markConsumed(Session session, UuidValue id) async {
+    final code = byId[id];
+    if (code == null) return;
+    byId[id] = code.copyWith(consumedAt: DateTime.now().toUtc());
+  }
+
+  @override
+  Future<void> registerFailedAttempt(Session session, UuidValue id) async {
+    final code = byId[id];
+    if (code == null) return;
+    byId[id] = code.copyWith(failedAttempts: code.failedAttempts + 1);
+  }
+
+  @override
+  Future<void> revokeActiveForIdentity(
+    Session session,
+    UuidValue identityId,
+  ) async {
+    final now = DateTime.now().toUtc();
+    for (final code in byId.values.where(
+      (code) => code.identityId == identityId && code.consumedAt == null,
+    )) {
+      byId[code.id!] = code.copyWith(consumedAt: now);
+    }
   }
 }
 
@@ -125,6 +349,23 @@ class FakeIdentityRepository implements IdentityRepository {
     final identity = byId[id];
     if (identity == null) return null;
     final updated = identity.copyWith(emailVerified: true);
+    byId[id] = updated;
+    return updated;
+  }
+
+  @override
+  Future<protocol.Identity?> updateEmail(
+    Session session, {
+    required UuidValue id,
+    required String email,
+    required bool emailVerified,
+  }) async {
+    final identity = byId[id];
+    if (identity == null) return null;
+    final updated = identity.copyWith(
+      email: email,
+      emailVerified: emailVerified,
+    );
     byId[id] = updated;
     return updated;
   }
@@ -203,6 +444,27 @@ class FakeIdentityProviderRepository implements IdentityProviderRepository {
     byId[id] = updated;
     return updated;
   }
+
+  @override
+  Future<List<protocol.IdentityProvider>> updateEmailForIdentity(
+    Session session, {
+    required UuidValue identityId,
+    required String email,
+    required bool emailVerified,
+  }) async {
+    final updated = <protocol.IdentityProvider>[];
+    for (final provider in byId.values.where(
+      (provider) => provider.identityId == identityId,
+    )) {
+      final next = provider.copyWith(
+        email: email,
+        emailVerified: emailVerified,
+      );
+      byId[next.id!] = next;
+      updated.add(next);
+    }
+    return updated;
+  }
 }
 
 class FakePasswordCredentialRepository implements PasswordCredentialRepository {
@@ -231,6 +493,16 @@ class FakePasswordCredentialRepository implements PasswordCredentialRepository {
     String username,
   ) async {
     return byUsername[username];
+  }
+
+  @override
+  Future<protocol.PasswordCredential?> findByIdentityId(
+    Session session,
+    UuidValue identityId,
+  ) async {
+    return byUsername.values
+        .where((credential) => credential.identityId == identityId)
+        .firstOrNull;
   }
 
   @override

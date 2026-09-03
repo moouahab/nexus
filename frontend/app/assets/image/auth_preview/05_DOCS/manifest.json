@@ -1,0 +1,52 @@
+{
+  "desktop_light": {
+    "width": 1672,
+    "height": 941,
+    "file": "01_DESKTOP/LIGHT/nexus_login_desktop_light.png"
+  },
+  "desktop_dark": {
+    "width": 1672,
+    "height": 941,
+    "file": "01_DESKTOP/DARK/nexus_login_desktop_dark.png"
+  },
+  "tablet_landscape_light": {
+    "width": 1448,
+    "height": 1086,
+    "file": "02_TABLET/LANDSCAPE/LIGHT/nexus_login_tablet_landscape_light.png"
+  },
+  "tablet_landscape_dark": {
+    "width": 1448,
+    "height": 1086,
+    "file": "02_TABLET/LANDSCAPE/DARK/nexus_login_tablet_landscape_dark.png"
+  },
+  "tablet_portrait_light": {
+    "width": 1086,
+    "height": 1448,
+    "file": "02_TABLET/PORTRAIT/LIGHT/nexus_login_tablet_portrait_light.png"
+  },
+  "tablet_portrait_dark": {
+    "width": 1086,
+    "height": 1448,
+    "file": "02_TABLET/PORTRAIT/DARK/nexus_login_tablet_portrait_dark.png"
+  },
+  "mobile_light": {
+    "width": 941,
+    "height": 1672,
+    "file": "03_MOBILE/LIGHT/nexus_login_mobile_light.png"
+  },
+  "mobile_dark": {
+    "width": 941,
+    "height": 1672,
+    "file": "03_MOBILE/DARK/nexus_login_mobile_dark.png"
+  },
+  "background_light": {
+    "width": 1672,
+    "height": 941,
+    "file": "04_BACKGROUNDS/LIGHT/nexus_background_light.png"
+  },
+  "background_dark": {
+    "width": 1672,
+    "height": 941,
+    "file": "04_BACKGROUNDS/DARK/nexus_background_dark.png"
+  }
+}

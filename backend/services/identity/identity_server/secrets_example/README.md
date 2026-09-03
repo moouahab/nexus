@@ -18,6 +18,16 @@ Required for the test Compose profile:
 - `postgres_test_password`
 - `redis_test_password`
 
+Prepared for the Nexus mail sender:
+
+- `mail_from_address`
+- `mail_from_name`
+- `mail_support_address`
+- `smtp_host`
+- `smtp_port`
+- `smtp_username`
+- `smtp_password`
+
 Production AppRole examples live under `production/`. Real production values
 must come from the deployment platform secret store, not from committed files.
 

@@ -20,6 +20,7 @@ services:
   vault_agent:
     build:
       context: ../vault-agent
+    user: "0:0"
     depends_on:
       vault:
         condition: service_started
@@ -40,6 +41,8 @@ services:
     volumes:
       - identity_vault_agent:/vault/token
       - identity_vault_secrets:/vault/secrets
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test:
         - CMD-SHELL

@@ -10,10 +10,22 @@ class AuthRefreshRoute extends AuthJsonRoute {
     Session session,
     Request request,
     AuthDependencies dependencies,
-  ) {
+  ) async {
+    final body = request.isEmpty
+        ? <String, dynamic>{}
+        : await readJsonBody(request);
+    final headers = requestHeaders(request);
+    final refreshToken = readOptionalStringBodyField(body, 'refreshToken');
+
+    if (refreshToken == null) {
+      dependencies.csrfProtection.requireValid(headers);
+    }
+
     return dependencies.refreshSession.execute(
       session,
-      requestHeaders: requestHeaders(request),
+      requestHeaders: headers,
+      refreshToken: refreshToken,
+      tokenTransport: tokenTransport(request, body: body),
     );
   }
 }

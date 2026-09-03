@@ -1,0 +1,19 @@
+USAGE RAPIDE
+
+Login / Register / Splash
+- bg_hero_light
+- bg_hero_dark
+
+Pages standard
+- bg_page_light
+- bg_page_dark
+
+Dashboard / contenu dense
+- bg_clean_light
+- bg_clean_dark
+
+Conseils
+- Garder le contenu principal dans la zone centrale vide
+- Éviter de superposer trop d'effets supplémentaires
+- Conserver les accents rouges pour les CTA et éléments clés
+- Sur mobile, réduire encore l'intensité des overlays si nécessaire

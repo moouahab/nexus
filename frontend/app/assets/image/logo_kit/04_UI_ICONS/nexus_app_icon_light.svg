@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+
+<defs>
+  <linearGradient id="redA" x1="0" y1="0" x2="0.8" y2="1">
+    <stop offset="0%" stop-color="#ff3137"/>
+    <stop offset="58%" stop-color="#f21f28"/>
+    <stop offset="100%" stop-color="#d50f18"/>
+  </linearGradient>
+  <linearGradient id="redB" x1="0" y1="0" x2="1" y2="0.8">
+    <stop offset="0%" stop-color="#ff3137"/>
+    <stop offset="55%" stop-color="#ec1c25"/>
+    <stop offset="100%" stop-color="#8e0b12"/>
+  </linearGradient>
+</defs>
+
+<rect width="1024" height="1024" rx="220" fill="#ffffff"/>
+<g transform="translate(162,155) scale(7.0)">
+<polygon points="17,13 18,86 26,82 27,30 65,57 65,48" fill="url(#redA)"/>
+<polygon points="81,18 80,75 42,48 41,57 90,93 90,18" fill="url(#redB)"/>
+</g>
+</svg>
