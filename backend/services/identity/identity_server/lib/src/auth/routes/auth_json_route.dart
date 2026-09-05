@@ -242,6 +242,7 @@ abstract class AuthJsonRoute extends Route {
       AuthUseCaseExceptionCode.invalidEmail => 400,
       AuthUseCaseExceptionCode.invalidOAuthProvider => 400,
       AuthUseCaseExceptionCode.weakPassword => 400,
+      AuthUseCaseExceptionCode.passwordConfirmationMismatch => 400,
       AuthUseCaseExceptionCode.missingEmail => 400,
       AuthUseCaseExceptionCode.invalidEmailVerificationCode => 401,
       AuthUseCaseExceptionCode.invalidPasswordResetCode => 401,

@@ -1,0 +1,7 @@
+enum: ProjectVisibility
+serialized: byName
+default: private
+values:
+  - private
+  - internal
+  - shared

@@ -60,15 +60,15 @@ write_identity_runtime_secrets() {
     smtp_port="$(read_secret_file_or_default "$SMTP_PORT_FILE" "587")" \
     smtp_username="$(read_secret_file_or_default "$SMTP_USERNAME_FILE" "")" \
     smtp_password="$(read_secret_file_or_default "$SMTP_PASSWORD_FILE" "")" \
-    google_oauth_enabled="${GOOGLE_OAUTH_ENABLED:-false}" \
-    google_oauth_client_id="${GOOGLE_OAUTH_CLIENT_ID:-}" \
-    google_oauth_client_secret="${GOOGLE_OAUTH_CLIENT_SECRET:-}" \
-    github_oauth_enabled="${GITHUB_OAUTH_ENABLED:-false}" \
-    github_oauth_client_id="${GITHUB_OAUTH_CLIENT_ID:-}" \
-    github_oauth_client_secret="${GITHUB_OAUTH_CLIENT_SECRET:-}" \
-    apple_oauth_enabled="${APPLE_OAUTH_ENABLED:-false}" \
-    apple_oauth_client_id="${APPLE_OAUTH_CLIENT_ID:-}" \
-    apple_oauth_client_secret="${APPLE_OAUTH_CLIENT_SECRET:-}" \
+    google_oauth_enabled="$(read_secret_file_or_default "$GOOGLE_OAUTH_ENABLED_FILE" "${GOOGLE_OAUTH_ENABLED:-false}")" \
+    google_oauth_client_id="$(read_secret_file_or_default "$GOOGLE_OAUTH_CLIENT_ID_FILE" "${GOOGLE_OAUTH_CLIENT_ID:-}")" \
+    google_oauth_client_secret="$(read_secret_file_or_default "$GOOGLE_OAUTH_CLIENT_SECRET_FILE" "${GOOGLE_OAUTH_CLIENT_SECRET:-}")" \
+    github_oauth_enabled="$(read_secret_file_or_default "$GITHUB_OAUTH_ENABLED_FILE" "${GITHUB_OAUTH_ENABLED:-false}")" \
+    github_oauth_client_id="$(read_secret_file_or_default "$GITHUB_OAUTH_CLIENT_ID_FILE" "${GITHUB_OAUTH_CLIENT_ID:-}")" \
+    github_oauth_client_secret="$(read_secret_file_or_default "$GITHUB_OAUTH_CLIENT_SECRET_FILE" "${GITHUB_OAUTH_CLIENT_SECRET:-}")" \
+    apple_oauth_enabled="$(read_secret_file_or_default "$APPLE_OAUTH_ENABLED_FILE" "${APPLE_OAUTH_ENABLED:-false}")" \
+    apple_oauth_client_id="$(read_secret_file_or_default "$APPLE_OAUTH_CLIENT_ID_FILE" "${APPLE_OAUTH_CLIENT_ID:-}")" \
+    apple_oauth_client_secret="$(read_secret_file_or_default "$APPLE_OAUTH_CLIENT_SECRET_FILE" "${APPLE_OAUTH_CLIENT_SECRET:-}")" \
     >/dev/null
   success "Runtime secrets written to Vault."
 }

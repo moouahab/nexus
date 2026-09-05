@@ -17,6 +17,7 @@ class AuthRegisterRoute extends AuthJsonRoute {
       session,
       username: readStringBodyField(body, 'username'),
       password: readStringBodyField(body, 'password'),
+      confirmPassword: readStringBodyField(body, 'confirmPassword'),
       email: readOptionalStringBodyField(body, 'email'),
       tokenTransport: tokenTransport(request, body: body),
     );

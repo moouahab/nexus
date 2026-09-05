@@ -19,7 +19,7 @@ services:
 
   vault_agent:
     build:
-      context: ../vault-agent
+      context: ../../../../../infrastructure/service-runtime/docker/vault-agent
     user: "0:0"
     depends_on:
       vault:
@@ -54,10 +54,10 @@ services:
 
 configs:
   vault_dev_listen_address:
-    file: ../vault/dev-listen-address
+    file: ../../../../../infrastructure/service-runtime/vault/dev-listen-address
 
   vault_agent_config:
-    file: ../vault/agent.hcl
+    file: ../../../../../infrastructure/service-runtime/vault/agent.hcl
 
   vault_template_postgres_password:
     file: ../vault/templates/postgres_password.ctmpl

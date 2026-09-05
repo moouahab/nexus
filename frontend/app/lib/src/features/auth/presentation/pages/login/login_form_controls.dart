@@ -1,16 +1,58 @@
 part of '../login_page.dart';
 
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.color, this.title = 'CONNEXION'});
+
+  final Color color;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            '/',
+            style: TextStyle(
+              color: NexusBrand.red,
+              fontFamily: 'monospace',
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(width: 22),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontFamily: 'monospace',
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LabeledLineField extends StatelessWidget {
   const _LabeledLineField({
     required this.controller,
     required this.label,
     required this.hintText,
     required this.icon,
+    this.fieldKey,
+    this.formFieldKey,
     this.keyboardType,
     this.textInputAction,
     this.autofillHints,
     this.obscureText = false,
     this.suffixIcon,
+    this.onChanged,
     this.onFieldSubmitted,
     this.validator,
   });
@@ -19,11 +61,14 @@ class _LabeledLineField extends StatelessWidget {
   final String label;
   final String hintText;
   final IconData icon;
+  final Key? fieldKey;
+  final GlobalKey<FormFieldState<String>>? formFieldKey;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
   final bool obscureText;
   final Widget? suffixIcon;
+  final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onFieldSubmitted;
   final FormFieldValidator<String>? validator;
 
@@ -35,6 +80,7 @@ class _LabeledLineField extends StatelessWidget {
     final lineColor = isDark ? Colors.white38 : Colors.black45;
 
     return Column(
+      key: formFieldKey == null ? null : fieldKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -48,11 +94,13 @@ class _LabeledLineField extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         TextFormField(
+          key: formFieldKey ?? fieldKey,
           controller: controller,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           autofillHints: autofillHints,
           obscureText: obscureText,
+          onChanged: onChanged,
           onFieldSubmitted: onFieldSubmitted,
           validator: validator,
           style: TextStyle(color: textColor, fontSize: 18),
@@ -97,38 +145,61 @@ class _RememberAndHelpRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white70 : const Color(0xff4f5661);
 
-    return Row(
-      children: [
-        Checkbox(
-          value: value,
-          onChanged: onChanged,
-          side: BorderSide(color: textColor),
-          activeColor: NexusBrand.red,
-          visualDensity: VisualDensity.compact,
-        ),
-        Text(
-          'Se souvenir de moi',
-          style: TextStyle(color: textColor, fontSize: 14),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                minimumSize: Size.zero,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text(
-                'Mot de passe oublié ?',
-                overflow: TextOverflow.ellipsis,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final remember = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: onChanged,
+              side: BorderSide(color: textColor),
+              activeColor: NexusBrand.red,
+              visualDensity: VisualDensity.compact,
             ),
+            Text(
+              'Se souvenir de moi',
+              style: TextStyle(color: textColor, fontSize: 14),
+            ),
+          ],
+        );
+        final help = TextButton(
+          onPressed: () {},
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        ),
-      ],
+          child: const Text(
+            'Mot de passe oublié ?',
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+
+        if (constraints.maxWidth < 340) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: remember,
+              ),
+              Align(alignment: Alignment.centerRight, child: help),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            remember,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Align(alignment: Alignment.centerRight, child: help),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -145,12 +216,16 @@ class _LineButton extends StatelessWidget {
   final String text;
   final Color color;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
-    final isPrimary = text == 'SE CONNECTER';
+    final isPrimary =
+        text == 'SE CONNECTER' ||
+        text == 'CONNEXION...' ||
+        text == 'CRÉER LE COMPTE' ||
+        text == 'CRÉATION...';
 
     return DecoratedBox(
       decoration: BoxDecoration(

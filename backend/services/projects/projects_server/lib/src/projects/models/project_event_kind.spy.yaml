@@ -1,0 +1,15 @@
+enum: ProjectEventKind
+serialized: byName
+default: note
+values:
+  - created
+  - updated
+  - statusChanged
+  - linked
+  - unlinked
+  - participantAdded
+  - participantUpdated
+  - participantRemoved
+  - archived
+  - restored
+  - note

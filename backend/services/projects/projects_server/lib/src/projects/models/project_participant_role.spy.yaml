@@ -1,0 +1,10 @@
+enum: ProjectParticipantRole
+serialized: byName
+default: nexusContributor
+values:
+  - nexusOwner
+  - nexusManager
+  - nexusContributor
+  - nexusReviewer
+  - clientOrganization
+  - clientReferent

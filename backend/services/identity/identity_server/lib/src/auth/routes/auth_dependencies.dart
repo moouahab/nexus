@@ -8,7 +8,9 @@ import '../application/services/require_auth.dart';
 import '../application/use_cases/change_email_use_case.dart';
 import '../application/use_cases/change_password_use_case.dart';
 import '../application/interfaces/auth_cookie_service.dart';
+import '../application/interfaces/email_verification_sender.dart';
 import '../application/interfaces/oauth_provider_verifier.dart';
+import '../application/interfaces/password_reset_sender.dart';
 import '../application/use_cases/login_with_username_use_case.dart';
 import '../application/use_cases/login_with_oauth_use_case.dart';
 import '../application/use_cases/logout_use_case.dart';
@@ -23,6 +25,9 @@ import '../infrastructure/oauth/github_oauth_provider_verifier.dart';
 import '../infrastructure/oauth/google_oauth_provider_verifier.dart';
 import '../infrastructure/email/log_email_verification_sender.dart';
 import '../infrastructure/email/log_password_reset_sender.dart';
+import '../infrastructure/email/smtp_email_verification_sender.dart';
+import '../infrastructure/email/smtp_mail_config.dart';
+import '../infrastructure/email/smtp_password_reset_sender.dart';
 import '../infrastructure/repositories/serverpod_auth_refresh_token_repository.dart';
 import '../infrastructure/repositories/serverpod_auth_session_repository.dart';
 import '../infrastructure/repositories/serverpod_email_verification_code_repository.dart';
@@ -97,12 +102,13 @@ class AuthDependencies {
     final refreshTokenSecretService = SecureRefreshTokenSecretService(
       secretHasher: secretHasher,
     );
+    final smtpMailConfig = SmtpMailConfig.fromSession(session);
     final emailVerificationService = EmailVerificationService(
       codeRepository: emailVerificationCodeRepository,
       identityRepository: identityRepository,
       codeHasher: emailVerificationCodeHasher,
       codeGenerator: NumericVerificationCodeGenerator(),
-      sender: const LogEmailVerificationSender(),
+      sender: _emailVerificationSender(smtpMailConfig),
       resendRateLimiter: _otpRateLimiter,
     );
     final passwordResetService = PasswordResetService(
@@ -112,7 +118,7 @@ class AuthDependencies {
       codeRepository: passwordResetCodeRepository,
       codeHasher: Argon2SecretHasher(pepper: refreshPepper),
       codeGenerator: NumericVerificationCodeGenerator(),
-      sender: const LogPasswordResetSender(),
+      sender: _passwordResetSender(smtpMailConfig),
       passwordHasher: passwordHasher,
       passwordPolicy: passwordPolicy,
       startRateLimiter: _otpRateLimiter,
@@ -231,6 +237,20 @@ class AuthDependencies {
     }
 
     return AuthCookieOptions.development();
+  }
+
+  static EmailVerificationSender _emailVerificationSender(
+    SmtpMailConfig? smtpMailConfig,
+  ) {
+    if (smtpMailConfig == null) return const LogEmailVerificationSender();
+    return SmtpEmailVerificationSender(smtpMailConfig);
+  }
+
+  static PasswordResetSender _passwordResetSender(
+    SmtpMailConfig? smtpMailConfig,
+  ) {
+    if (smtpMailConfig == null) return const LogPasswordResetSender();
+    return SmtpPasswordResetSender(smtpMailConfig);
   }
 
   static Map<protocol.AuthProvider, OAuthProviderVerifier> _oauthVerifiers(

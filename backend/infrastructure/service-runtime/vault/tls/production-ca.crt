@@ -1,0 +1,3 @@
+-----BEGIN CERTIFICATE-----
+Replace with the production Vault CA certificate.
+-----END CERTIFICATE-----

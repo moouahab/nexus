@@ -12,11 +12,13 @@ set -Eeuo pipefail
 
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_LIB_DIR="$SCRIPT_DIR/lib"
+readonly BACKEND_ROOT="$(cd -- "$SCRIPT_DIR/../../../../.." && pwd)"
+readonly SERVICE_RUNTIME_LIB_DIR="$BACKEND_ROOT/infrastructure/service-runtime/script/lib"
 
-source "$SCRIPT_LIB_DIR/common.sh"
+source "$SERVICE_RUNTIME_LIB_DIR/common.sh"
 source "$SCRIPT_LIB_DIR/paths.sh"
 source "$SCRIPT_LIB_DIR/secrets.sh"
-source "$SCRIPT_LIB_DIR/docker.sh"
+source "$SERVICE_RUNTIME_LIB_DIR/docker.sh"
 source "$SCRIPT_LIB_DIR/vault.sh"
 
 main() {

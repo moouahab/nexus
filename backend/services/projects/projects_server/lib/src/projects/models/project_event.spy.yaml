@@ -1,0 +1,27 @@
+### Timeline event for project registry activity.
+class: ProjectEvent
+table: project_event
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  project: Project?, relation(onDelete=Cascade)
+
+  kind: ProjectEventKind
+  message: String?
+
+  ### Identity service UUID of the actor that caused this event.
+  actorIdentityId: UuidValue?
+
+  resourceKind: ProjectLinkKind?
+  resourceService: String?
+  resourceExternalId: String?
+  payload: Map<String, String>?
+
+  occurredAt: DateTime, default=now
+
+indexes:
+  project_event_project_idx:
+    fields: projectId
+  project_event_kind_idx:
+    fields: kind
+  project_event_occurred_at_idx:
+    fields: occurredAt

@@ -32,10 +32,10 @@ docker/script/setup_vault_approle.sh
 It loads focused helper files:
 
 ```text
-docker/script/lib/common.sh
+backend/infrastructure/service-runtime/script/lib/common.sh
+backend/infrastructure/service-runtime/script/lib/docker.sh
 docker/script/lib/paths.sh
 docker/script/lib/secrets.sh
-docker/script/lib/docker.sh
 docker/script/lib/vault.sh
 ```
 

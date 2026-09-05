@@ -1,0 +1,33 @@
+### Lightweight reference from a project to another Nexus resource.
+class: ProjectLink
+table: project_link
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  project: Project?, relation(onDelete=Cascade)
+
+  kind: ProjectLinkKind
+
+  ### Owning service name, for example missions, labs, data, documents, history.
+  service: String
+
+  ### External resource id managed by the owning service.
+  externalId: String
+
+  label: String?
+  uri: String?
+  status: ProjectLinkStatus, default=active
+  metadata: Map<String, String>?
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+
+indexes:
+  project_link_project_idx:
+    fields: projectId
+  project_link_kind_idx:
+    fields: kind
+  project_link_external_idx:
+    fields: service, externalId
+  project_link_unique_idx:
+    fields: projectId, kind, service, externalId
+    unique: true

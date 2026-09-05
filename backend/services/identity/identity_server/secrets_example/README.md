@@ -20,6 +20,7 @@ Required for the test Compose profile:
 
 Prepared for the Nexus mail sender:
 
+- `auth_allowed_origins`
 - `mail_from_address`
 - `mail_from_name`
 - `mail_support_address`
@@ -27,6 +28,37 @@ Prepared for the Nexus mail sender:
 - `smtp_port`
 - `smtp_username`
 - `smtp_password`
+
+Prepared for OAuth providers:
+
+- `google_oauth_enabled`
+- `google_oauth_client_id`
+- `google_oauth_client_secret`
+- `github_oauth_enabled`
+- `github_oauth_client_id`
+- `github_oauth_client_secret`
+- `apple_oauth_enabled`
+- `apple_oauth_client_id`
+- `apple_oauth_client_secret`
+
+For local Gmail SMTP testing, copy this directory to `secrets/` and set:
+
+- `smtp_host`: `smtp.gmail.com`
+- `smtp_port`: `587`
+- `smtp_username`: your Gmail address
+- `smtp_password`: your Gmail app password, never your Google account password
+- `mail_from_address`: the same Gmail address, unless your SMTP account allows
+  another sender
+
+Keep real SMTP values only in `secrets/`, never in `secrets_example/`.
+
+For Google login, create a Google OAuth client and set:
+
+- `google_oauth_enabled`: `true`
+- `google_oauth_client_id`: the Google OAuth client ID
+- `google_oauth_client_secret`: the Google OAuth client secret
+
+The Gmail SMTP app password is not the Google OAuth client secret.
 
 Production AppRole examples live under `production/`. Real production values
 must come from the deployment platform secret store, not from committed files.

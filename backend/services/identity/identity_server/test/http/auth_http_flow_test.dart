@@ -47,6 +47,7 @@ void main() {
         final registered = await client.postJson('/auth/register', {
           'username': username,
           'password': password,
+          'confirmPassword': password,
           'email': '$username@example.com',
         });
 
@@ -155,6 +156,7 @@ void main() {
         {
           'username': username,
           'password': password,
+          'confirmPassword': password,
           'email': '$username@example.com',
         },
         headers: const {
@@ -228,6 +230,7 @@ void main() {
         {
           'username': username,
           'password': password,
+          'confirmPassword': password,
           'email': '$username@example.com',
         },
         headers: const {
@@ -238,6 +241,29 @@ void main() {
       expect(response.statusCode, 400);
       expect(response.jsonBody, {
         'error': 'invalid_request',
+      });
+    });
+
+    test('rejects password confirmation mismatch', () async {
+      if (!runHttpTests) {
+        expect(
+          runHttpTests,
+          isFalse,
+          reason: 'Set IDENTITY_RUN_HTTP_TESTS=true to run HTTP auth flow.',
+        );
+        return;
+      }
+
+      final response = await client.postJson('/auth/register', {
+        'username': username,
+        'password': password,
+        'confirmPassword': 'different-password-123',
+        'email': '$username@example.com',
+      });
+
+      expect(response.statusCode, 400);
+      expect(response.jsonBody, {
+        'error': 'passwordConfirmationMismatch',
       });
     });
   });

@@ -23,7 +23,7 @@ Production Vault server
 
 Vault Agent
   runs with the identity service stack
-  authenticates using AppRole or platform identity
+  authenticates with AppRole credentials delivered by the deployment platform
   renders secret files
 
 Identity services
@@ -144,15 +144,15 @@ them.
 The production config is generated from:
 
 ```text
-docker/vault/agent-production.hcl
-docker/vault/production-vault-address
-docker/vault/tls/production-ca.crt
+backend/infrastructure/service-runtime/vault/agent-production.hcl
+backend/infrastructure/service-runtime/vault/production-vault-address
+backend/infrastructure/service-runtime/vault/tls/production-ca.crt
 ```
 
 Set the real Vault address in:
 
 ```text
-docker/vault/production-vault-address
+backend/infrastructure/service-runtime/vault/production-vault-address
 ```
 
 Example file content:
@@ -164,7 +164,7 @@ https://vault.production.internal:8200
 Put the production Vault CA certificate in:
 
 ```text
-docker/vault/tls/production-ca.crt
+backend/infrastructure/service-runtime/vault/tls/production-ca.crt
 ```
 
 The production agent config uses TLS CA verification:
@@ -257,8 +257,8 @@ docker compose -f docker/compose/prod.yaml config
 Before using it, update:
 
 ```text
-docker/vault/production-vault-address
-docker/vault/tls/production-ca.crt
+backend/infrastructure/service-runtime/vault/production-vault-address
+backend/infrastructure/service-runtime/vault/tls/production-ca.crt
 ```
 
 The production Compose validates with:
@@ -291,8 +291,9 @@ For local validation of the production Compose shape, example files exist under:
 secrets_example/production/
 ```
 
-Real production values must be stored in the deployment platform secret store,
-not committed to Git.
+These example files are only placeholders for local Compose validation. Real
+production values must be stored in the deployment platform secret store, not
+committed to Git.
 
 ## 8. Rotate Secret IDs
 

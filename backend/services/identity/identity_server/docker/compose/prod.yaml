@@ -2,7 +2,14 @@ services:
   api:
     build:
       context: ../../..
-      dockerfile: identity_server/docker/api/Dockerfile
+      dockerfile: ../../infrastructure/service-runtime/docker/serverpod-api/Dockerfile
+      additional_contexts:
+        service_runtime: ../../../../../infrastructure/service-runtime/docker/serverpod-api
+      args:
+        SERVER_PACKAGE: identity_server
+        CLIENT_PACKAGE: identity_client
+        RUNTIME_USER: identity
+        ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["production", "default", "normal", "monolith", "false"]
     ports:
       - "127.0.0.1:8080:8080"
@@ -24,7 +31,7 @@ services:
 
   vault_agent:
     build:
-      context: ../vault-agent
+      context: ../../../../../infrastructure/service-runtime/docker/vault-agent
     configs:
       - source: vault_agent_production_config
         target: /vault/config/agent.hcl.template
@@ -59,13 +66,13 @@ services:
 
 configs:
   vault_agent_production_config:
-    file: ../vault/agent-production.hcl
+    file: ../../../../../infrastructure/service-runtime/vault/agent-production.hcl
 
   vault_production_address:
-    file: ../vault/production-vault-address
+    file: ../../../../../infrastructure/service-runtime/vault/production-vault-address
 
   vault_production_ca_cert:
-    file: ../vault/tls/production-ca.crt
+    file: ../../../../../infrastructure/service-runtime/vault/tls/production-ca.crt
 
   vault_template_production_postgres_password:
     file: ../vault/templates/production/postgres_password.ctmpl

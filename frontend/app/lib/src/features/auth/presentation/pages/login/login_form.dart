@@ -7,9 +7,14 @@ class _LoginForm extends StatelessWidget {
     required this.passwordController,
     required this.rememberMe,
     required this.obscurePassword,
+    required this.isSubmitting,
+    required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onRegister,
+    this.compactSpacing = false,
+    this.showHeading = true,
   });
 
   final GlobalKey<FormState> formKey;
@@ -17,9 +22,14 @@ class _LoginForm extends StatelessWidget {
   final TextEditingController passwordController;
   final bool rememberMe;
   final bool obscurePassword;
+  final bool isSubmitting;
+  final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
-  final VoidCallback onSubmit;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onRegister;
+  final bool compactSpacing;
+  final bool showHeading;
 
   @override
   Widget build(BuildContext context) {
@@ -33,27 +43,38 @@ class _LoginForm extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (showHeading) ...[
+            _SectionHeading(color: primaryText),
+            const SizedBox(height: 18),
+            Text(
+              'Accédez à votre espace Nexus',
+              style: TextStyle(
+                color: secondaryText,
+                fontSize: 20,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            SizedBox(height: compactSpacing ? 50 : 72),
+          ],
           _LabeledLineField(
             controller: emailController,
             label: 'IDENTIFIANT',
-            hintText: 'Adresse e-mail',
+            hintText: 'E-mail ou nom d’utilisateur',
             icon: Icons.person_outline,
-            keyboardType: TextInputType.emailAddress,
+            keyboardType: TextInputType.text,
             textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.email],
+            autofillHints: const [AutofillHints.username],
             validator: (value) {
-              final email = value?.trim() ?? '';
-              if (email.isEmpty) {
-                return 'Email requis';
-              }
-              if (!email.contains('@')) {
-                return 'Email invalide';
+              final username = value?.trim() ?? '';
+              if (username.isEmpty) {
+                return 'Identifiant requis';
               }
               return null;
             },
           ),
-          const SizedBox(height: 52),
+          SizedBox(height: compactSpacing ? 38 : 52),
           _LabeledLineField(
+            fieldKey: const ValueKey('login-password-field'),
             controller: passwordController,
             label: 'MOT DE PASSE',
             hintText: 'Votre mot de passe',
@@ -62,6 +83,7 @@ class _LoginForm extends StatelessWidget {
             textInputAction: TextInputAction.done,
             autofillHints: const [AutofillHints.password],
             suffixIcon: IconButton(
+              key: const ValueKey('login-password-visibility-button'),
               onPressed: onTogglePassword,
               icon: Icon(
                 obscurePassword
@@ -80,18 +102,30 @@ class _LoginForm extends StatelessWidget {
               return null;
             },
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: compactSpacing ? 22 : 32),
           _RememberAndHelpRow(value: rememberMe, onChanged: onRememberChanged),
-          const SizedBox(height: 42),
+          if (submitError != null) ...[
+            SizedBox(height: compactSpacing ? 18 : 24),
+            Text(
+              submitError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: NexusBrand.red,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          SizedBox(height: compactSpacing ? 28 : 42),
           _LineButton(
-            text: 'SE CONNECTER',
+            text: isSubmitting ? 'CONNEXION...' : 'SE CONNECTER',
             color: NexusBrand.red,
             icon: Icons.arrow_forward,
-            onPressed: onSubmit,
+            onPressed: isSubmitting ? null : onSubmit,
           ),
-          const SizedBox(height: 44),
+          SizedBox(height: compactSpacing ? 30 : 44),
           _Separator(label: 'OU', color: secondaryText),
-          const SizedBox(height: 26),
+          SizedBox(height: compactSpacing ? 18 : 26),
           _LineButton(
             text: 'Continuer avec Google',
             color: primaryText,
@@ -99,24 +133,26 @@ class _LoginForm extends StatelessWidget {
               'G',
               style: TextStyle(
                 color: primaryText,
-                fontSize: 34,
+                fontSize: 28,
                 fontWeight: FontWeight.w800,
               ),
             ),
             icon: Icons.arrow_forward,
             onPressed: () {},
           ),
-          const SizedBox(height: 46),
-          Row(
+          SizedBox(height: compactSpacing ? 24 : 46),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: Text(
-                  'Pas encore de compte ?',
-                  style: TextStyle(color: secondaryText, fontSize: 16),
-                ),
+              Text(
+                'Pas encore de compte ?',
+                style: TextStyle(color: secondaryText, fontSize: 16),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: onRegister,
                 child: const Text('Créer un compte'),
               ),
             ],

@@ -1,18 +1,67 @@
-# identity_server
+# Identity Server
 
-This is the starting point for your Serverpod server.
+`identity_server` owns authentication for NEXUS.
 
-To run your server, you first need to start Postgres and Redis. It's easiest to do with Docker.
+It owns:
 
-    docker compose up --build --detach
+- the `identity` database;
+- username/password authentication;
+- email verification and password reset;
+- OAuth provider configuration;
+- JWT/access token and refresh token secrets;
+- SMTP mail delivery configuration.
 
-Then you can start the Serverpod server.
+Other services must not copy these auth secrets.
 
-    dart bin/main.dart
+## Local Runtime
 
-When you are finished, you can shut down Serverpod with `Ctrl-C`, then stop Postgres and Redis.
+Use the local setup script from `identity_server/`:
 
-    docker compose stop
+```bash
+./docker/script/setup_vault_approle.sh
+```
+
+The script creates or reuses local secrets, writes the Identity secret set to
+Vault, configures AppRole, starts the Docker stack, and verifies Vault Agent
+output.
+
+Runtime ports:
+
+```text
+API      127.0.0.1:8080
+Insights 127.0.0.1:8181
+Web      127.0.0.1:8182
+Postgres 127.0.0.1:8090
+Redis    127.0.0.1:8091
+Vault    127.0.0.1:8200
+```
+
+## Shared Runtime
+
+The service uses shared runtime mechanics from:
+
+```text
+backend/infrastructure/service-runtime/
+```
+
+Shared:
+
+- Serverpod API Dockerfile and entrypoint;
+- Postgres image;
+- Redis image;
+- Vault Agent image;
+- Vault Agent connection config;
+- common script helpers;
+- common Serverpod test runner.
+
+Still specific to `identity`:
+
+- Compose ports, volumes, names, and DB name;
+- `docker/script/lib/paths.sh`;
+- `docker/script/lib/secrets.sh`;
+- `docker/script/lib/vault.sh`;
+- `docker/vault/templates/`;
+- `secrets/` and `secrets_example/`.
 
 ## Vault Agent
 
@@ -113,3 +162,18 @@ alerting.
 
 See `docker/vault/docs/inject-approle-secrets.md` for production AppRole secret
 injection.
+
+Shared Vault operational rules live in
+`backend/infrastructure/service-runtime/docs/vault-operations.md`.
+
+## Tests
+
+Run from `identity_server/`:
+
+```bash
+./docker/script/run_serverpod_tests.sh
+```
+
+The wrapper delegates to the shared Serverpod test runner and enables
+`SERVERPOD_TEST_AUTH_PASSWORDS=true`, because Identity owns the auth test
+secrets.

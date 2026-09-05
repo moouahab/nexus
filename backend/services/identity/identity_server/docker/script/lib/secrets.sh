@@ -115,6 +115,15 @@ Runtime secret source files:
   - secrets/smtp_port
   - secrets/smtp_username
   - secrets/smtp_password
+  - secrets/google_oauth_enabled
+  - secrets/google_oauth_client_id
+  - secrets/google_oauth_client_secret
+  - secrets/github_oauth_enabled
+  - secrets/github_oauth_client_id
+  - secrets/github_oauth_client_secret
+  - secrets/apple_oauth_enabled
+  - secrets/apple_oauth_client_id
+  - secrets/apple_oauth_client_secret
 
 Files rendered by Vault Agent:
   - /vault/secrets/postgres_password

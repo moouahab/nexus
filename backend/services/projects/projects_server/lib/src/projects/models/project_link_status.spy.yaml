@@ -1,0 +1,7 @@
+enum: ProjectLinkStatus
+serialized: byName
+default: active
+values:
+  - active
+  - archived
+  - detached

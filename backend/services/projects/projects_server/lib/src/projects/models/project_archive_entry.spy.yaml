@@ -1,0 +1,24 @@
+### Archive lifecycle record for a project.
+class: ProjectArchiveEntry
+table: project_archive_entry
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  project: Project?, relation(onDelete=Cascade)
+
+  archivePath: String?
+  reason: String?
+
+  ### Identity service UUID of the actor that archived the project.
+  archivedByIdentityId: UuidValue?
+
+  archivedAt: DateTime, default=now
+  restoredAt: DateTime?
+  restoredByIdentityId: UuidValue?
+
+  metadata: Map<String, String>?
+
+indexes:
+  project_archive_entry_project_idx:
+    fields: projectId
+  project_archive_entry_archived_at_idx:
+    fields: archivedAt

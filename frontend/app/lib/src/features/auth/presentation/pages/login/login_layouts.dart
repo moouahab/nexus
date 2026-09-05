@@ -7,9 +7,12 @@ class _DesktopLoginLayout extends StatelessWidget {
     required this.passwordController,
     required this.rememberMe,
     required this.obscurePassword,
+    required this.isSubmitting,
+    required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onRegister,
   });
 
   final GlobalKey<FormState> formKey;
@@ -17,9 +20,12 @@ class _DesktopLoginLayout extends StatelessWidget {
   final TextEditingController passwordController;
   final bool rememberMe;
   final bool obscurePassword;
+  final bool isSubmitting;
+  final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
-  final VoidCallback onSubmit;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onRegister;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +40,8 @@ class _DesktopLoginLayout extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 56),
                 child: _ScaleToFit(
-                  width: 680,
-                  height: 700,
+                  width: 660,
+                  height: 850,
                   alignment: const Alignment(-1, -0.22),
                   child: Padding(
                     padding: const EdgeInsets.only(left: 56, right: 40),
@@ -45,9 +51,13 @@ class _DesktopLoginLayout extends StatelessWidget {
                       passwordController: passwordController,
                       rememberMe: rememberMe,
                       obscurePassword: obscurePassword,
+                      isSubmitting: isSubmitting,
+                      submitError: submitError,
                       onRememberChanged: onRememberChanged,
                       onTogglePassword: onTogglePassword,
                       onSubmit: onSubmit,
+                      onRegister: onRegister,
+                      showHeading: true,
                     ),
                   ),
                 ),
@@ -67,9 +77,12 @@ class _CompactLoginLayout extends StatelessWidget {
     required this.passwordController,
     required this.rememberMe,
     required this.obscurePassword,
+    required this.isSubmitting,
+    required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onRegister,
   });
 
   final GlobalKey<FormState> formKey;
@@ -77,9 +90,12 @@ class _CompactLoginLayout extends StatelessWidget {
   final TextEditingController passwordController;
   final bool rememberMe;
   final bool obscurePassword;
+  final bool isSubmitting;
+  final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
-  final VoidCallback onSubmit;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onRegister;
 
   @override
   Widget build(BuildContext context) {
@@ -88,25 +104,30 @@ class _CompactLoginLayout extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: _ScaleToFit(
-            width: 520,
-            height: 1100,
+            width: 430,
+            height: 1120,
             alignment: Alignment.topCenter,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 const _BrandPanel(compact: true),
-                const SizedBox(height: 44),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: 430,
                   child: _LoginForm(
                     formKey: formKey,
                     emailController: emailController,
                     passwordController: passwordController,
                     rememberMe: rememberMe,
                     obscurePassword: obscurePassword,
+                    isSubmitting: isSubmitting,
+                    submitError: submitError,
                     onRememberChanged: onRememberChanged,
                     onTogglePassword: onTogglePassword,
                     onSubmit: onSubmit,
+                    onRegister: onRegister,
+                    compactSpacing: true,
+                    showHeading: false,
                   ),
                 ),
               ],
@@ -125,9 +146,12 @@ class _TabletPortraitLoginLayout extends StatelessWidget {
     required this.passwordController,
     required this.rememberMe,
     required this.obscurePassword,
+    required this.isSubmitting,
+    required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onRegister,
   });
 
   final GlobalKey<FormState> formKey;
@@ -135,36 +159,43 @@ class _TabletPortraitLoginLayout extends StatelessWidget {
   final TextEditingController passwordController;
   final bool rememberMe;
   final bool obscurePassword;
+  final bool isSubmitting;
+  final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
-  final VoidCallback onSubmit;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onRegister;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 96, vertical: 96),
+          padding: const EdgeInsets.symmetric(horizontal: 72, vertical: 56),
           child: _ScaleToFit(
-            width: 640,
-            height: 1140,
+            width: 600,
+            height: 1220,
             alignment: Alignment.topCenter,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 const _BrandPanel(compact: true),
-                const SizedBox(height: 70),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
+                const SizedBox(height: 54),
+                SizedBox(
+                  width: 600,
                   child: _LoginForm(
                     formKey: formKey,
                     emailController: emailController,
                     passwordController: passwordController,
                     rememberMe: rememberMe,
                     obscurePassword: obscurePassword,
+                    isSubmitting: isSubmitting,
+                    submitError: submitError,
                     onRememberChanged: onRememberChanged,
                     onTogglePassword: onTogglePassword,
                     onSubmit: onSubmit,
+                    onRegister: onRegister,
+                    showHeading: true,
                   ),
                 ),
               ],
@@ -183,9 +214,12 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
     required this.passwordController,
     required this.rememberMe,
     required this.obscurePassword,
+    required this.isSubmitting,
+    required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onRegister,
   });
 
   final GlobalKey<FormState> formKey;
@@ -193,9 +227,12 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
   final TextEditingController passwordController;
   final bool rememberMe;
   final bool obscurePassword;
+  final bool isSubmitting;
+  final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
-  final VoidCallback onSubmit;
+  final Future<void> Function() onSubmit;
+  final VoidCallback onRegister;
 
   @override
   Widget build(BuildContext context) {
@@ -213,10 +250,10 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
         Expanded(
           flex: 54,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: _ScaleToFit(
-              width: 620,
-              height: 760,
+              width: 560,
+              height: 920,
               alignment: Alignment.centerLeft,
               child: _LoginForm(
                 formKey: formKey,
@@ -224,9 +261,13 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
                 passwordController: passwordController,
                 rememberMe: rememberMe,
                 obscurePassword: obscurePassword,
+                isSubmitting: isSubmitting,
+                submitError: submitError,
                 onRememberChanged: onRememberChanged,
                 onTogglePassword: onTogglePassword,
                 onSubmit: onSubmit,
+                onRegister: onRegister,
+                showHeading: true,
               ),
             ),
           ),
@@ -266,19 +307,10 @@ class _ScaleToFit extends StatelessWidget {
           child: SizedBox(
             width: width * scale,
             height: height * scale,
-            child: ClipRect(
-              child: Transform.scale(
-                scale: scale,
-                alignment: Alignment.topLeft,
-                child: OverflowBox(
-                  alignment: Alignment.topLeft,
-                  minWidth: width,
-                  maxWidth: width,
-                  minHeight: height,
-                  maxHeight: height,
-                  child: SizedBox(width: width, height: height, child: child),
-                ),
-              ),
+            child: FittedBox(
+              fit: BoxFit.contain,
+              alignment: Alignment.topLeft,
+              child: SizedBox(width: width, height: height, child: child),
             ),
           ),
         );

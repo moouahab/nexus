@@ -3,7 +3,7 @@ services:
     profiles:
       - test
     build:
-      context: ../postgres
+      context: ../../../../../infrastructure/service-runtime/docker/postgres
     user: "0:0"
     ports:
       - "127.0.0.1:${POSTGRES_TEST_PORT:-9090}:5432"
@@ -20,7 +20,7 @@ services:
     profiles:
       - test
     build:
-      context: ../redis
+      context: ../../../../../infrastructure/service-runtime/docker/redis
     user: "0:0"
     ports:
       - "127.0.0.1:${REDIS_TEST_PORT:-9091}:6379"

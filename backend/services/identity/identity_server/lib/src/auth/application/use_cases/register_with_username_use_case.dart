@@ -50,6 +50,7 @@ class RegisterWithUsernameUseCase {
     Session session, {
     required String username,
     required String password,
+    String? confirmPassword,
     String? email,
     AuthTokenTransport tokenTransport = AuthTokenTransport.cookie,
   }) async {
@@ -57,6 +58,12 @@ class RegisterWithUsernameUseCase {
     final normalizedEmail = _normalizeOptional(email);
 
     try {
+      if (confirmPassword != null && password != confirmPassword) {
+        throw const AuthUseCaseException(
+          AuthUseCaseExceptionCode.passwordConfirmationMismatch,
+        );
+      }
+
       _usernamePolicy.validate(normalizedUsername);
       _emailPolicy.validate(normalizedEmail);
       _passwordPolicy.validate(

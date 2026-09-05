@@ -1,0 +1,10 @@
+enum: ProjectLinkKind
+serialized: byName
+default: document
+values:
+  - mission
+  - lab
+  - dataset
+  - document
+  - history
+  - externalResource

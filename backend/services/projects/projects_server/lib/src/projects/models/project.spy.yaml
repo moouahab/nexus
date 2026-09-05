@@ -1,0 +1,44 @@
+### Registry entry for one Nexus workspace.
+class: Project
+table: project
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+
+  ### Stable human-readable key used in URLs and filesystem integrations.
+  slug: String
+
+  ### Display name shown in clients.
+  name: String
+
+  ### Short registry description. Domain-specific documents stay outside this service.
+  summary: String?
+
+  status: ProjectStatus, default=active
+  visibility: ProjectVisibility, default=private
+
+  ### Identity service UUID of the owner, kept as an external reference.
+  ownerIdentityId: UuidValue?
+
+  ### Optional local/source workspace path for filesystem-backed projects.
+  workspacePath: String?
+
+  ### Optional archive location when the project is archived.
+  archivePath: String?
+
+  tags: List<String>?
+  metadata: Map<String, String>?
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+  archivedAt: DateTime?
+
+indexes:
+  project_slug_idx:
+    fields: slug
+    unique: true
+  project_status_idx:
+    fields: status
+  project_owner_idx:
+    fields: ownerIdentityId
+  project_created_at_idx:
+    fields: createdAt

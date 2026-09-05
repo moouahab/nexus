@@ -53,7 +53,7 @@ environment:
 This project avoids `environment:` sections, so those values were moved to:
 
 - `secrets/vault_dev_root_token`
-- `docker/vault/dev-listen-address`
+- `backend/infrastructure/service-runtime/vault/dev-listen-address`
 
 The final Vault command reads both files:
 

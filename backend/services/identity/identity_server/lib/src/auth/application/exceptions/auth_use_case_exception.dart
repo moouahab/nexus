@@ -17,6 +17,7 @@ enum AuthUseCaseExceptionCode {
   invalidUsername,
   invalidEmail,
   weakPassword,
+  passwordConfirmationMismatch,
   missingEmail,
   invalidEmailVerificationCode,
   invalidPasswordResetCode,

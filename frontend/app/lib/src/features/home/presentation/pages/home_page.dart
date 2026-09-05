@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/brand/brand.dart';
+import '../../../../core/config/router/routers.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -31,6 +32,18 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(NexusBrand.name),
           ],
         ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(PageNavigation.login, (route) => false);
+            },
+            icon: const Icon(Icons.logout),
+            label: const Text('Déconnexion'),
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
       body: NexusBackground(
         variant: NexusBackgroundVariant.hero,

@@ -1,0 +1,41 @@
+### Human or organization attached to a project.
+class: ProjectParticipant
+table: project_participant
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  project: Project?, relation(onDelete=Cascade)
+
+  ### Role in the project registry, not a permission model by itself.
+  role: ProjectParticipantRole
+  status: ProjectParticipantStatus, default=active
+
+  ### Identity service UUID for Nexus-side users when available.
+  identityId: UuidValue?
+
+  ### External CRM/customer/contact id when this participant comes from another system.
+  externalId: String?
+
+  displayName: String?
+  organizationName: String?
+  email: String?
+  phone: String?
+  notes: String?
+
+  ### Marks the main client or main client referent for quick lookup.
+  isPrimary: bool, default=false
+
+  metadata: Map<String, String>?
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+
+indexes:
+  project_participant_project_idx:
+    fields: projectId
+  project_participant_role_idx:
+    fields: role
+  project_participant_status_idx:
+    fields: status
+  project_participant_identity_idx:
+    fields: identityId
+  project_participant_external_idx:
+    fields: externalId

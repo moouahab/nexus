@@ -2,7 +2,14 @@ services:
   api:
     build:
       context: ../../..
-      dockerfile: identity_server/docker/api/Dockerfile
+      dockerfile: ../../infrastructure/service-runtime/docker/serverpod-api/Dockerfile
+      additional_contexts:
+        service_runtime: ../../../../../infrastructure/service-runtime/docker/serverpod-api
+      args:
+        SERVER_PACKAGE: identity_server
+        CLIENT_PACKAGE: identity_client
+        RUNTIME_USER: identity
+        ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["development", "default", "normal", "monolith", "true"]
     ports:
       - "127.0.0.1:8080:8080"
@@ -29,7 +36,7 @@ services:
 
   postgres:
     build:
-      context: ../postgres
+      context: ../../../../../infrastructure/service-runtime/docker/postgres
     user: "0:0"
     ports:
       - "127.0.0.1:8090:5432"
@@ -51,7 +58,7 @@ services:
 
   redis:
     build:
-      context: ../redis
+      context: ../../../../../infrastructure/service-runtime/docker/redis
     user: "0:0"
     ports:
       - "127.0.0.1:8091:6379"

@@ -1,0 +1,9 @@
+enum: ProjectStatus
+serialized: byName
+default: active
+values:
+  - draft
+  - active
+  - paused
+  - archived
+  - deleted
