@@ -55,6 +55,31 @@ ensure_config_file() {
   success "$label created."
 }
 
+ensure_rsa_key_pair() {
+  if [[ -s "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE" && -s "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE" ]]; then
+    info "JWT access token RSA key pair already exists."
+    chmod 600 "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE" "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE"
+    return 0
+  fi
+
+  if ! command -v openssl >/dev/null 2>&1; then
+    error "openssl is required to generate the local JWT RSA key pair."
+    exit 1
+  fi
+
+  info "Generating local JWT access token RSA key pair..."
+  openssl genpkey \
+    -algorithm RSA \
+    -pkeyopt rsa_keygen_bits:2048 \
+    -out "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE" >/dev/null 2>&1
+  openssl rsa \
+    -pubout \
+    -in "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE" \
+    -out "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE" >/dev/null 2>&1
+  chmod 600 "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE" "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE"
+  success "JWT access token RSA key pair created."
+}
+
 prepare_local_secrets() {
   copy_examples_if_needed
   mkdir -p "$SECRETS_DIR"
@@ -67,6 +92,8 @@ prepare_local_secrets() {
   ensure_secret_file "$REDIS_PASSWORD_FILE" "Redis password"
   ensure_secret_file "$SERVICE_SECRET_FILE" "Serverpod service secret"
   ensure_secret_file "$EMAIL_SECRET_HASH_PEPPER_FILE" "Email/password hash pepper"
+  ensure_rsa_key_pair
+  ensure_config_file "$JWT_ACCESS_TOKEN_KEY_ID_FILE" "JWT access token key id" "identity-access-token-current"
   ensure_secret_file "$JWT_HMAC_PRIVATE_KEY_FILE" "JWT HMAC private key"
   ensure_secret_file "$JWT_REFRESH_HASH_PEPPER_FILE" "JWT refresh token hash pepper"
   ensure_config_file "$AUTH_ALLOWED_ORIGINS_FILE" "Auth allowed origins" ""
@@ -83,6 +110,9 @@ prepare_local_secrets() {
   require_file "$REDIS_PASSWORD_FILE"
   require_file "$SERVICE_SECRET_FILE"
   require_file "$EMAIL_SECRET_HASH_PEPPER_FILE"
+  require_file "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE"
+  require_file "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE"
+  require_file "$JWT_ACCESS_TOKEN_KEY_ID_FILE"
   require_file "$JWT_HMAC_PRIVATE_KEY_FILE"
   require_file "$JWT_REFRESH_HASH_PEPPER_FILE"
   require_file "$MAIL_FROM_ADDRESS_FILE"
@@ -105,6 +135,9 @@ Runtime secret source files:
   - secrets/redis_password
   - secrets/service_secret
   - secrets/email_secret_hash_pepper
+  - secrets/jwt_access_token_private_key_pem
+  - secrets/jwt_access_token_public_key_pem
+  - secrets/jwt_access_token_key_id
   - secrets/jwt_hmac_sha512_private_key
   - secrets/jwt_refresh_token_hash_pepper
   - secrets/auth_allowed_origins

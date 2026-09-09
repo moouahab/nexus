@@ -71,6 +71,7 @@ prepare_local_secrets() {
   require_file "$POSTGRES_PASSWORD_FILE"
   require_file "$REDIS_PASSWORD_FILE"
   require_file "$SERVICE_SECRET_FILE"
+  require_file "$IDENTITY_ACCESS_TOKEN_PUBLIC_KEY_FILE"
 }
 
 print_success_summary() {
@@ -86,6 +87,7 @@ Runtime secret source files:
   - secrets/postgres_password
   - secrets/redis_password
   - secrets/service_secret
+  - secrets/identity_access_token_public_key_pem
 
 Files rendered by Vault Agent:
   - /vault/secrets/postgres_password

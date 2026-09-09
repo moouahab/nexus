@@ -1,0 +1,37 @@
+services:
+  postgres_test:
+    profiles:
+      - test
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/postgres
+    user: "0:0"
+    ports:
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-9390}:5432"
+    configs:
+      - source: postgres_test_config
+        target: /run/config/postgres.conf
+    secrets:
+      - source: postgres_test_password
+        target: postgres_password
+    volumes:
+      - users_test_data:/var/lib/postgresql/data
+
+  redis_test:
+    profiles:
+      - test
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/redis
+    user: "0:0"
+    ports:
+      - "127.0.0.1:${REDIS_TEST_PORT:-9391}:6379"
+    secrets:
+      - source: redis_test_password
+        target: redis_password
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

@@ -1,0 +1,10 @@
+enum: UserProfileKind
+serialized: byName
+default: consultant
+values:
+  - consultant
+  - organizationMember
+  - clientReferent
+  - expert
+  - internalStaff
+

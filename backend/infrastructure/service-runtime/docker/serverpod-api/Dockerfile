@@ -5,6 +5,7 @@ ARG SERVER_PACKAGE
 ARG CLIENT_PACKAGE
 
 WORKDIR /app
+COPY --from=nexus_auth . /shared/nexus_auth
 COPY pubspec.yaml pubspec.lock ./
 COPY ${CLIENT_PACKAGE}/pubspec.yaml ${CLIENT_PACKAGE}/pubspec.yaml
 COPY ${SERVER_PACKAGE}/pubspec.yaml ${SERVER_PACKAGE}/pubspec.yaml
@@ -44,8 +45,8 @@ COPY --from=build /app/${SERVER_PACKAGE}/web/ web/
 COPY --from=build /app/${SERVER_PACKAGE}/migrations/ migrations/
 COPY --from=build /app/${SERVER_PACKAGE}/lib/src/generated/protocol.yaml lib/src/generated/protocol.yaml
 
-RUN addgroup -S ${RUNTIME_USER} \
-  && adduser -S -G ${RUNTIME_USER} -H -h /app ${RUNTIME_USER} \
+RUN getent group ${RUNTIME_USER} >/dev/null || addgroup -S ${RUNTIME_USER} \
+  && id -u ${RUNTIME_USER} >/dev/null 2>&1 || adduser -S -G ${RUNTIME_USER} -H -h /app ${RUNTIME_USER} \
   && chown -R ${RUNTIME_USER}:${RUNTIME_USER} /app
 
 EXPOSE 8080

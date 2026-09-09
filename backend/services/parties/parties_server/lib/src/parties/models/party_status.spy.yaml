@@ -1,0 +1,8 @@
+enum: PartyStatus
+serialized: byName
+default: active
+values:
+  - active
+  - inactive
+  - archived
+

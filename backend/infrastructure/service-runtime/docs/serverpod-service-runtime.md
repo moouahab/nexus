@@ -6,7 +6,9 @@ Serverpod services.
 It is used by:
 
 - `services/identity/identity_server`
+- `services/parties/parties_server`
 - `services/projects/projects_server`
+- `services/users/users_server`
 
 ## Shared Docker Images
 
@@ -94,4 +96,3 @@ Each service keeps:
 - Serverpod models, endpoints, migrations, and tests.
 
 Do not move service secrets or service business rules into this runtime.
-

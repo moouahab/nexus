@@ -1,0 +1,125 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: identity-auth-web
+    url: http://host.docker.internal:8182/auth
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-auth
+        paths:
+          - /v1/auth
+        strip_path: true
+        preserve_host: false
+        protocols:
+          - http
+          - https
+
+  - name: identity-well-known-web
+    url: http://host.docker.internal:8182/.well-known
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: well-known
+        paths:
+          - /.well-known
+        strip_path: true
+        preserve_host: false
+        protocols:
+          - http
+          - https
+
+  - name: users-api
+    url: http://host.docker.internal:8380
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-users
+        paths:
+          - /v1/users
+        strip_path: true
+        preserve_host: false
+        protocols:
+          - http
+          - https
+
+  - name: parties-api
+    url: http://host.docker.internal:8480
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-parties
+        paths:
+          - /v1/parties
+        strip_path: true
+        preserve_host: false
+        protocols:
+          - http
+          - https
+
+  - name: projects-api
+    url: http://host.docker.internal:8280
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-projects
+        paths:
+          - /v1/projects
+        strip_path: true
+        preserve_host: false
+        protocols:
+          - http
+          - https
+
+plugins:
+  - name: correlation-id
+    config:
+      header_name: x-request-id
+      generator: uuid
+      echo_downstream: true
+
+  - name: cors
+    config:
+      origins:
+        - http://localhost:3000
+        - http://localhost:5173
+        - http://localhost:8080
+        - http://127.0.0.1:3000
+        - http://127.0.0.1:5173
+        - http://127.0.0.1:8080
+        - http://identity.nexus.local:8080
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - X-Auth-Token-Transport
+        - X-CSRF-Token
+        - X-Request-Id
+      exposed_headers:
+        - X-Request-Id
+      credentials: true
+      max_age: 3600
+
+  - name: rate-limiting
+    config:
+      minute: 600
+      policy: local
+      hide_client_headers: false

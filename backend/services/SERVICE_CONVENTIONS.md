@@ -28,6 +28,7 @@ Examples:
 
 ```text
 identity -> identity database
+parties -> parties database
 projects -> projects database
 users    -> users database
 entities -> entities database
@@ -58,11 +59,13 @@ Service-specific secrets stay in that service.
 Example:
 
 - SMTP, OAuth, and JWT auth secrets belong to `identity`.
+- User profile data belongs to `users`.
+- Party, organization, and membership data belongs to `parties`.
 - Archive storage secrets belong to `projects` only when archive storage is
   implemented.
 
-`secrets/` is never shared across services. `identity/secrets/` and
-`projects/secrets/` are intentionally separate.
+`secrets/` is never shared across services. Each service keeps its own
+`secrets/` and `secrets_example/` directories.
 
 ## Inter-Service Rule
 

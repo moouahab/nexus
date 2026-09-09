@@ -97,6 +97,9 @@ The local Vault secret must contain all of these keys:
 - `redis_password`
 - `service_secret`
 - `email_secret_hash_pepper`
+- `jwt_access_token_private_key_pem`
+- `jwt_access_token_public_key_pem`
+- `jwt_access_token_key_id`
 - `jwt_hmac_sha512_private_key`
 - `jwt_refresh_token_hash_pepper`
 - `auth_allowed_origins`
@@ -107,6 +110,12 @@ The local Vault secret must contain all of these keys:
 - `smtp_port`
 - `smtp_username`
 - `smtp_password`
+
+Access tokens are signed with RS256 when `jwt_access_token_private_key_pem`
+and `jwt_access_token_public_key_pem` are configured. The public key is exposed
+through `/.well-known/jwks.json` so other services and Kong can validate tokens
+without receiving signing material. `jwt_hmac_sha512_private_key` remains as a
+legacy fallback during migration.
 
 OAuth provider keys are prepared but disabled by default:
 

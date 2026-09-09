@@ -1,10 +1,36 @@
 import 'package:serverpod/serverpod.dart';
+import 'package:nexus_auth/nexus_auth.dart';
 
 import '../generated/protocol.dart';
 import 'application/project_registry_service.dart';
 
 class ProjectEndpoint extends Endpoint {
   static const _registry = ProjectRegistryService();
+  static const _auth = AuthContextResolver();
+
+  Future<Project> createMyProject(
+    Session session, {
+    required String slug,
+    required String name,
+    String? summary,
+    ProjectVisibility visibility = ProjectVisibility.private,
+    String? workspacePath,
+    List<String>? tags,
+    Map<String, String>? metadata,
+  }) {
+    final auth = _auth.requireContext(session);
+    return _registry.createProject(
+      session,
+      slug: slug,
+      name: name,
+      summary: summary,
+      visibility: visibility,
+      ownerIdentityId: auth.identityId,
+      workspacePath: workspacePath,
+      tags: tags,
+      metadata: metadata,
+    );
+  }
 
   Future<Project> createProject(
     Session session, {
@@ -17,13 +43,14 @@ class ProjectEndpoint extends Endpoint {
     List<String>? tags,
     Map<String, String>? metadata,
   }) {
+    final auth = _authContextForHttp(session);
     return _registry.createProject(
       session,
       slug: slug,
       name: name,
       summary: summary,
       visibility: visibility,
-      ownerIdentityId: ownerIdentityId,
+      ownerIdentityId: auth?.identityId ?? ownerIdentityId,
       workspacePath: workspacePath,
       tags: tags,
       metadata: metadata,
@@ -36,6 +63,7 @@ class ProjectEndpoint extends Endpoint {
     int limit = 50,
     int offset = 0,
   }) {
+    _ensureAuthenticatedHttp(session);
     return _registry.listProjects(
       session,
       status: status,
@@ -45,10 +73,12 @@ class ProjectEndpoint extends Endpoint {
   }
 
   Future<Project> getProject(Session session, UuidValue projectId) {
+    _ensureAuthenticatedHttp(session);
     return _registry.getProject(session, projectId);
   }
 
   Future<Project> getProjectBySlug(Session session, String slug) {
+    _ensureAuthenticatedHttp(session);
     return _registry.getProjectBySlug(session, slug);
   }
 
@@ -63,6 +93,7 @@ class ProjectEndpoint extends Endpoint {
     Map<String, String>? metadata,
     UuidValue? actorIdentityId,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.updateProjectProfile(
       session,
       projectId: projectId,
@@ -72,7 +103,7 @@ class ProjectEndpoint extends Endpoint {
       workspacePath: workspacePath,
       tags: tags,
       metadata: metadata,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
     );
   }
 
@@ -83,11 +114,12 @@ class ProjectEndpoint extends Endpoint {
     UuidValue? actorIdentityId,
     String? reason,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.changeStatus(
       session,
       projectId: projectId,
       status: status,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
       reason: reason,
     );
   }
@@ -100,12 +132,13 @@ class ProjectEndpoint extends Endpoint {
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.archiveProject(
       session,
       projectId: projectId,
       archivePath: archivePath,
       reason: reason,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
       metadata: metadata,
     );
   }
@@ -116,10 +149,11 @@ class ProjectEndpoint extends Endpoint {
     UuidValue? actorIdentityId,
     String? reason,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.restoreProject(
       session,
       projectId: projectId,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
       reason: reason,
     );
   }
@@ -135,6 +169,7 @@ class ProjectEndpoint extends Endpoint {
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.assignProjectMember(
       session,
       projectId: projectId,
@@ -143,7 +178,7 @@ class ProjectEndpoint extends Endpoint {
       displayName: displayName,
       email: email,
       isPrimary: isPrimary,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
       metadata: metadata,
     );
   }
@@ -160,6 +195,7 @@ class ProjectEndpoint extends Endpoint {
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.setProjectClient(
       session,
       projectId: projectId,
@@ -169,7 +205,7 @@ class ProjectEndpoint extends Endpoint {
       email: email,
       phone: phone,
       notes: notes,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
       metadata: metadata,
     );
   }
@@ -186,6 +222,7 @@ class ProjectEndpoint extends Endpoint {
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.setClientReferent(
       session,
       projectId: projectId,
@@ -195,7 +232,7 @@ class ProjectEndpoint extends Endpoint {
       email: email,
       phone: phone,
       notes: notes,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
       metadata: metadata,
     );
   }
@@ -206,6 +243,7 @@ class ProjectEndpoint extends Endpoint {
     ProjectParticipantRole? role,
     ProjectParticipantStatus? status,
   }) {
+    _ensureAuthenticatedHttp(session);
     return _registry.listParticipants(
       session,
       projectId: projectId,
@@ -219,10 +257,11 @@ class ProjectEndpoint extends Endpoint {
     required UuidValue participantId,
     UuidValue? actorIdentityId,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.removeParticipant(
       session,
       participantId: participantId,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
     );
   }
 
@@ -237,6 +276,7 @@ class ProjectEndpoint extends Endpoint {
     Map<String, String>? metadata,
     UuidValue? actorIdentityId,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.linkResource(
       session,
       projectId: projectId,
@@ -246,7 +286,7 @@ class ProjectEndpoint extends Endpoint {
       label: label,
       uri: uri,
       metadata: metadata,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
     );
   }
 
@@ -255,10 +295,11 @@ class ProjectEndpoint extends Endpoint {
     required UuidValue linkId,
     UuidValue? actorIdentityId,
   }) {
+    final actor = _actorIdentityId(session, actorIdentityId);
     return _registry.detachLink(
       session,
       linkId: linkId,
-      actorIdentityId: actorIdentityId,
+      actorIdentityId: actor,
     );
   }
 
@@ -268,6 +309,7 @@ class ProjectEndpoint extends Endpoint {
     ProjectLinkKind? kind,
     ProjectLinkStatus? status,
   }) {
+    _ensureAuthenticatedHttp(session);
     return _registry.listLinks(
       session,
       projectId: projectId,
@@ -282,11 +324,28 @@ class ProjectEndpoint extends Endpoint {
     int limit = 100,
     int offset = 0,
   }) {
+    _ensureAuthenticatedHttp(session);
     return _registry.listEvents(
       session,
       projectId: projectId,
       limit: limit,
       offset: offset,
     );
+  }
+
+  AuthContext? _authContextForHttp(Session session) {
+    if (session.request == null) return null;
+    return _auth.requireContext(session);
+  }
+
+  UuidValue? _actorIdentityId(
+    Session session,
+    UuidValue? internalActorIdentityId,
+  ) {
+    return _authContextForHttp(session)?.identityId ?? internalActorIdentityId;
+  }
+
+  void _ensureAuthenticatedHttp(Session session) {
+    _authContextForHttp(session);
   }
 }

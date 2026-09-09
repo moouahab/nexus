@@ -7,7 +7,9 @@ infrastructure boundaries.
 backend/
 ├── services/
 │   ├── identity/
-│   └── projects/
+│   ├── parties/
+│   ├── projects/
+│   └── users/
 ├── shared/
 └── infrastructure/
 ```

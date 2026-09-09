@@ -1,0 +1,7 @@
+user:
+  - completeMyProfile:
+  - getMyProfile:
+  - completeProfile:
+  - getProfile:
+  - getProfileByIdentity:
+  - setPrimaryParty:

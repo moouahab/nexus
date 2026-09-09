@@ -49,6 +49,7 @@ write_projects_runtime_secrets() {
     postgres_password="$(cat "$POSTGRES_PASSWORD_FILE")" \
     redis_password="$(cat "$REDIS_PASSWORD_FILE")" \
     service_secret="$(cat "$SERVICE_SECRET_FILE")" \
+    identity_access_token_public_key_pem="$(cat "$IDENTITY_ACCESS_TOKEN_PUBLIC_KEY_FILE")" \
     >/dev/null
   success "Runtime secrets written to Vault."
 }

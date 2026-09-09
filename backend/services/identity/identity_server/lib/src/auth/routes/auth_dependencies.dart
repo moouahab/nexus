@@ -8,6 +8,7 @@ import '../application/services/require_auth.dart';
 import '../application/use_cases/change_email_use_case.dart';
 import '../application/use_cases/change_password_use_case.dart';
 import '../application/interfaces/auth_cookie_service.dart';
+import '../application/interfaces/access_token_service.dart';
 import '../application/interfaces/email_verification_sender.dart';
 import '../application/interfaces/oauth_provider_verifier.dart';
 import '../application/interfaces/password_reset_sender.dart';
@@ -43,6 +44,7 @@ import '../infrastructure/security/hmac_sha256_access_token_service.dart';
 import '../infrastructure/security/numeric_verification_code_generator.dart';
 import '../infrastructure/security/redis_login_attempt_limiter.dart';
 import '../infrastructure/security/redis_otp_rate_limiter.dart';
+import '../infrastructure/security/rs256_access_token_service.dart';
 import '../infrastructure/security/secure_refresh_token_secret_service.dart';
 import '../infrastructure/validation/default_email_policy.dart';
 import '../infrastructure/validation/default_username_policy.dart';
@@ -71,10 +73,6 @@ class AuthDependencies {
       session,
       'emailSecretHashPepper',
     );
-    final jwtSecret = _requiredPassword(
-      session,
-      'jwtHmacSha512PrivateKey',
-    );
     final refreshPepper = _requiredPassword(
       session,
       'jwtRefreshTokenHashPepper',
@@ -94,7 +92,7 @@ class AuthDependencies {
     const emailPolicy = DefaultEmailPolicy();
     final passwordHasher = Argon2PasswordHasher(pepper: passwordPepper);
     const passwordPolicy = DefaultPasswordPolicy();
-    final accessTokenService = HmacSha256AccessTokenService(secret: jwtSecret);
+    final accessTokenService = accessTokenServiceFromSession(session);
     final secretHasher = Argon2SecretHasher(pepper: refreshPepper);
     final emailVerificationCodeHasher = Argon2SecretHasher(
       pepper: refreshPepper,
@@ -221,6 +219,31 @@ class AuthDependencies {
   final AuthCookieService authCookieService;
   final EmailVerificationService emailVerificationService;
   final PasswordResetService passwordResetService;
+
+  static AccessTokenService accessTokenServiceFromSession(Session session) {
+    final privateKey = _optionalPassword(
+      session,
+      'jwtAccessTokenPrivateKeyPem',
+    );
+    final publicKey = _optionalPassword(session, 'jwtAccessTokenPublicKeyPem');
+    final keyId =
+        _optionalPassword(session, 'jwtAccessTokenKeyId') ??
+        'identity-access-token-current';
+
+    if (privateKey != null && publicKey != null) {
+      return Rs256AccessTokenService(
+        privateKeyPem: privateKey,
+        publicKeyPem: publicKey,
+        keyId: keyId,
+      );
+    }
+
+    final hmacSecret = _requiredPassword(
+      session,
+      'jwtHmacSha512PrivateKey',
+    );
+    return HmacSha256AccessTokenService(secret: hmacSecret);
+  }
 
   static String _requiredPassword(Session session, String key) {
     final value = session.passwords[key];

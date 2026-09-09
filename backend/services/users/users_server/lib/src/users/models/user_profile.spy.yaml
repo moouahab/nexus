@@ -1,0 +1,34 @@
+### Functional NEXUS profile for one connected technical identity.
+class: UserProfile
+table: user_profile
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+
+  ### Identity service UUID. Authentication remains owned by identity.
+  identityId: UuidValue
+
+  displayName: String
+  kind: UserProfileKind, default=consultant
+  status: UserProfileStatus, default=active
+
+  ### Preferred party context UUID owned by the parties service, when one exists.
+  primaryPartyId: UuidValue?
+
+  email: String?
+  avatarUri: String?
+  bio: String?
+  locale: String?
+  timezone: String?
+  metadata: Map<String, String>?
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+
+indexes:
+  user_profile_identity_idx:
+    fields: identityId
+    unique: true
+  user_profile_status_idx:
+    fields: status
+  user_profile_primary_party_idx:
+    fields: primaryPartyId

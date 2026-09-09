@@ -72,6 +72,9 @@ postgres_password
 redis_password
 service_secret
 email_secret_hash_pepper
+jwt_access_token_private_key_pem
+jwt_access_token_public_key_pem
+jwt_access_token_key_id
 jwt_hmac_sha512_private_key
 jwt_refresh_token_hash_pepper
 ```
@@ -84,6 +87,9 @@ vault kv put secret/nexus/identity/production \
   redis_password='<production-redis-password>' \
   service_secret='<production-serverpod-service-secret>' \
   email_secret_hash_pepper='<production-email-secret-hash-pepper>' \
+  jwt_access_token_private_key_pem='<production-rs256-private-key-pem>' \
+  jwt_access_token_public_key_pem='<production-rs256-public-key-pem>' \
+  jwt_access_token_key_id='identity-access-token-2026-09' \
   jwt_hmac_sha512_private_key='<production-jwt-hmac-sha512-private-key>' \
   jwt_refresh_token_hash_pepper='<production-jwt-refresh-token-hash-pepper>'
 ```

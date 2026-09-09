@@ -6,6 +6,7 @@ import 'package:identity_server/src/auth/constants/auth_token_types.dart';
 import 'package:identity_server/src/auth/domain/auth_claims.dart';
 import 'package:identity_server/src/auth/infrastructure/security/hmac_sha256_access_token_service.dart';
 import 'package:identity_server/src/generated/protocol.dart' as protocol;
+import 'package:nexus_auth/nexus_auth.dart' as nexus_auth;
 import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 
@@ -40,6 +41,26 @@ void main() {
       expect(claims.tokenType, AuthTokenTypes.access);
       expect(claims.emailVerified, isTrue);
       expect(claims.authenticationMethods, [protocol.AuthProvider.username]);
+    });
+
+    test('creates tokens compatible with shared NEXUS auth verifier', () {
+      final token = service.createAccessToken(
+        AuthClaims.access(
+          identityId: identityId,
+          sessionId: sessionId,
+          emailVerified: true,
+          authenticationMethods: [protocol.AuthProvider.username],
+        ),
+      );
+
+      final context = nexus_auth.HmacSha256AccessTokenVerifier(
+        secret: 'test-secret',
+      ).verify(token);
+
+      expect(context.identityId, identityId);
+      expect(context.authSessionId, sessionId);
+      expect(context.emailVerified, isTrue);
+      expect(context.authenticationMethods, ['username']);
     });
 
     test('rejects malformed tokens', () {

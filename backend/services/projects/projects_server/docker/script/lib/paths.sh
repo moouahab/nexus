@@ -15,6 +15,7 @@ readonly SECRET_ID_FILE="$SECRETS_DIR/vault_secret_id"
 readonly POSTGRES_PASSWORD_FILE="$SECRETS_DIR/postgres_password"
 readonly REDIS_PASSWORD_FILE="$SECRETS_DIR/redis_password"
 readonly SERVICE_SECRET_FILE="$SECRETS_DIR/service_secret"
+readonly IDENTITY_ACCESS_TOKEN_PUBLIC_KEY_FILE="$SECRETS_DIR/identity_access_token_public_key_pem"
 
 setup_environment() {
   cd "$SERVER_ROOT"

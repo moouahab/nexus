@@ -1,0 +1,7 @@
+party:
+  - createParty:
+  - createPartyWithOwner:
+  - getParty:
+  - listParties:
+  - joinParty:
+  - listMemberships:

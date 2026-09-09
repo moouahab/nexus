@@ -50,6 +50,9 @@ write_identity_runtime_secrets() {
     redis_password="$(cat "$REDIS_PASSWORD_FILE")" \
     service_secret="$(cat "$SERVICE_SECRET_FILE")" \
     email_secret_hash_pepper="$(cat "$EMAIL_SECRET_HASH_PEPPER_FILE")" \
+    jwt_access_token_private_key_pem="$(cat "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE")" \
+    jwt_access_token_public_key_pem="$(cat "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE")" \
+    jwt_access_token_key_id="$(read_secret_file_or_default "$JWT_ACCESS_TOKEN_KEY_ID_FILE" "identity-access-token-current")" \
     jwt_hmac_sha512_private_key="$(cat "$JWT_HMAC_PRIVATE_KEY_FILE")" \
     jwt_refresh_token_hash_pepper="$(cat "$JWT_REFRESH_HASH_PEPPER_FILE")" \
     auth_allowed_origins="$(read_secret_file_or_default "$AUTH_ALLOWED_ORIGINS_FILE" "")" \

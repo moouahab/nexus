@@ -1,0 +1,60 @@
+{
+	email ops@nexus.example
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
+
+(auth_cors) {
+	@allowed_auth_origin header Origin https://app.nexus.example
+	@auth_preflight {
+		method OPTIONS
+		path /auth/*
+		header Origin https://app.nexus.example
+	}
+
+	handle @auth_preflight {
+		header Access-Control-Allow-Origin "{http.request.header.Origin}"
+		header Access-Control-Allow-Credentials "true"
+		header Access-Control-Allow-Methods "POST, GET, OPTIONS"
+		header Access-Control-Allow-Headers "Content-Type, X-CSRF-Token, X-Auth-Token-Transport, Authorization"
+		header Access-Control-Max-Age "600"
+		respond "" 204
+	}
+
+	header @allowed_auth_origin Access-Control-Allow-Origin "{http.request.header.Origin}"
+	header @allowed_auth_origin Access-Control-Allow-Credentials "true"
+	header @allowed_auth_origin Vary "Origin"
+}
+
+api.nexus.example {
+	import security_headers
+	import auth_cors
+
+	reverse_proxy 127.0.0.1:8080 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-For {remote_host}
+		transport http {
+			read_timeout 30s
+			write_timeout 30s
+		}
+	}
+}
+
+app.nexus.example {
+	import security_headers
+
+	reverse_proxy 127.0.0.1:8082 {
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-For {remote_host}
+	}
+}

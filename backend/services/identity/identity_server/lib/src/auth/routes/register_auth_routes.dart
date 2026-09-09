@@ -5,6 +5,7 @@ import 'auth_change_password_route.dart';
 import 'auth_finish_password_reset_route.dart';
 import 'auth_login_route.dart';
 import 'auth_logout_route.dart';
+import 'auth_jwks_route.dart';
 import 'auth_me_route.dart';
 import 'auth_oauth_login_route.dart';
 import 'auth_resend_email_verification_route.dart';
@@ -48,6 +49,10 @@ void registerAuthRoutes(Serverpod pod) {
     AuthRouteDefinition(
       path: '/auth/me',
       route: AuthMeRoute(),
+    ),
+    AuthRouteDefinition(
+      path: '/.well-known/jwks.json',
+      route: AuthJwksRoute(),
     ),
     AuthRouteDefinition(
       path: '/auth/email/verify',

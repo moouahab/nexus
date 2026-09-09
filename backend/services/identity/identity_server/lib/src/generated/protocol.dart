@@ -23,7 +23,6 @@ import 'auth/models/identity_provider.dart' as _i9;
 import 'auth/models/identity_status.dart' as _i10;
 import 'auth/models/password_credential.dart' as _i11;
 import 'auth/models/password_reset_code.dart' as _i12;
-import 'greetings/greeting.dart' as _i13;
 export 'auth/models/auth_provider.dart';
 export 'auth/models/auth_refresh_token.dart';
 export 'auth/models/auth_session.dart';
@@ -33,7 +32,6 @@ export 'auth/models/identity_provider.dart';
 export 'auth/models/identity_status.dart';
 export 'auth/models/password_credential.dart';
 export 'auth/models/password_reset_code.dart';
-export 'greetings/greeting.dart';
 
 class Protocol extends _i1.SerializationManagerServer {
   Protocol._();
@@ -872,9 +870,6 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i12.PasswordResetCode) {
       return _i12.PasswordResetCode.fromJson(data) as T;
     }
-    if (t == _i13.Greeting) {
-      return _i13.Greeting.fromJson(data) as T;
-    }
     if (t == _i1.getType<_i4.AuthProvider?>()) {
       return (data != null ? _i4.AuthProvider.fromJson(data) : null) as T;
     }
@@ -904,9 +899,6 @@ class Protocol extends _i1.SerializationManagerServer {
     if (t == _i1.getType<_i12.PasswordResetCode?>()) {
       return (data != null ? _i12.PasswordResetCode.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i13.Greeting?>()) {
-      return (data != null ? _i13.Greeting.fromJson(data) : null) as T;
-    }
     try {
       return _i3.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
@@ -927,7 +919,6 @@ class Protocol extends _i1.SerializationManagerServer {
       _i10.IdentityStatus => 'IdentityStatus',
       _i11.PasswordCredential => 'PasswordCredential',
       _i12.PasswordResetCode => 'PasswordResetCode',
-      _i13.Greeting => 'Greeting',
       _ => null,
     };
   }
@@ -960,8 +951,6 @@ class Protocol extends _i1.SerializationManagerServer {
         return 'PasswordCredential';
       case _i12.PasswordResetCode():
         return 'PasswordResetCode';
-      case _i13.Greeting():
-        return 'Greeting';
     }
     className = _i2.Protocol().getClassNameForObject(data);
     if (className != null) {
@@ -1006,9 +995,6 @@ class Protocol extends _i1.SerializationManagerServer {
     }
     if (dataClassName == 'PasswordResetCode') {
       return deserialize<_i12.PasswordResetCode>(data['data']);
-    }
-    if (dataClassName == 'Greeting') {
-      return deserialize<_i13.Greeting>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);

@@ -12,46 +12,27 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
 import 'dart:async' as _i2;
-import 'package:projects_client/src/protocol/greetings/greeting.dart' as _i3;
 import 'package:projects_client/src/protocol/projects/models/project.dart'
-    as _i4;
+    as _i3;
 import 'package:projects_client/src/protocol/projects/models/project_visibility.dart'
-    as _i5;
+    as _i4;
 import 'package:projects_client/src/protocol/projects/models/project_status.dart'
-    as _i6;
+    as _i5;
 import 'package:projects_client/src/protocol/projects/models/project_participant.dart'
-    as _i7;
+    as _i6;
 import 'package:projects_client/src/protocol/projects/models/project_participant_role.dart'
-    as _i8;
+    as _i7;
 import 'package:projects_client/src/protocol/projects/models/project_participant_status.dart'
-    as _i9;
+    as _i8;
 import 'package:projects_client/src/protocol/projects/models/project_link.dart'
-    as _i10;
+    as _i9;
 import 'package:projects_client/src/protocol/projects/models/project_link_kind.dart'
-    as _i11;
+    as _i10;
 import 'package:projects_client/src/protocol/projects/models/project_link_status.dart'
-    as _i12;
+    as _i11;
 import 'package:projects_client/src/protocol/projects/models/project_event.dart'
-    as _i13;
-import 'protocol.dart' as _i14;
-
-/// This is an example endpoint that returns a greeting message through
-/// its [hello] method.
-/// {@category Endpoint}
-class EndpointGreeting extends _i1.EndpointRef {
-  EndpointGreeting(_i1.EndpointCaller caller) : super(caller);
-
-  @override
-  String get name => 'greeting';
-
-  /// Returns a personalized greeting message: "Hello {name}".
-  _i2.Future<_i3.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i3.Greeting>(
-        'greeting',
-        'hello',
-        {'name': name},
-      );
-}
+    as _i12;
+import 'protocol.dart' as _i13;
 
 /// {@category Endpoint}
 class EndpointProject extends _i1.EndpointRef {
@@ -60,16 +41,38 @@ class EndpointProject extends _i1.EndpointRef {
   @override
   String get name => 'project';
 
-  _i2.Future<_i4.Project> createProject({
+  _i2.Future<_i3.Project> createMyProject({
     required String slug,
     required String name,
     String? summary,
-    required _i5.ProjectVisibility visibility,
+    required _i4.ProjectVisibility visibility,
+    String? workspacePath,
+    List<String>? tags,
+    Map<String, String>? metadata,
+  }) => caller.callServerEndpoint<_i3.Project>(
+    'project',
+    'createMyProject',
+    {
+      'slug': slug,
+      'name': name,
+      'summary': summary,
+      'visibility': visibility,
+      'workspacePath': workspacePath,
+      'tags': tags,
+      'metadata': metadata,
+    },
+  );
+
+  _i2.Future<_i3.Project> createProject({
+    required String slug,
+    required String name,
+    String? summary,
+    required _i4.ProjectVisibility visibility,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     List<String>? tags,
     Map<String, String>? metadata,
-  }) => caller.callServerEndpoint<_i4.Project>(
+  }) => caller.callServerEndpoint<_i3.Project>(
     'project',
     'createProject',
     {
@@ -84,11 +87,11 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<List<_i4.Project>> listProjects({
-    _i6.ProjectStatus? status,
+  _i2.Future<List<_i3.Project>> listProjects({
+    _i5.ProjectStatus? status,
     required int limit,
     required int offset,
-  }) => caller.callServerEndpoint<List<_i4.Project>>(
+  }) => caller.callServerEndpoint<List<_i3.Project>>(
     'project',
     'listProjects',
     {
@@ -98,30 +101,30 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i4.Project> getProject(_i1.UuidValue projectId) =>
-      caller.callServerEndpoint<_i4.Project>(
+  _i2.Future<_i3.Project> getProject(_i1.UuidValue projectId) =>
+      caller.callServerEndpoint<_i3.Project>(
         'project',
         'getProject',
         {'projectId': projectId},
       );
 
-  _i2.Future<_i4.Project> getProjectBySlug(String slug) =>
-      caller.callServerEndpoint<_i4.Project>(
+  _i2.Future<_i3.Project> getProjectBySlug(String slug) =>
+      caller.callServerEndpoint<_i3.Project>(
         'project',
         'getProjectBySlug',
         {'slug': slug},
       );
 
-  _i2.Future<_i4.Project> updateProjectProfile({
+  _i2.Future<_i3.Project> updateProjectProfile({
     required _i1.UuidValue projectId,
     String? name,
     String? summary,
-    _i5.ProjectVisibility? visibility,
+    _i4.ProjectVisibility? visibility,
     String? workspacePath,
     List<String>? tags,
     Map<String, String>? metadata,
     _i1.UuidValue? actorIdentityId,
-  }) => caller.callServerEndpoint<_i4.Project>(
+  }) => caller.callServerEndpoint<_i3.Project>(
     'project',
     'updateProjectProfile',
     {
@@ -136,12 +139,12 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i4.Project> changeProjectStatus({
+  _i2.Future<_i3.Project> changeProjectStatus({
     required _i1.UuidValue projectId,
-    required _i6.ProjectStatus status,
+    required _i5.ProjectStatus status,
     _i1.UuidValue? actorIdentityId,
     String? reason,
-  }) => caller.callServerEndpoint<_i4.Project>(
+  }) => caller.callServerEndpoint<_i3.Project>(
     'project',
     'changeProjectStatus',
     {
@@ -152,13 +155,13 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i4.Project> archiveProject({
+  _i2.Future<_i3.Project> archiveProject({
     required _i1.UuidValue projectId,
     String? archivePath,
     String? reason,
     _i1.UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) => caller.callServerEndpoint<_i4.Project>(
+  }) => caller.callServerEndpoint<_i3.Project>(
     'project',
     'archiveProject',
     {
@@ -170,11 +173,11 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i4.Project> restoreProject({
+  _i2.Future<_i3.Project> restoreProject({
     required _i1.UuidValue projectId,
     _i1.UuidValue? actorIdentityId,
     String? reason,
-  }) => caller.callServerEndpoint<_i4.Project>(
+  }) => caller.callServerEndpoint<_i3.Project>(
     'project',
     'restoreProject',
     {
@@ -184,16 +187,16 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i7.ProjectParticipant> assignProjectMember({
+  _i2.Future<_i6.ProjectParticipant> assignProjectMember({
     required _i1.UuidValue projectId,
-    required _i8.ProjectParticipantRole role,
+    required _i7.ProjectParticipantRole role,
     _i1.UuidValue? identityId,
     String? displayName,
     String? email,
     required bool isPrimary,
     _i1.UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) => caller.callServerEndpoint<_i7.ProjectParticipant>(
+  }) => caller.callServerEndpoint<_i6.ProjectParticipant>(
     'project',
     'assignProjectMember',
     {
@@ -208,7 +211,7 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i7.ProjectParticipant> setProjectClient({
+  _i2.Future<_i6.ProjectParticipant> setProjectClient({
     required _i1.UuidValue projectId,
     required String organizationName,
     String? externalId,
@@ -218,7 +221,7 @@ class EndpointProject extends _i1.EndpointRef {
     String? notes,
     _i1.UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) => caller.callServerEndpoint<_i7.ProjectParticipant>(
+  }) => caller.callServerEndpoint<_i6.ProjectParticipant>(
     'project',
     'setProjectClient',
     {
@@ -234,7 +237,7 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i7.ProjectParticipant> setClientReferent({
+  _i2.Future<_i6.ProjectParticipant> setClientReferent({
     required _i1.UuidValue projectId,
     required String displayName,
     String? externalId,
@@ -244,7 +247,7 @@ class EndpointProject extends _i1.EndpointRef {
     String? notes,
     _i1.UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) => caller.callServerEndpoint<_i7.ProjectParticipant>(
+  }) => caller.callServerEndpoint<_i6.ProjectParticipant>(
     'project',
     'setClientReferent',
     {
@@ -260,11 +263,11 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<List<_i7.ProjectParticipant>> listParticipants({
+  _i2.Future<List<_i6.ProjectParticipant>> listParticipants({
     required _i1.UuidValue projectId,
-    _i8.ProjectParticipantRole? role,
-    _i9.ProjectParticipantStatus? status,
-  }) => caller.callServerEndpoint<List<_i7.ProjectParticipant>>(
+    _i7.ProjectParticipantRole? role,
+    _i8.ProjectParticipantStatus? status,
+  }) => caller.callServerEndpoint<List<_i6.ProjectParticipant>>(
     'project',
     'listParticipants',
     {
@@ -274,10 +277,10 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i7.ProjectParticipant> removeParticipant({
+  _i2.Future<_i6.ProjectParticipant> removeParticipant({
     required _i1.UuidValue participantId,
     _i1.UuidValue? actorIdentityId,
-  }) => caller.callServerEndpoint<_i7.ProjectParticipant>(
+  }) => caller.callServerEndpoint<_i6.ProjectParticipant>(
     'project',
     'removeParticipant',
     {
@@ -286,16 +289,16 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i10.ProjectLink> linkResource({
+  _i2.Future<_i9.ProjectLink> linkResource({
     required _i1.UuidValue projectId,
-    required _i11.ProjectLinkKind kind,
+    required _i10.ProjectLinkKind kind,
     required String externalId,
     String? service,
     String? label,
     String? uri,
     Map<String, String>? metadata,
     _i1.UuidValue? actorIdentityId,
-  }) => caller.callServerEndpoint<_i10.ProjectLink>(
+  }) => caller.callServerEndpoint<_i9.ProjectLink>(
     'project',
     'linkResource',
     {
@@ -310,10 +313,10 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<_i10.ProjectLink> detachLink({
+  _i2.Future<_i9.ProjectLink> detachLink({
     required _i1.UuidValue linkId,
     _i1.UuidValue? actorIdentityId,
-  }) => caller.callServerEndpoint<_i10.ProjectLink>(
+  }) => caller.callServerEndpoint<_i9.ProjectLink>(
     'project',
     'detachLink',
     {
@@ -322,11 +325,11 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<List<_i10.ProjectLink>> listLinks({
+  _i2.Future<List<_i9.ProjectLink>> listLinks({
     required _i1.UuidValue projectId,
-    _i11.ProjectLinkKind? kind,
-    _i12.ProjectLinkStatus? status,
-  }) => caller.callServerEndpoint<List<_i10.ProjectLink>>(
+    _i10.ProjectLinkKind? kind,
+    _i11.ProjectLinkStatus? status,
+  }) => caller.callServerEndpoint<List<_i9.ProjectLink>>(
     'project',
     'listLinks',
     {
@@ -336,11 +339,11 @@ class EndpointProject extends _i1.EndpointRef {
     },
   );
 
-  _i2.Future<List<_i13.ProjectEvent>> listEvents({
+  _i2.Future<List<_i12.ProjectEvent>> listEvents({
     required _i1.UuidValue projectId,
     required int limit,
     required int offset,
-  }) => caller.callServerEndpoint<List<_i13.ProjectEvent>>(
+  }) => caller.callServerEndpoint<List<_i12.ProjectEvent>>(
     'project',
     'listEvents',
     {
@@ -371,7 +374,7 @@ class Client extends _i1.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i14.Protocol(),
+         _i13.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -380,19 +383,13 @@ class Client extends _i1.ServerpodClientShared {
          disconnectStreamsOnLostInternetConnection:
              disconnectStreamsOnLostInternetConnection,
        ) {
-    greeting = EndpointGreeting(this);
     project = EndpointProject(this);
   }
-
-  late final EndpointGreeting greeting;
 
   late final EndpointProject project;
 
   @override
-  Map<String, _i1.EndpointRef> get endpointRefLookup => {
-    'greeting': greeting,
-    'project': project,
-  };
+  Map<String, _i1.EndpointRef> get endpointRefLookup => {'project': project};
 
   @override
   Map<String, _i1.ModuleEndpointCaller> get moduleLookup => {};

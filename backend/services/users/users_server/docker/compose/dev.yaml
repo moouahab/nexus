@@ -1,0 +1,78 @@
+services:
+  api:
+    build:
+      context: ../../..
+      dockerfile: ../../infrastructure/service-runtime/docker/serverpod-api/Dockerfile
+      additional_contexts:
+        service_runtime: ../../../../../infrastructure/service-runtime/docker/serverpod-api
+        nexus_auth: ../../../../../shared/nexus_auth
+      args:
+        SERVER_PACKAGE: users_server
+        CLIENT_PACKAGE: users_client
+        RUNTIME_USER: users
+        ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
+    command: ["development", "default", "normal", "monolith", "true"]
+    ports:
+      - "127.0.0.1:8380:8080"
+      - "127.0.0.1:8381:8081"
+      - "127.0.0.1:8382:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      vault_agent:
+        condition: service_healthy
+    volumes:
+      - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
+      - users_vault_secrets:/run/vault/secrets:ro
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  postgres:
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/postgres
+    user: "0:0"
+    ports:
+      - "127.0.0.1:8390:5432"
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    configs:
+      - source: postgres_dev_config
+        target: /run/config/postgres.conf
+    volumes:
+      - users_data:/var/lib/postgresql/data
+      - users_vault_secrets:/run/vault/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/redis
+    user: "0:0"
+    ports:
+      - "127.0.0.1:8391:6379"
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    volumes:
+      - users_vault_secrets:/run/vault/secrets:ro
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$(cat /run/vault/secrets/redis_password)\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

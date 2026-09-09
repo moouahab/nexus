@@ -12,28 +12,26 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 import 'package:serverpod/protocol.dart' as _i2;
-import 'greetings/greeting.dart' as _i3;
-import 'projects/models/project.dart' as _i4;
-import 'projects/models/project_archive_entry.dart' as _i5;
-import 'projects/models/project_event.dart' as _i6;
-import 'projects/models/project_event_kind.dart' as _i7;
-import 'projects/models/project_link.dart' as _i8;
-import 'projects/models/project_link_kind.dart' as _i9;
-import 'projects/models/project_link_status.dart' as _i10;
-import 'projects/models/project_participant.dart' as _i11;
-import 'projects/models/project_participant_role.dart' as _i12;
-import 'projects/models/project_participant_status.dart' as _i13;
-import 'projects/models/project_status.dart' as _i14;
-import 'projects/models/project_visibility.dart' as _i15;
+import 'projects/models/project.dart' as _i3;
+import 'projects/models/project_archive_entry.dart' as _i4;
+import 'projects/models/project_event.dart' as _i5;
+import 'projects/models/project_event_kind.dart' as _i6;
+import 'projects/models/project_link.dart' as _i7;
+import 'projects/models/project_link_kind.dart' as _i8;
+import 'projects/models/project_link_status.dart' as _i9;
+import 'projects/models/project_participant.dart' as _i10;
+import 'projects/models/project_participant_role.dart' as _i11;
+import 'projects/models/project_participant_status.dart' as _i12;
+import 'projects/models/project_status.dart' as _i13;
+import 'projects/models/project_visibility.dart' as _i14;
 import 'package:projects_server/src/generated/projects/models/project.dart'
-    as _i16;
+    as _i15;
 import 'package:projects_server/src/generated/projects/models/project_participant.dart'
-    as _i17;
+    as _i16;
 import 'package:projects_server/src/generated/projects/models/project_link.dart'
-    as _i18;
+    as _i17;
 import 'package:projects_server/src/generated/projects/models/project_event.dart'
-    as _i19;
-export 'greetings/greeting.dart';
+    as _i18;
 export 'projects/models/project.dart';
 export 'projects/models/project_archive_entry.dart';
 export 'projects/models/project_event.dart';
@@ -873,89 +871,83 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
 
-    if (t == _i3.Greeting) {
-      return _i3.Greeting.fromJson(data) as T;
+    if (t == _i3.Project) {
+      return _i3.Project.fromJson(data) as T;
     }
-    if (t == _i4.Project) {
-      return _i4.Project.fromJson(data) as T;
+    if (t == _i4.ProjectArchiveEntry) {
+      return _i4.ProjectArchiveEntry.fromJson(data) as T;
     }
-    if (t == _i5.ProjectArchiveEntry) {
-      return _i5.ProjectArchiveEntry.fromJson(data) as T;
+    if (t == _i5.ProjectEvent) {
+      return _i5.ProjectEvent.fromJson(data) as T;
     }
-    if (t == _i6.ProjectEvent) {
-      return _i6.ProjectEvent.fromJson(data) as T;
+    if (t == _i6.ProjectEventKind) {
+      return _i6.ProjectEventKind.fromJson(data) as T;
     }
-    if (t == _i7.ProjectEventKind) {
-      return _i7.ProjectEventKind.fromJson(data) as T;
+    if (t == _i7.ProjectLink) {
+      return _i7.ProjectLink.fromJson(data) as T;
     }
-    if (t == _i8.ProjectLink) {
-      return _i8.ProjectLink.fromJson(data) as T;
+    if (t == _i8.ProjectLinkKind) {
+      return _i8.ProjectLinkKind.fromJson(data) as T;
     }
-    if (t == _i9.ProjectLinkKind) {
-      return _i9.ProjectLinkKind.fromJson(data) as T;
+    if (t == _i9.ProjectLinkStatus) {
+      return _i9.ProjectLinkStatus.fromJson(data) as T;
     }
-    if (t == _i10.ProjectLinkStatus) {
-      return _i10.ProjectLinkStatus.fromJson(data) as T;
+    if (t == _i10.ProjectParticipant) {
+      return _i10.ProjectParticipant.fromJson(data) as T;
     }
-    if (t == _i11.ProjectParticipant) {
-      return _i11.ProjectParticipant.fromJson(data) as T;
+    if (t == _i11.ProjectParticipantRole) {
+      return _i11.ProjectParticipantRole.fromJson(data) as T;
     }
-    if (t == _i12.ProjectParticipantRole) {
-      return _i12.ProjectParticipantRole.fromJson(data) as T;
+    if (t == _i12.ProjectParticipantStatus) {
+      return _i12.ProjectParticipantStatus.fromJson(data) as T;
     }
-    if (t == _i13.ProjectParticipantStatus) {
-      return _i13.ProjectParticipantStatus.fromJson(data) as T;
+    if (t == _i13.ProjectStatus) {
+      return _i13.ProjectStatus.fromJson(data) as T;
     }
-    if (t == _i14.ProjectStatus) {
-      return _i14.ProjectStatus.fromJson(data) as T;
+    if (t == _i14.ProjectVisibility) {
+      return _i14.ProjectVisibility.fromJson(data) as T;
     }
-    if (t == _i15.ProjectVisibility) {
-      return _i15.ProjectVisibility.fromJson(data) as T;
+    if (t == _i1.getType<_i3.Project?>()) {
+      return (data != null ? _i3.Project.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i3.Greeting?>()) {
-      return (data != null ? _i3.Greeting.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i4.Project?>()) {
-      return (data != null ? _i4.Project.fromJson(data) : null) as T;
-    }
-    if (t == _i1.getType<_i5.ProjectArchiveEntry?>()) {
-      return (data != null ? _i5.ProjectArchiveEntry.fromJson(data) : null)
+    if (t == _i1.getType<_i4.ProjectArchiveEntry?>()) {
+      return (data != null ? _i4.ProjectArchiveEntry.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i6.ProjectEvent?>()) {
-      return (data != null ? _i6.ProjectEvent.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i5.ProjectEvent?>()) {
+      return (data != null ? _i5.ProjectEvent.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i7.ProjectEventKind?>()) {
-      return (data != null ? _i7.ProjectEventKind.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i6.ProjectEventKind?>()) {
+      return (data != null ? _i6.ProjectEventKind.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i8.ProjectLink?>()) {
-      return (data != null ? _i8.ProjectLink.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i7.ProjectLink?>()) {
+      return (data != null ? _i7.ProjectLink.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i9.ProjectLinkKind?>()) {
-      return (data != null ? _i9.ProjectLinkKind.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i8.ProjectLinkKind?>()) {
+      return (data != null ? _i8.ProjectLinkKind.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i10.ProjectLinkStatus?>()) {
-      return (data != null ? _i10.ProjectLinkStatus.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i9.ProjectLinkStatus?>()) {
+      return (data != null ? _i9.ProjectLinkStatus.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i11.ProjectParticipant?>()) {
-      return (data != null ? _i11.ProjectParticipant.fromJson(data) : null)
+    if (t == _i1.getType<_i10.ProjectParticipant?>()) {
+      return (data != null ? _i10.ProjectParticipant.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i12.ProjectParticipantRole?>()) {
-      return (data != null ? _i12.ProjectParticipantRole.fromJson(data) : null)
+    if (t == _i1.getType<_i11.ProjectParticipantRole?>()) {
+      return (data != null ? _i11.ProjectParticipantRole.fromJson(data) : null)
           as T;
     }
-    if (t == _i1.getType<_i13.ProjectParticipantStatus?>()) {
+    if (t == _i1.getType<_i12.ProjectParticipantStatus?>()) {
       return (data != null
-              ? _i13.ProjectParticipantStatus.fromJson(data)
+              ? _i12.ProjectParticipantStatus.fromJson(data)
               : null)
           as T;
     }
-    if (t == _i1.getType<_i14.ProjectStatus?>()) {
-      return (data != null ? _i14.ProjectStatus.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i13.ProjectStatus?>()) {
+      return (data != null ? _i13.ProjectStatus.fromJson(data) : null) as T;
     }
-    if (t == _i1.getType<_i15.ProjectVisibility?>()) {
-      return (data != null ? _i15.ProjectVisibility.fromJson(data) : null) as T;
+    if (t == _i1.getType<_i14.ProjectVisibility?>()) {
+      return (data != null ? _i14.ProjectVisibility.fromJson(data) : null) as T;
     }
     if (t == List<String>) {
       return (data as List).map((e) => deserialize<String>(e)).toList() as T;
@@ -1005,25 +997,25 @@ class Protocol extends _i1.SerializationManagerServer {
               : null)
           as T;
     }
-    if (t == List<_i16.Project>) {
-      return (data as List).map((e) => deserialize<_i16.Project>(e)).toList()
+    if (t == List<_i15.Project>) {
+      return (data as List).map((e) => deserialize<_i15.Project>(e)).toList()
           as T;
     }
-    if (t == List<_i17.ProjectParticipant>) {
+    if (t == List<_i16.ProjectParticipant>) {
       return (data as List)
-              .map((e) => deserialize<_i17.ProjectParticipant>(e))
+              .map((e) => deserialize<_i16.ProjectParticipant>(e))
               .toList()
           as T;
     }
-    if (t == List<_i18.ProjectLink>) {
+    if (t == List<_i17.ProjectLink>) {
       return (data as List)
-              .map((e) => deserialize<_i18.ProjectLink>(e))
+              .map((e) => deserialize<_i17.ProjectLink>(e))
               .toList()
           as T;
     }
-    if (t == List<_i19.ProjectEvent>) {
+    if (t == List<_i18.ProjectEvent>) {
       return (data as List)
-              .map((e) => deserialize<_i19.ProjectEvent>(e))
+              .map((e) => deserialize<_i18.ProjectEvent>(e))
               .toList()
           as T;
     }
@@ -1035,19 +1027,18 @@ class Protocol extends _i1.SerializationManagerServer {
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
-      _i3.Greeting => 'Greeting',
-      _i4.Project => 'Project',
-      _i5.ProjectArchiveEntry => 'ProjectArchiveEntry',
-      _i6.ProjectEvent => 'ProjectEvent',
-      _i7.ProjectEventKind => 'ProjectEventKind',
-      _i8.ProjectLink => 'ProjectLink',
-      _i9.ProjectLinkKind => 'ProjectLinkKind',
-      _i10.ProjectLinkStatus => 'ProjectLinkStatus',
-      _i11.ProjectParticipant => 'ProjectParticipant',
-      _i12.ProjectParticipantRole => 'ProjectParticipantRole',
-      _i13.ProjectParticipantStatus => 'ProjectParticipantStatus',
-      _i14.ProjectStatus => 'ProjectStatus',
-      _i15.ProjectVisibility => 'ProjectVisibility',
+      _i3.Project => 'Project',
+      _i4.ProjectArchiveEntry => 'ProjectArchiveEntry',
+      _i5.ProjectEvent => 'ProjectEvent',
+      _i6.ProjectEventKind => 'ProjectEventKind',
+      _i7.ProjectLink => 'ProjectLink',
+      _i8.ProjectLinkKind => 'ProjectLinkKind',
+      _i9.ProjectLinkStatus => 'ProjectLinkStatus',
+      _i10.ProjectParticipant => 'ProjectParticipant',
+      _i11.ProjectParticipantRole => 'ProjectParticipantRole',
+      _i12.ProjectParticipantStatus => 'ProjectParticipantStatus',
+      _i13.ProjectStatus => 'ProjectStatus',
+      _i14.ProjectVisibility => 'ProjectVisibility',
       _ => null,
     };
   }
@@ -1062,31 +1053,29 @@ class Protocol extends _i1.SerializationManagerServer {
     }
 
     switch (data) {
-      case _i3.Greeting():
-        return 'Greeting';
-      case _i4.Project():
+      case _i3.Project():
         return 'Project';
-      case _i5.ProjectArchiveEntry():
+      case _i4.ProjectArchiveEntry():
         return 'ProjectArchiveEntry';
-      case _i6.ProjectEvent():
+      case _i5.ProjectEvent():
         return 'ProjectEvent';
-      case _i7.ProjectEventKind():
+      case _i6.ProjectEventKind():
         return 'ProjectEventKind';
-      case _i8.ProjectLink():
+      case _i7.ProjectLink():
         return 'ProjectLink';
-      case _i9.ProjectLinkKind():
+      case _i8.ProjectLinkKind():
         return 'ProjectLinkKind';
-      case _i10.ProjectLinkStatus():
+      case _i9.ProjectLinkStatus():
         return 'ProjectLinkStatus';
-      case _i11.ProjectParticipant():
+      case _i10.ProjectParticipant():
         return 'ProjectParticipant';
-      case _i12.ProjectParticipantRole():
+      case _i11.ProjectParticipantRole():
         return 'ProjectParticipantRole';
-      case _i13.ProjectParticipantStatus():
+      case _i12.ProjectParticipantStatus():
         return 'ProjectParticipantStatus';
-      case _i14.ProjectStatus():
+      case _i13.ProjectStatus():
         return 'ProjectStatus';
-      case _i15.ProjectVisibility():
+      case _i14.ProjectVisibility():
         return 'ProjectVisibility';
     }
     className = _i2.Protocol().getClassNameForObject(data);
@@ -1102,44 +1091,41 @@ class Protocol extends _i1.SerializationManagerServer {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
-    if (dataClassName == 'Greeting') {
-      return deserialize<_i3.Greeting>(data['data']);
-    }
     if (dataClassName == 'Project') {
-      return deserialize<_i4.Project>(data['data']);
+      return deserialize<_i3.Project>(data['data']);
     }
     if (dataClassName == 'ProjectArchiveEntry') {
-      return deserialize<_i5.ProjectArchiveEntry>(data['data']);
+      return deserialize<_i4.ProjectArchiveEntry>(data['data']);
     }
     if (dataClassName == 'ProjectEvent') {
-      return deserialize<_i6.ProjectEvent>(data['data']);
+      return deserialize<_i5.ProjectEvent>(data['data']);
     }
     if (dataClassName == 'ProjectEventKind') {
-      return deserialize<_i7.ProjectEventKind>(data['data']);
+      return deserialize<_i6.ProjectEventKind>(data['data']);
     }
     if (dataClassName == 'ProjectLink') {
-      return deserialize<_i8.ProjectLink>(data['data']);
+      return deserialize<_i7.ProjectLink>(data['data']);
     }
     if (dataClassName == 'ProjectLinkKind') {
-      return deserialize<_i9.ProjectLinkKind>(data['data']);
+      return deserialize<_i8.ProjectLinkKind>(data['data']);
     }
     if (dataClassName == 'ProjectLinkStatus') {
-      return deserialize<_i10.ProjectLinkStatus>(data['data']);
+      return deserialize<_i9.ProjectLinkStatus>(data['data']);
     }
     if (dataClassName == 'ProjectParticipant') {
-      return deserialize<_i11.ProjectParticipant>(data['data']);
+      return deserialize<_i10.ProjectParticipant>(data['data']);
     }
     if (dataClassName == 'ProjectParticipantRole') {
-      return deserialize<_i12.ProjectParticipantRole>(data['data']);
+      return deserialize<_i11.ProjectParticipantRole>(data['data']);
     }
     if (dataClassName == 'ProjectParticipantStatus') {
-      return deserialize<_i13.ProjectParticipantStatus>(data['data']);
+      return deserialize<_i12.ProjectParticipantStatus>(data['data']);
     }
     if (dataClassName == 'ProjectStatus') {
-      return deserialize<_i14.ProjectStatus>(data['data']);
+      return deserialize<_i13.ProjectStatus>(data['data']);
     }
     if (dataClassName == 'ProjectVisibility') {
-      return deserialize<_i15.ProjectVisibility>(data['data']);
+      return deserialize<_i14.ProjectVisibility>(data['data']);
     }
     if (dataClassName.startsWith('serverpod.')) {
       data['className'] = dataClassName.substring(10);
@@ -1157,16 +1143,16 @@ class Protocol extends _i1.SerializationManagerServer {
       }
     }
     switch (t) {
-      case _i4.Project:
-        return _i4.Project.t;
-      case _i5.ProjectArchiveEntry:
-        return _i5.ProjectArchiveEntry.t;
-      case _i6.ProjectEvent:
-        return _i6.ProjectEvent.t;
-      case _i8.ProjectLink:
-        return _i8.ProjectLink.t;
-      case _i11.ProjectParticipant:
-        return _i11.ProjectParticipant.t;
+      case _i3.Project:
+        return _i3.Project.t;
+      case _i4.ProjectArchiveEntry:
+        return _i4.ProjectArchiveEntry.t;
+      case _i5.ProjectEvent:
+        return _i5.ProjectEvent.t;
+      case _i7.ProjectLink:
+        return _i7.ProjectLink.t;
+      case _i10.ProjectParticipant:
+        return _i10.ProjectParticipant.t;
     }
     return null;
   }

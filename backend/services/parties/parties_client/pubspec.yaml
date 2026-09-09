@@ -1,0 +1,13 @@
+name: parties_client
+description: Client package for the NEXUS parties service.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: '^3.8.0'
+
+resolution: workspace
+
+dependencies:
+  serverpod_client: 3.4.11
+

@@ -1,0 +1,9 @@
+enum: UserProfileStatus
+serialized: byName
+default: active
+values:
+  - active
+  - incomplete
+  - suspended
+  - deleted
+

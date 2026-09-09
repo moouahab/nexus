@@ -1,6 +1,5 @@
-greeting:
-  - hello:
 project:
+  - createMyProject:
   - createProject:
   - listProjects:
   - getProject:

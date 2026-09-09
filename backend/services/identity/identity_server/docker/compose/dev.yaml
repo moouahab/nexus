@@ -5,6 +5,7 @@ services:
       dockerfile: ../../infrastructure/service-runtime/docker/serverpod-api/Dockerfile
       additional_contexts:
         service_runtime: ../../../../../infrastructure/service-runtime/docker/serverpod-api
+        nexus_auth: ../../../../../shared/nexus_auth
       args:
         SERVER_PACKAGE: identity_server
         CLIENT_PACKAGE: identity_client

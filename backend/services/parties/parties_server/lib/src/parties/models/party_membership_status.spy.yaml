@@ -1,0 +1,9 @@
+enum: PartyMembershipStatus
+serialized: byName
+default: active
+values:
+  - active
+  - pending
+  - suspended
+  - removed
+

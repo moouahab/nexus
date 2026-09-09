@@ -1,0 +1,8 @@
+enum: PartyKind
+serialized: byName
+default: company
+values:
+  - company
+  - association
+  - consultantPractice
+

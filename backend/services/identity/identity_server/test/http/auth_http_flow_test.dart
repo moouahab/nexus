@@ -170,6 +170,11 @@ void main() {
       expect(registered.jsonBody['tokenType'], 'Bearer');
       expect(registered.jsonBody['accessToken'], isA<String>());
       expect(registered.jsonBody['refreshToken'], isA<String>());
+      expect(_jwtHeader(registered.jsonBody['accessToken'])['alg'], 'RS256');
+      expect(
+        _jwtHeader(registered.jsonBody['accessToken'])['kid'],
+        'identity-access-token-current',
+      );
       expect(client.cookies, isNot(contains('access_token')));
       expect(client.cookies, isNot(contains('refresh_token')));
 
@@ -267,6 +272,15 @@ void main() {
       });
     });
   });
+}
+
+Map<String, dynamic> _jwtHeader(Object? token) {
+  final parts = (token as String).split('.');
+  return (jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(parts[0]))),
+          )
+          as Map<String, dynamic>)
+      .cast<String, dynamic>();
 }
 
 class _AuthHttpClient {

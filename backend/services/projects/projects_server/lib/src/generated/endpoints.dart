@@ -11,66 +11,90 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
-import '../greetings/greeting_endpoint.dart' as _i2;
-import '../projects/project_endpoint.dart' as _i3;
+import '../projects/project_endpoint.dart' as _i2;
 import 'package:projects_server/src/generated/projects/models/project_visibility.dart'
-    as _i4;
+    as _i3;
 import 'package:projects_server/src/generated/projects/models/project_status.dart'
-    as _i5;
+    as _i4;
 import 'package:projects_server/src/generated/projects/models/project_participant_role.dart'
-    as _i6;
+    as _i5;
 import 'package:projects_server/src/generated/projects/models/project_participant_status.dart'
-    as _i7;
+    as _i6;
 import 'package:projects_server/src/generated/projects/models/project_link_kind.dart'
-    as _i8;
+    as _i7;
 import 'package:projects_server/src/generated/projects/models/project_link_status.dart'
-    as _i9;
+    as _i8;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
   void initializeEndpoints(_i1.Server server) {
     var endpoints = <String, _i1.Endpoint>{
-      'greeting': _i2.GreetingEndpoint()
-        ..initialize(
-          server,
-          'greeting',
-          null,
-        ),
-      'project': _i3.ProjectEndpoint()
+      'project': _i2.ProjectEndpoint()
         ..initialize(
           server,
           'project',
           null,
         ),
     };
-    connectors['greeting'] = _i1.EndpointConnector(
-      name: 'greeting',
-      endpoint: endpoints['greeting']!,
+    connectors['project'] = _i1.EndpointConnector(
+      name: 'project',
+      endpoint: endpoints['project']!,
       methodConnectors: {
-        'hello': _i1.MethodConnector(
-          name: 'hello',
+        'createMyProject': _i1.MethodConnector(
+          name: 'createMyProject',
           params: {
+            'slug': _i1.ParameterDescription(
+              name: 'slug',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
             'name': _i1.ParameterDescription(
               name: 'name',
               type: _i1.getType<String>(),
               nullable: false,
+            ),
+            'summary': _i1.ParameterDescription(
+              name: 'summary',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'visibility': _i1.ParameterDescription(
+              name: 'visibility',
+              type: _i1.getType<_i3.ProjectVisibility>(),
+              nullable: false,
+            ),
+            'workspacePath': _i1.ParameterDescription(
+              name: 'workspacePath',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+            'tags': _i1.ParameterDescription(
+              name: 'tags',
+              type: _i1.getType<List<String>?>(),
+              nullable: true,
+            ),
+            'metadata': _i1.ParameterDescription(
+              name: 'metadata',
+              type: _i1.getType<Map<String, String>?>(),
+              nullable: true,
             ),
           },
           call:
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['greeting'] as _i2.GreetingEndpoint).hello(
-                session,
-                params['name'],
-              ),
+              ) async =>
+                  (endpoints['project'] as _i2.ProjectEndpoint).createMyProject(
+                    session,
+                    slug: params['slug'],
+                    name: params['name'],
+                    summary: params['summary'],
+                    visibility: params['visibility'],
+                    workspacePath: params['workspacePath'],
+                    tags: params['tags'],
+                    metadata: params['metadata'],
+                  ),
         ),
-      },
-    );
-    connectors['project'] = _i1.EndpointConnector(
-      name: 'project',
-      endpoint: endpoints['project']!,
-      methodConnectors: {
         'createProject': _i1.MethodConnector(
           name: 'createProject',
           params: {
@@ -91,7 +115,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'visibility': _i1.ParameterDescription(
               name: 'visibility',
-              type: _i1.getType<_i4.ProjectVisibility>(),
+              type: _i1.getType<_i3.ProjectVisibility>(),
               nullable: false,
             ),
             'ownerIdentityId': _i1.ParameterDescription(
@@ -120,7 +144,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).createProject(
+                  (endpoints['project'] as _i2.ProjectEndpoint).createProject(
                     session,
                     slug: params['slug'],
                     name: params['name'],
@@ -137,7 +161,7 @@ class Endpoints extends _i1.EndpointDispatch {
           params: {
             'status': _i1.ParameterDescription(
               name: 'status',
-              type: _i1.getType<_i5.ProjectStatus?>(),
+              type: _i1.getType<_i4.ProjectStatus?>(),
               nullable: true,
             ),
             'limit': _i1.ParameterDescription(
@@ -156,7 +180,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).listProjects(
+                  (endpoints['project'] as _i2.ProjectEndpoint).listProjects(
                     session,
                     status: params['status'],
                     limit: params['limit'],
@@ -177,7 +201,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).getProject(
+                  (endpoints['project'] as _i2.ProjectEndpoint).getProject(
                     session,
                     params['projectId'],
                   ),
@@ -195,7 +219,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .getProjectBySlug(
                     session,
                     params['slug'],
@@ -221,7 +245,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'visibility': _i1.ParameterDescription(
               name: 'visibility',
-              type: _i1.getType<_i4.ProjectVisibility?>(),
+              type: _i1.getType<_i3.ProjectVisibility?>(),
               nullable: true,
             ),
             'workspacePath': _i1.ParameterDescription(
@@ -249,7 +273,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .updateProjectProfile(
                     session,
                     projectId: params['projectId'],
@@ -272,7 +296,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'status': _i1.ParameterDescription(
               name: 'status',
-              type: _i1.getType<_i5.ProjectStatus>(),
+              type: _i1.getType<_i4.ProjectStatus>(),
               nullable: false,
             ),
             'actorIdentityId': _i1.ParameterDescription(
@@ -290,7 +314,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .changeProjectStatus(
                     session,
                     projectId: params['projectId'],
@@ -333,7 +357,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).archiveProject(
+                  (endpoints['project'] as _i2.ProjectEndpoint).archiveProject(
                     session,
                     projectId: params['projectId'],
                     archivePath: params['archivePath'],
@@ -366,7 +390,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).restoreProject(
+                  (endpoints['project'] as _i2.ProjectEndpoint).restoreProject(
                     session,
                     projectId: params['projectId'],
                     actorIdentityId: params['actorIdentityId'],
@@ -383,7 +407,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'role': _i1.ParameterDescription(
               name: 'role',
-              type: _i1.getType<_i6.ProjectParticipantRole>(),
+              type: _i1.getType<_i5.ProjectParticipantRole>(),
               nullable: false,
             ),
             'identityId': _i1.ParameterDescription(
@@ -421,7 +445,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .assignProjectMember(
                     session,
                     projectId: params['projectId'],
@@ -487,7 +511,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .setProjectClient(
                     session,
                     projectId: params['projectId'],
@@ -554,7 +578,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .setClientReferent(
                     session,
                     projectId: params['projectId'],
@@ -578,12 +602,12 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'role': _i1.ParameterDescription(
               name: 'role',
-              type: _i1.getType<_i6.ProjectParticipantRole?>(),
+              type: _i1.getType<_i5.ProjectParticipantRole?>(),
               nullable: true,
             ),
             'status': _i1.ParameterDescription(
               name: 'status',
-              type: _i1.getType<_i7.ProjectParticipantStatus?>(),
+              type: _i1.getType<_i6.ProjectParticipantStatus?>(),
               nullable: true,
             ),
           },
@@ -591,7 +615,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .listParticipants(
                     session,
                     projectId: params['projectId'],
@@ -617,7 +641,7 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['project'] as _i3.ProjectEndpoint)
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
                   .removeParticipant(
                     session,
                     participantId: params['participantId'],
@@ -634,7 +658,7 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'kind': _i1.ParameterDescription(
               name: 'kind',
-              type: _i1.getType<_i8.ProjectLinkKind>(),
+              type: _i1.getType<_i7.ProjectLinkKind>(),
               nullable: false,
             ),
             'externalId': _i1.ParameterDescription(
@@ -673,7 +697,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).linkResource(
+                  (endpoints['project'] as _i2.ProjectEndpoint).linkResource(
                     session,
                     projectId: params['projectId'],
                     kind: params['kind'],
@@ -704,7 +728,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).detachLink(
+                  (endpoints['project'] as _i2.ProjectEndpoint).detachLink(
                     session,
                     linkId: params['linkId'],
                     actorIdentityId: params['actorIdentityId'],
@@ -720,12 +744,12 @@ class Endpoints extends _i1.EndpointDispatch {
             ),
             'kind': _i1.ParameterDescription(
               name: 'kind',
-              type: _i1.getType<_i8.ProjectLinkKind?>(),
+              type: _i1.getType<_i7.ProjectLinkKind?>(),
               nullable: true,
             ),
             'status': _i1.ParameterDescription(
               name: 'status',
-              type: _i1.getType<_i9.ProjectLinkStatus?>(),
+              type: _i1.getType<_i8.ProjectLinkStatus?>(),
               nullable: true,
             ),
           },
@@ -734,7 +758,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).listLinks(
+                  (endpoints['project'] as _i2.ProjectEndpoint).listLinks(
                     session,
                     projectId: params['projectId'],
                     kind: params['kind'],
@@ -765,7 +789,7 @@ class Endpoints extends _i1.EndpointDispatch {
                 _i1.Session session,
                 Map<String, dynamic> params,
               ) async =>
-                  (endpoints['project'] as _i3.ProjectEndpoint).listEvents(
+                  (endpoints['project'] as _i2.ProjectEndpoint).listEvents(
                     session,
                     projectId: params['projectId'],
                     limit: params['limit'],

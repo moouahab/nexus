@@ -1,0 +1,23 @@
+services:
+  kong:
+    image: kong:3.8
+    restart: unless-stopped
+    env_file:
+      - kong.env
+    ports:
+      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8443:8443"
+      - "127.0.0.1:8001:8001"
+      - "127.0.0.1:8100:8100"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./kong.yaml:/kong/declarative/kong.yaml:ro
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "kong health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s

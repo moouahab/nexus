@@ -10,6 +10,16 @@ infrastructure/
 └── service-runtime/
 ```
 
+## Kong
+
+`kong/` is the cross-platform API gateway entrypoint. It currently routes:
+
+- `/v1/auth`
+- `/v1/users`
+- `/v1/parties`
+- `/v1/projects`
+- `/.well-known`
+
 ## Service Runtime
 
 `service-runtime/` is the home for reusable Docker, Vault, and local runtime

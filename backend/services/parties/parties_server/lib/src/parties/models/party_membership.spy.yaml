@@ -1,0 +1,33 @@
+### Link between a user profile owned by users and a business party context.
+class: PartyMembership
+table: party_membership
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+
+  ### UserProfile UUID owned by the users service.
+  userProfileId: UuidValue
+
+  party: Party?, relation(onDelete=Cascade)
+
+  role: PartyMembershipRole
+  status: PartyMembershipStatus, default=active
+  isPrimary: bool, default=false
+
+  title: String?
+  invitedByIdentityId: UuidValue?
+  metadata: Map<String, String>?
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+
+indexes:
+  party_membership_user_idx:
+    fields: userProfileId
+  party_membership_party_idx:
+    fields: partyId
+  party_membership_status_idx:
+    fields: status
+  party_membership_unique_idx:
+    fields: userProfileId, partyId
+    unique: true
+

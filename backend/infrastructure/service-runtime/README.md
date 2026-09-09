@@ -48,3 +48,10 @@ Services still own their operational identity:
 
 Do not move service secrets here. Each service keeps its own `secrets/` and
 `secrets_example/` directories.
+
+Current Serverpod consumers:
+
+- `services/identity/identity_server`
+- `services/parties/parties_server`
+- `services/projects/projects_server`
+- `services/users/users_server`

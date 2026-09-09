@@ -1,0 +1,27 @@
+### Business actor represented in NEXUS: company, association, or consultant practice.
+class: Party
+table: party
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+
+  kind: PartyKind
+  status: PartyStatus, default=active
+
+  name: String
+  legalName: String?
+  registrationNumber: String?
+  country: String?
+  website: String?
+  metadata: Map<String, String>?
+
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+
+indexes:
+  party_kind_idx:
+    fields: kind
+  party_status_idx:
+    fields: status
+  party_name_idx:
+    fields: name
+
