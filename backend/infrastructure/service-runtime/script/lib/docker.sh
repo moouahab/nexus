@@ -13,7 +13,7 @@ assert_docker_ready() {
 
 ensure_nexus_gateway_network() {
   local network_name
-  local network_names="${NEXUS_GATEWAY_NETWORKS:-nexus_identity_gateway nexus_users_gateway nexus_parties_gateway nexus_projects_gateway nexus_ai_gateway}"
+  local network_names="${NEXUS_GATEWAY_NETWORKS:-nexus_identity_gateway nexus_users_gateway nexus_parties_gateway nexus_projects_gateway nexus_ai_gateway nexus_telemetry}"
 
   for network_name in $network_names; do
     if docker network inspect "$network_name" >/dev/null 2>&1; then

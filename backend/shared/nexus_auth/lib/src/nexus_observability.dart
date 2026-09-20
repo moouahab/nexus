@@ -3,15 +3,23 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart'
+    hide LogLevel, Session;
 import 'package:serverpod/serverpod.dart';
 
-/// Dependency-free correlation and structured logging for NEXUS HTTP edges.
+/// Request correlation, distributed tracing and structured logging for NEXUS
+/// HTTP edges.
 /// Request bodies, credentials and user identifiers are never logged here.
 abstract final class NexusObservability {
   static const requestIdHeader = 'x-request-id';
   static final _validRequestId = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$');
   static final Object _requestIdZoneKey = Object();
   static final Random _random = Random.secure();
+  static final _propagator =
+      OTelAPI.compositePropagator<Map<String, String>, String>([
+        W3CTraceContextPropagator(),
+        W3CBaggagePropagator(),
+      ]);
 
   static String? get currentRequestId =>
       Zone.current[_requestIdZoneKey] as String?;
@@ -57,40 +65,76 @@ abstract final class NexusObservability {
   }) async {
     final requestId = requestIdFrom(request);
     final watch = Stopwatch()..start();
-    return runZoned(() async {
-      try {
-        final result = await operation();
-        watch.stop();
-        log(
-          session,
-          service: service,
-          event: 'http_request',
-          fields: {
-            'request_id': requestId,
-            'method': request.method.name,
-            'status_code': result is Response ? result.statusCode : null,
-            'duration_ms': watch.elapsedMilliseconds,
-          },
+    final incomingHeaders = <String, String>{
+      for (final entry in request.headers.entries)
+        if (entry.value.isNotEmpty) entry.key.toLowerCase(): entry.value.first,
+    };
+    final parentContext = _propagator.extract(
+      OTel.context(),
+      incomingHeaders,
+      _MapTextMapGetter(incomingHeaders),
+    );
+    return runZoned(
+      () => parentContext.run(() async {
+        final span = OTel.tracer().startSpan(
+          'HTTP ${request.method.name.toUpperCase()}',
+          kind: SpanKind.server,
+          attributes: OTel.attributesFromMap({
+            'http.request.method': request.method.name.toUpperCase(),
+            'server.address': service,
+            'nexus.request.id': requestId,
+          }),
         );
-        return result;
-      } catch (_) {
-        watch.stop();
-        log(
-          session,
-          service: service,
-          event: 'http_request',
-          level: LogLevel.error,
-          fields: {
-            'request_id': requestId,
-            'method': request.method.name,
-            'status_code': 500,
-            'duration_ms': watch.elapsedMilliseconds,
-            'outcome': 'unhandled_error',
-          },
-        );
-        rethrow;
-      }
-    }, zoneValues: {_requestIdZoneKey: requestId});
+        try {
+          return await OTel.withSpanAsync(span, () async {
+            try {
+              final result = await operation();
+              watch.stop();
+              final statusCode = result is Response ? result.statusCode : null;
+              if (statusCode != null) {
+                span.setIntAttribute('http.response.status_code', statusCode);
+                if (statusCode >= 500) {
+                  span.setStatus(SpanStatusCode.Error, 'HTTP $statusCode');
+                }
+              }
+              log(
+                session,
+                service: service,
+                event: 'http_request',
+                fields: {
+                  'request_id': requestId,
+                  'method': request.method.name,
+                  'status_code': statusCode,
+                  'duration_ms': watch.elapsedMilliseconds,
+                },
+              );
+              return result;
+            } catch (error, stackTrace) {
+              watch.stop();
+              span.recordException(error, stackTrace: stackTrace);
+              span.setStatus(SpanStatusCode.Error, 'Unhandled HTTP error');
+              log(
+                session,
+                service: service,
+                event: 'http_request',
+                level: LogLevel.error,
+                fields: {
+                  'request_id': requestId,
+                  'method': request.method.name,
+                  'status_code': 500,
+                  'duration_ms': watch.elapsedMilliseconds,
+                  'outcome': 'unhandled_error',
+                },
+              );
+              rethrow;
+            }
+          });
+        } finally {
+          span.end();
+        }
+      }),
+      zoneValues: {_requestIdZoneKey: requestId},
+    );
   }
 
   static Map<String, List<String>> responseHeaders([
@@ -102,6 +146,11 @@ abstract final class NexusObservability {
 
   static void addOutboundHeaders(HttpHeaders headers) {
     if (currentRequestId case final id?) headers.set(requestIdHeader, id);
+    final carrier = <String, String>{};
+    _propagator.inject(Context.current, carrier, _MapTextMapSetter(carrier));
+    for (final entry in carrier.entries) {
+      headers.set(entry.key, entry.value);
+    }
   }
 
   static void log(
@@ -116,10 +165,53 @@ abstract final class NexusObservability {
       'service': service,
       'event': event,
       if (currentRequestId case final id?) 'request_id': id,
+      if (Context.current.span?.spanContext case final context?
+          when context.isValid) ...{
+        'trace_id': context.traceId.toString(),
+        'span_id': context.spanId.toString(),
+      },
       ...fields,
     }..removeWhere((_, value) => value == null);
     // Do not attach exceptions or stack traces here: exception messages may
     // contain request payloads, credentials or user identifiers.
     session.log(jsonEncode(data), level: level);
   }
+}
+
+/// Initializes the process-wide OTLP exporter. Telemetry is deliberately
+/// fail-open: an unavailable collector must never prevent an API from booting.
+abstract final class NexusTelemetry {
+  static Future<void> initialize(String serviceName) async {
+    try {
+      await OTel.initialize(
+        serviceName: serviceName,
+        enableMetrics: false,
+        enableLogs: false,
+        sampler: ParentBasedSampler(TraceIdRatioSampler(1.0)),
+      );
+    } on Object catch (error) {
+      stderr.writeln('OpenTelemetry initialization failed: $error');
+    }
+  }
+}
+
+final class _MapTextMapSetter implements TextMapSetter<String> {
+  _MapTextMapSetter(this._carrier);
+
+  final Map<String, String> _carrier;
+
+  @override
+  void set(String key, String value) => _carrier[key] = value;
+}
+
+final class _MapTextMapGetter implements TextMapGetter<String> {
+  _MapTextMapGetter(this._carrier);
+
+  final Map<String, String> _carrier;
+
+  @override
+  String? get(String key) => _carrier[key.toLowerCase()];
+
+  @override
+  Iterable<String> keys() => _carrier.keys;
 }

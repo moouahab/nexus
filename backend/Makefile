@@ -8,6 +8,7 @@ AI_GATEWAY_DIR := services/ai_gateway/ai_gateway_server
 KONG_DIR := infrastructure/kong
 OBSERVABILITY_DIR := infrastructure/observability
 GATEWAY_NETWORKS := nexus_identity_gateway nexus_users_gateway nexus_parties_gateway nexus_projects_gateway nexus_ai_gateway
+TELEMETRY_NETWORK := nexus_telemetry
 IDENTITY_PROJECT := identity_server
 PROJECTS_PROJECT := projects_server
 USERS_PROJECT := users_server
@@ -68,7 +69,7 @@ help:
 up: gateway-network services-init gateway-up
 
 gateway-network:
-	@for network in $(GATEWAY_NETWORKS); do \
+	@for network in $(GATEWAY_NETWORKS) $(TELEMETRY_NETWORK); do \
 		docker network inspect "$$network" >/dev/null 2>&1 || docker network create "$$network" >/dev/null; \
 	done
 

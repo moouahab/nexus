@@ -12,12 +12,18 @@ services:
         RUNTIME_USER: identity
         ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["production", "default", "normal", "monolith", "false"]
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
     expose:
       - "8080"
     networks:
       identity_gateway:
         aliases:
           - identity-api
+      telemetry:
     depends_on:
       vault_agent:
         condition: service_healthy
@@ -127,4 +133,7 @@ volumes:
 networks:
   identity_gateway:
     name: nexus_identity_gateway
+    external: true
+  telemetry:
+    name: nexus_telemetry
     external: true

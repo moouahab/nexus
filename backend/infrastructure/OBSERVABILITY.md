@@ -1,7 +1,6 @@
 # Observability baseline
 
-NEXUS uses a deliberately small baseline that works with Serverpod 3.4.11 and
-does not require a collector in development.
+NEXUS uses structured logs plus OpenTelemetry traces with Serverpod 3.4.11.
 
 ## Correlation
 
@@ -43,13 +42,16 @@ project ids or tenant ids as metric labels.
 
 ## Distributed tracing and export
 
-The request id gives log correlation, not full distributed spans. This codebase
-does not currently run an OpenTelemetry collector and Serverpod 3.4.11 does not
-make an OTLP exporter available through the current service configuration.
-Adding traces therefore requires an explicit collector/exporter deployment and
-sampling/privacy policy. Until then, operators should export Serverpod JSON
-logs through the platform's standard container log pipeline and treat
-`request_id` as the trace lookup key.
+Every public HTTP boundary creates an OpenTelemetry server span, extracts W3C
+`traceparent`/`baggage`, and injects that context into supported outbound HTTP
+calls. Trace and span identifiers are included in structured logs alongside the
+request id. APIs export OTLP/HTTP to the Collector, which batches and forwards
+traces to Jaeger in the local observability stack.
+
+Development samples every trace. Production should set an appropriate
+parent-based sampling ratio and replace the local Jaeger exporter with the
+organization tracing backend. Credentials and business identifiers must never
+be added as span attributes or baggage.
 
 ## Quick check
 

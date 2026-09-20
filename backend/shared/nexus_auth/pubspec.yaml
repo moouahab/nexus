@@ -8,6 +8,7 @@ environment:
 dependencies:
   crypto: ^3.0.6
   dart_jsonwebtoken: ^3.4.1
+  dartastic_opentelemetry: ^0.11.0
   serverpod: 3.4.11
 
 dev_dependencies:

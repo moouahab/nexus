@@ -1,4 +1,5 @@
 import 'package:serverpod/serverpod.dart';
+import 'package:nexus_auth/nexus_auth.dart';
 // ignore: implementation_imports
 import 'package:serverpod/src/server/serverpod.dart'
     show ServerpodInternalMethods;
@@ -9,6 +10,7 @@ import 'src/ai/http/ai_http_routes.dart';
 import 'src/ai/application/ai_run_queue.dart';
 
 Future<void> run(List<String> args) async {
+  await NexusTelemetry.initialize('ai-gateway');
   final pod = Serverpod(
     args,
     Protocol(),

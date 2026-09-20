@@ -22,8 +22,20 @@ the setup job again:
 docker compose -f infrastructure/observability/docker-compose.yaml run --rm kibana-setup
 ```
 
-Elasticsearch and the Logstash diagnostics API are available only on loopback
-at ports `9200` and `9600`. No ELK service joins an application network.
+Distributed traces are exported by the APIs over OTLP/HTTP to the local
+OpenTelemetry Collector and forwarded to Jaeger. Open the Jaeger UI at
+<http://localhost:16686>, select a NEXUS service, then search for traces.
+The collector exposes OTLP/gRPC on `127.0.0.1:4317`, OTLP/HTTP on
+`127.0.0.1:4318`, and its health endpoint on `127.0.0.1:13133`.
+
+The API containers use `http://otel-collector:4318` on the isolated
+`nexus_telemetry` network. W3C `traceparent` and `baggage` headers are
+propagated on service-to-service HTTP calls. Set `OTEL_SDK_DISABLED=true` to
+disable export, or override `OTEL_EXPORTER_OTLP_ENDPOINT` for another backend.
+
+All published observability ports are bound to loopback. The Collector and
+Jaeger join only the observability and telemetry networks; neither joins a
+service database or gateway network.
 
 ## What the dashboard contains
 

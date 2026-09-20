@@ -20,6 +20,10 @@ services:
       OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-512}
       PROJECTS_BASE_URL: ${PROJECTS_BASE_URL:-http://projects-api:8082}
       PROJECTS_TIMEOUT_SECONDS: ${PROJECTS_TIMEOUT_SECONDS:-10}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=development
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:
@@ -32,6 +36,7 @@ services:
         aliases:
           - ai-gateway-api
       projects_gateway:
+      telemetry:
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,4 +97,7 @@ networks:
     external: true
   projects_gateway:
     name: nexus_projects_gateway
+    external: true
+  telemetry:
+    name: nexus_telemetry
     external: true
