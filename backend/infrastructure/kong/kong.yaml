@@ -49,7 +49,7 @@ services:
     retries: 2
     routes:
       - name: v1-users-rpc-compat
-        paths: [/v1/users/user]
+        paths: ["~/v1/users/user$", /v1/users/user/]
         strip_path: true
         preserve_host: false
         protocols: [http, https]
@@ -75,7 +75,7 @@ services:
     retries: 2
     routes:
       - name: v1-parties-rpc-compat
-        paths: [/v1/parties/party]
+        paths: ["~/v1/parties/party$", /v1/parties/party/]
         strip_path: true
         preserve_host: false
         protocols: [http, https]
@@ -101,7 +101,7 @@ services:
     retries: 2
     routes:
       - name: v1-projects-rpc-compat
-        paths: [/v1/projects/project]
+        paths: ["~/v1/projects/project$", /v1/projects/project/]
         strip_path: true
         preserve_host: false
         protocols: [http, https]

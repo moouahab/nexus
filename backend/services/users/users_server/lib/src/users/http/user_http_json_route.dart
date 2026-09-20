@@ -8,6 +8,8 @@ abstract class UserHttpJsonRoute extends Route {
   UserHttpJsonRoute({super.methods});
 
   static const maxBodyBytes = 256 * 1024;
+  static const _userAuth = AuthContextResolver();
+  static const _serviceAuth = AuthContextResolver(audience: 'users-service');
 
   Future<Map<String, dynamic>> execute(Session session, Request request);
 
@@ -24,9 +26,17 @@ abstract class UserHttpJsonRoute extends Route {
 
   Future<Result> _handleCall(Session session, Request request) async {
     try {
+      _requireAuthenticatedCaller(session);
       return jsonResponse(
         await execute(session, request),
         statusCode: successStatusCode,
+      );
+    } on NexusAuthException catch (error) {
+      final unavailable =
+          error.code == NexusAuthExceptionCode.missingAuthSecret;
+      return errorResponse(
+        unavailable ? 503 : 401,
+        unavailable ? 'AUTH_UNAVAILABLE' : 'AUTH_REQUIRED',
       );
     } on NotAuthorizedException catch (error) {
       final unauthenticated =
@@ -50,6 +60,15 @@ abstract class UserHttpJsonRoute extends Route {
       return errorResponse(409, 'INVALID_STATE');
     } on Object {
       return errorResponse(500, 'INTERNAL_ERROR');
+    }
+  }
+
+  void _requireAuthenticatedCaller(Session session) {
+    try {
+      _userAuth.requireContext(session);
+    } on NexusAuthException catch (error) {
+      if (error.code != NexusAuthExceptionCode.invalidAccessToken) rethrow;
+      _serviceAuth.requireServiceContext(session);
     }
   }
 

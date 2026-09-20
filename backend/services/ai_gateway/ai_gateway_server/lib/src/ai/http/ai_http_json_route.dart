@@ -11,11 +11,15 @@ abstract class AiHttpJsonRoute extends Route {
   AiHttpJsonRoute({required this.application, super.methods, super.path});
 
   static const maxBodyBytes = 1024 * 1024;
+  static const _userAuth = AuthContextResolver();
+  static const _serviceAuth = AuthContextResolver(audience: 'ai-gateway');
   final AiGatewayApplication application;
 
   Future<Map<String, dynamic>> execute(Session session, Request request);
 
   int get successStatusCode => 200;
+
+  bool get requiresAuthentication => true;
 
   @override
   FutureOr<Result> handleCall(Session session, Request request) =>
@@ -28,6 +32,7 @@ abstract class AiHttpJsonRoute extends Route {
 
   Future<Result> _handleCall(Session session, Request request) async {
     try {
+      if (requiresAuthentication) _requireAuthenticatedCaller(session);
       return jsonResponse(
         await execute(session, request),
         statusCode: successStatusCode,
@@ -57,6 +62,15 @@ abstract class AiHttpJsonRoute extends Route {
       return errorResponse(403, 'ACCESS_DENIED');
     } on Object {
       return errorResponse(500, 'INTERNAL_ERROR');
+    }
+  }
+
+  void _requireAuthenticatedCaller(Session session) {
+    try {
+      _userAuth.requireContext(session);
+    } on NexusAuthException catch (error) {
+      if (error.code != NexusAuthExceptionCode.invalidAccessToken) rethrow;
+      _serviceAuth.requireServiceContext(session);
     }
   }
 

@@ -10,6 +10,10 @@ abstract class ProjectHttpJsonRoute extends Route {
   ProjectHttpJsonRoute({super.methods, super.path});
 
   static const maxBodyBytes = 1024 * 1024;
+  static const _userAuth = AuthContextResolver();
+  static const _serviceAuth = AuthContextResolver(
+    audience: 'projects-service',
+  );
   final ProjectEndpoint projects = ProjectEndpoint();
 
   Future<Map<String, dynamic>> execute(Session session, Request request);
@@ -26,6 +30,7 @@ abstract class ProjectHttpJsonRoute extends Route {
 
   Future<Result> _handleCall(Session session, Request request) async {
     try {
+      _requireAuthenticatedCaller(session);
       return jsonResponse(
         await execute(session, request),
         statusCode: successStatusCode,
@@ -54,6 +59,15 @@ abstract class ProjectHttpJsonRoute extends Route {
       return errorResponse(400, 'VALIDATION_FAILED');
     } on Object {
       return errorResponse(500, 'INTERNAL_ERROR');
+    }
+  }
+
+  void _requireAuthenticatedCaller(Session session) {
+    try {
+      _userAuth.requireContext(session);
+    } on NexusAuthException catch (error) {
+      if (error.code != NexusAuthExceptionCode.invalidAccessToken) rethrow;
+      _serviceAuth.requireServiceContext(session);
     }
   }
 

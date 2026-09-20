@@ -16,7 +16,7 @@ services:
       - "8080"
       - "8082"
     networks:
-      nexus_gateway:
+      users_gateway:
         aliases:
           - users-api
     depends_on:
@@ -126,6 +126,6 @@ volumes:
   users_redis_secrets:
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  users_gateway:
+    name: nexus_users_gateway
     external: true

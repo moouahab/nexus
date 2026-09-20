@@ -28,9 +28,10 @@ services:
       - "8082"
     networks:
       default:
-      nexus_gateway:
+      ai_gateway:
         aliases:
           - ai-gateway-api
+      projects_gateway:
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,8 +60,6 @@ services:
     build:
       context: ../../../../../infrastructure/service-runtime/docker/postgres
     user: "0:0"
-    ports:
-      - "127.0.0.1:8590:5432"
     depends_on:
       vault_agent:
         condition: service_healthy
@@ -88,6 +87,9 @@ services:
       start_period: 10s
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  ai_gateway:
+    name: nexus_ai_gateway
+    external: true
+  projects_gateway:
+    name: nexus_projects_gateway
     external: true

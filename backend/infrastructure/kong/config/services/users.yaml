@@ -19,7 +19,7 @@
     retries: 2
     routes:
       - name: v1-users-rpc-compat
-        paths: [/v1/users/user]
+        paths: ["~/v1/users/user$", /v1/users/user/]
         strip_path: true
         preserve_host: false
         protocols: [http, https]

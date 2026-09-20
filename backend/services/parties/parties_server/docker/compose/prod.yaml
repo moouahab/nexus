@@ -16,7 +16,7 @@ services:
       - "8080"
       - "8082"
     networks:
-      nexus_gateway:
+      parties_gateway:
         aliases:
           - parties-api
     depends_on:
@@ -126,6 +126,6 @@ volumes:
   parties_redis_secrets:
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  parties_gateway:
+    name: nexus_parties_gateway
     external: true

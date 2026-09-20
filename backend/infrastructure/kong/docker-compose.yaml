@@ -11,7 +11,11 @@ services:
     volumes:
       - ./kong.yaml:/kong/declarative/kong.yaml:ro
     networks:
-      - nexus_gateway
+      - identity_gateway
+      - users_gateway
+      - parties_gateway
+      - projects_gateway
+      - ai_gateway
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -30,6 +34,18 @@ services:
       start_period: 10s
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  identity_gateway:
+    name: nexus_identity_gateway
+    external: true
+  users_gateway:
+    name: nexus_users_gateway
+    external: true
+  parties_gateway:
+    name: nexus_parties_gateway
+    external: true
+  projects_gateway:
+    name: nexus_projects_gateway
+    external: true
+  ai_gateway:
+    name: nexus_ai_gateway
     external: true

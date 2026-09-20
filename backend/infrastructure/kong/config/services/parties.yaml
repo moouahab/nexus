@@ -19,7 +19,7 @@
     retries: 2
     routes:
       - name: v1-parties-rpc-compat
-        paths: [/v1/parties/party]
+        paths: ["~/v1/parties/party$", /v1/parties/party/]
         strip_path: true
         preserve_host: false
         protocols: [http, https]

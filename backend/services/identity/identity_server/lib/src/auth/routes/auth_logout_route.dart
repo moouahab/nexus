@@ -1,15 +1,17 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../domain/auth_result.dart';
+import '../domain/authenticated_request.dart';
 import 'auth_dependencies.dart';
-import 'auth_json_route.dart';
+import 'authenticated_json_route.dart';
 
-class AuthLogoutRoute extends AuthJsonRoute {
+class AuthLogoutRoute extends AuthenticatedJsonRoute {
   @override
-  Future<AuthResult> execute(
+  Future<AuthResult> executeAuthenticated(
     Session session,
     Request request,
     AuthDependencies dependencies,
+    AuthenticatedRequest authenticated,
   ) {
     final headers = requestHeaders(request);
     if (dependencies.csrfProtection.requiresProtection(headers)) {

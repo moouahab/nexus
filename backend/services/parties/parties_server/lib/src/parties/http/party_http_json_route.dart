@@ -16,6 +16,10 @@ abstract class PartyHttpJsonRoute extends Route {
        authorization = authorization ?? const PartyAuthorization();
 
   static const maxBodyBytes = 1024 * 1024;
+  static const _userAuth = AuthContextResolver();
+  static const _serviceAuth = AuthContextResolver(
+    audience: 'parties-service',
+  );
   final PartyService parties;
   final PartyAuthorization authorization;
 
@@ -33,6 +37,7 @@ abstract class PartyHttpJsonRoute extends Route {
 
   Future<Result> _handleCall(Session session, Request request) async {
     try {
+      _requireAuthenticatedCaller(session);
       return jsonResponse(
         await execute(session, request),
         statusCode: successStatusCode,
@@ -57,6 +62,15 @@ abstract class PartyHttpJsonRoute extends Route {
       );
     } on Object {
       return errorResponse(500, 'INTERNAL_ERROR');
+    }
+  }
+
+  void _requireAuthenticatedCaller(Session session) {
+    try {
+      _userAuth.requireContext(session);
+    } on NexusAuthException catch (error) {
+      if (error.code != NexusAuthExceptionCode.invalidAccessToken) rethrow;
+      _serviceAuth.requireServiceContext(session);
     }
   }
 

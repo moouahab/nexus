@@ -24,9 +24,10 @@ services:
       - "host.docker.internal:host-gateway"
     expose: ["8080", "8082"]
     networks:
-      nexus_gateway:
+      ai_gateway:
         aliases:
           - ai-gateway-api
+      projects_gateway:
     depends_on:
       vault_agent:
         condition: service_healthy
@@ -115,6 +116,9 @@ volumes:
   ai_gateway_postgres_secrets:
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  ai_gateway:
+    name: nexus_ai_gateway
+    external: true
+  projects_gateway:
+    name: nexus_projects_gateway
     external: true

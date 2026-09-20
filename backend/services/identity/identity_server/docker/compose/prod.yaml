@@ -15,7 +15,7 @@ services:
     expose:
       - "8080"
     networks:
-      nexus_gateway:
+      identity_gateway:
         aliases:
           - identity-api
     depends_on:
@@ -125,6 +125,6 @@ volumes:
   identity_redis_secrets:
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  identity_gateway:
+    name: nexus_identity_gateway
     external: true

@@ -19,7 +19,7 @@
     retries: 2
     routes:
       - name: v1-projects-rpc-compat
-        paths: [/v1/projects/project]
+        paths: ["~/v1/projects/project$", /v1/projects/project/]
         strip_path: true
         preserve_host: false
         protocols: [http, https]

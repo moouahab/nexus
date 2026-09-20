@@ -20,6 +20,9 @@ final class _HealthRoute extends AiHttpJsonRoute {
     : super(application: application, methods: const {Method.get});
 
   @override
+  bool get requiresAuthentication => false;
+
+  @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
     final health = application.health();
     return {'service': health.service, 'status': health.status};

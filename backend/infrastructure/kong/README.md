@@ -5,7 +5,7 @@ Kong is the local API entrypoint for the current NEXUS backend services.
 ```text
 Client
   -> Kong http://127.0.0.1:8000
-  -> identity / users / parties / projects on the internal nexus_gateway Docker network
+  -> one private Docker network per upstream API
 ```
 
 ## Routes
@@ -25,12 +25,13 @@ platform-neutral integrations should use the documented REST resources.
 
 ## Run
 
-Start the backend services first, then start Kong:
+Start the whole backend through the global orchestration commands:
 
 ```bash
-make gateway-network
-make services-up
-make gateway-up
+make up          # initialize local Vault secrets and start everything
+make stack-up    # subsequent start using the existing secrets
+make stack-ps
+make stack-down
 ```
 
 Useful checks:
@@ -48,7 +49,19 @@ of date.
 The Kong Admin API is disabled. The status endpoint is bound to localhost and
 is intended for health monitoring only.
 
-Kong and the API containers share the external Docker network `nexus_gateway`.
-Only Kong is published on the host. Service API containers are not published on
-host ports in development; they are reachable by Kong through Docker DNS aliases
-such as `identity-api`, `users-api`, `parties-api`, and `projects-api`.
+Kong joins one external private network per API (`nexus_identity_gateway`,
+`nexus_users_gateway`, `nexus_parties_gateway`, `nexus_projects_gateway`, and
+`nexus_ai_gateway`). An API therefore cannot discover every other API through a
+single flat gateway network. The AI Gateway additionally joins the Projects
+network because it has an explicit Projects API dependency.
+
+Only Kong is published on the host during a normal start. Service APIs,
+PostgreSQL, and Redis remain private. To temporarily expose database ports on
+localhost through hardened TCP relay containers, run:
+
+```bash
+make stack-debug-up
+```
+
+The relays belong to the Compose `debug` profile and disappear with
+`make stack-down`. They never listen on a non-loopback host address.

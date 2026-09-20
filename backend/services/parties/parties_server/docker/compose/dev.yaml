@@ -18,7 +18,7 @@ services:
       - "8082"
     networks:
       default:
-      nexus_gateway:
+      parties_gateway:
         aliases:
           - parties-api
     depends_on:
@@ -53,8 +53,6 @@ services:
     build:
       context: ../../../../../infrastructure/service-runtime/docker/postgres
     user: "0:0"
-    ports:
-      - "127.0.0.1:8490:5432"
     depends_on:
       vault_agent:
         condition: service_healthy
@@ -92,8 +90,6 @@ services:
     build:
       context: ../../../../../infrastructure/service-runtime/docker/redis
     user: "0:0"
-    ports:
-      - "127.0.0.1:8491:6379"
     depends_on:
       vault_agent:
         condition: service_healthy
@@ -123,6 +119,6 @@ services:
       start_period: 5s
 
 networks:
-  nexus_gateway:
-    name: nexus_gateway
+  parties_gateway:
+    name: nexus_parties_gateway
     external: true

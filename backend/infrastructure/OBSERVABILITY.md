@@ -59,3 +59,11 @@ curl -i -H 'x-request-id: local-check-1234' http://localhost:8000/v1/ai/health
 
 The response must include `x-request-id: local-check-1234`, and AI Gateway logs
 must contain a matching JSON `http_request` event.
+
+## Local ELK workspace
+
+An optional, resource-bounded Elasticsearch, Logstash and Kibana stack is
+available under [`observability/`](observability/README.md). It tails Docker
+logs without mounting the Docker socket and provisions the NEXUS operational
+dashboard automatically. It is intended for local diagnosis; production must
+use authenticated, encrypted and redundant observability infrastructure.
