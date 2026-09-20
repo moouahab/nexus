@@ -1,11 +1,14 @@
 services:
   vault:
     image: hashicorp/vault:1.17
+    environment:
+      HOME: /tmp
     command:
       - sh
       - -ec
       - |
         vault server -dev \
+          -dev-no-store-token \
           -dev-root-token-id="$$(cat /run/secrets/vault_dev_root_token)" \
           -dev-listen-address="$$(cat /vault/config/dev-listen-address)"
     ports:
@@ -16,6 +19,21 @@ services:
     secrets:
       - source: vault_dev_root_token
         target: vault_dev_root_token
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - IPC_LOCK
+      - DAC_OVERRIDE
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+      - /vault/file:size=64m,nosuid,nodev
+      - /vault/logs:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
+    security_opt:
+      - no-new-privileges:true
 
   vault_agent:
     build:
@@ -40,13 +58,30 @@ services:
         target: secret_id
     volumes:
       - projects_vault_agent:/vault/token
-      - projects_vault_secrets:/vault/secrets
+      - projects_api_secrets:/vault/secrets/api
+      - projects_postgres_secrets:/vault/secrets/postgres
+      - projects_redis_secrets:/vault/secrets/redis
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /vault/runtime:size=4m,noexec,nosuid,nodev,mode=0700
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
     security_opt:
       - no-new-privileges:true
     healthcheck:
       test:
         - CMD-SHELL
-        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres_password && test -s /vault/secrets/redis_password && test -s /vault/secrets/serverpod-passwords.yaml
+        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres/postgres_password && test -s /vault/secrets/redis/redis_password && test -s /vault/secrets/api/serverpod-passwords.yaml
       interval: 5s
       timeout: 3s
       retries: 12
@@ -80,4 +115,6 @@ secrets:
 
 volumes:
   projects_vault_agent:
-  projects_vault_secrets:
+  projects_api_secrets:
+  projects_postgres_secrets:
+  projects_redis_secrets:

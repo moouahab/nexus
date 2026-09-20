@@ -78,6 +78,11 @@ class ProjectRegistryPolicy {
     ProjectParticipantRole.clientReferent,
   };
 
+  static const projectManagerRoles = <ProjectParticipantRole>{
+    ProjectParticipantRole.nexusOwner,
+    ProjectParticipantRole.nexusManager,
+  };
+
   static const participantRequiredFields =
       <ProjectParticipantRole, Set<String>>{
         ProjectParticipantRole.nexusOwner: {'identityOrName'},
@@ -121,6 +126,10 @@ class ProjectRegistryPolicy {
 
   bool canBePrimaryParticipant(ProjectParticipantRole role) {
     return primaryParticipantRoles.contains(role);
+  }
+
+  bool canManageProject(ProjectParticipantRole role) {
+    return projectManagerRoles.contains(role);
   }
 
   Set<String> requiredFieldsFor(ProjectParticipantRole role) {

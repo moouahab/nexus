@@ -8,10 +8,12 @@ class _LoginForm extends StatelessWidget {
     required this.rememberMe,
     required this.obscurePassword,
     required this.isSubmitting,
+    required this.isGoogleSubmitting,
     required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onGoogleLogin,
     required this.onRegister,
     this.compactSpacing = false,
     this.showHeading = true,
@@ -23,10 +25,12 @@ class _LoginForm extends StatelessWidget {
   final bool rememberMe;
   final bool obscurePassword;
   final bool isSubmitting;
+  final bool isGoogleSubmitting;
   final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
   final Future<void> Function() onSubmit;
+  final Future<void> Function() onGoogleLogin;
   final VoidCallback onRegister;
   final bool compactSpacing;
   final bool showHeading;
@@ -127,7 +131,9 @@ class _LoginForm extends StatelessWidget {
           _Separator(label: 'OU', color: secondaryText),
           SizedBox(height: compactSpacing ? 18 : 26),
           _LineButton(
-            text: 'Continuer avec Google',
+            text: isGoogleSubmitting
+                ? 'Connexion Google...'
+                : 'Continuer avec Google',
             color: primaryText,
             leading: Text(
               'G',
@@ -138,7 +144,9 @@ class _LoginForm extends StatelessWidget {
               ),
             ),
             icon: Icons.arrow_forward,
-            onPressed: () {},
+            onPressed: isSubmitting || isGoogleSubmitting
+                ? null
+                : onGoogleLogin,
           ),
           SizedBox(height: compactSpacing ? 24 : 46),
           Wrap(

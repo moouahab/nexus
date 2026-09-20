@@ -10,4 +10,5 @@ class AuthClaimNames {
   static const expiresAt = 'exp';
   static const emailVerified = 'email_verified';
   static const authenticationMethods = 'amr';
+  static const scopes = 'scope';
 }

@@ -7,6 +7,7 @@ infrastructure boundaries.
 backend/
 ├── services/
 │   ├── identity/
+│   ├── ai_gateway/
 │   ├── parties/
 │   ├── projects/
 │   └── users/
@@ -50,3 +51,22 @@ backend/infrastructure/service-runtime/
 It provides shared Docker images, entrypoints, shell helpers, and Vault Agent
 connection config. Each service still keeps its own Compose files, secrets,
 Vault templates, database name, ports, and business logic.
+
+## Public API Compatibility
+
+Kong exposes versioned HTTPS/JSON contracts for platform-neutral clients.
+Generated Serverpod clients remain an optional optimized transport for Dart and
+Flutter applications. Identity, Users, Parties, Projects, and AI capabilities
+also expose platform-neutral JSON routes through Kong.
+
+Current gateway prefixes are `/v1/auth`, `/v1/users`, `/v1/parties`,
+`/v1/projects`, and `/v1/ai`. Each public REST contract must reuse the same
+application layer as its Serverpod RPC endpoint.
+
+OpenAPI contracts currently live at:
+
+- `services/identity/openapi/openapi.yaml`;
+- `services/users/openapi/openapi.yaml`;
+- `services/parties/openapi/openapi.yaml`;
+- `services/projects/projects_server/openapi.yaml`;
+- `ia/ai-gateway/openapi.yaml`.

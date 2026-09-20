@@ -7,17 +7,29 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
       - "127.0.0.1:8443:8443"
-      - "127.0.0.1:8001:8001"
       - "127.0.0.1:8100:8100"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - ./kong.yaml:/kong/declarative/kong.yaml:ro
+    networks:
+      - nexus_gateway
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,nosuid,nodev,mode=1777
+    pids_limit: 200
+    mem_limit: 512m
+    cpus: 1.0
     healthcheck:
       test: ["CMD-SHELL", "kong health"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 10s
+
+networks:
+  nexus_gateway:
+    name: nexus_gateway
+    external: true

@@ -1,4 +1,6 @@
 import 'package:identity_server/src/auth/domain/auth_claims.dart';
+import 'package:identity_server/src/auth/domain/service_auth_claims.dart';
+import 'package:identity_server/src/auth/infrastructure/security/hmac_sha256_access_token_service.dart';
 import 'package:identity_server/src/auth/infrastructure/security/rs256_access_token_service.dart';
 import 'package:identity_server/src/generated/protocol.dart' as protocol;
 import 'package:nexus_auth/nexus_auth.dart' as nexus_auth;
@@ -49,6 +51,53 @@ void main() {
       expect(jwk.containsKey('d'), isFalse);
       expect(jwk.containsKey('p'), isFalse);
       expect(jwk.containsKey('q'), isFalse);
+    });
+
+    test('creates service tokens verifiable by public shared verifier', () {
+      final service = Rs256AccessTokenService(
+        privateKeyPem: _rsaPrivateKeyPem,
+        publicKeyPem: _rsaPublicKeyPem,
+        keyId: 'identity-access-token-current',
+        audience: 'ai-gateway',
+      );
+
+      final token = service.createServiceToken(
+        ServiceAuthClaims.service(
+          serviceName: 'projects',
+          audience: 'ai-gateway',
+          scopes: ['ai.context.preview', 'ai.run.create'],
+        ),
+      );
+
+      final context = nexus_auth.Rs256AccessTokenVerifier(
+        publicKeyPem: _rsaPublicKeyPem,
+        audience: 'ai-gateway',
+      ).verifyServiceToken(token, requiredScopes: ['ai.context.preview']);
+
+      expect(context.serviceName, 'projects');
+      expect(context.audiences, ['ai-gateway']);
+      expect(context.scopes, ['ai.context.preview', 'ai.run.create']);
+    });
+
+    test('rejects service tokens as user access tokens', () {
+      final service = Rs256AccessTokenService(
+        privateKeyPem: _rsaPrivateKeyPem,
+        publicKeyPem: _rsaPublicKeyPem,
+        keyId: 'identity-access-token-current',
+      );
+
+      final token = service.createServiceToken(
+        ServiceAuthClaims.service(
+          serviceName: 'projects',
+          audience: 'nexus-api',
+          scopes: ['projects.read'],
+        ),
+      );
+
+      expect(
+        () => service.verifyAccessToken(token),
+        throwsA(isA<InvalidAccessTokenException>()),
+      );
     });
   });
 }

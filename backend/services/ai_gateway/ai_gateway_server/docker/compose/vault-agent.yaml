@@ -1,0 +1,98 @@
+services:
+  vault:
+    image: hashicorp/vault:1.17
+    environment:
+      HOME: /tmp
+    command:
+      - sh
+      - -ec
+      - |
+        vault server -dev \
+          -dev-no-store-token \
+          -dev-root-token-id="$$(cat /run/secrets/vault_dev_root_token)" \
+          -dev-listen-address="0.0.0.0:8200"
+    ports:
+      - "127.0.0.1:8600:8200"
+    secrets:
+      - source: vault_dev_root_token
+        target: vault_dev_root_token
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [IPC_LOCK, DAC_OVERRIDE]
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+      - /vault/file:size=64m,nosuid,nodev
+      - /vault/logs:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
+    security_opt: [no-new-privileges:true]
+
+  vault_agent:
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/vault-agent
+    user: "0:0"
+    depends_on:
+      vault:
+        condition: service_started
+    configs:
+      - source: vault_agent_config
+        target: /vault/config/agent.hcl
+      - source: vault_template_postgres_password
+        target: /vault/templates/postgres_password.ctmpl
+      - source: vault_template_redis_password
+        target: /vault/templates/redis_password.ctmpl
+      - source: vault_template_serverpod_passwords
+        target: /vault/templates/serverpod-passwords.yaml.ctmpl
+    secrets:
+      - source: vault_role_id
+        target: role_id
+      - source: vault_secret_id
+        target: secret_id
+    volumes:
+      - ai_gateway_vault_agent:/vault/token
+      - ai_gateway_api_secrets:/vault/secrets/api
+      - ai_gateway_postgres_secrets:/vault/secrets/postgres
+      - ai_gateway_redis_secrets:/vault/secrets/redis
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    tmpfs:
+      - /vault/runtime:size=4m,noexec,nosuid,nodev,mode=0700
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres/postgres_password && test -s /vault/secrets/api/serverpod-passwords.yaml
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+configs:
+  vault_agent_config:
+    file: ../../../../../infrastructure/service-runtime/vault/agent.hcl
+  vault_template_postgres_password:
+    file: ../vault/templates/postgres_password.ctmpl
+  vault_template_redis_password:
+    file: ../vault/templates/redis_password.ctmpl
+  vault_template_serverpod_passwords:
+    file: ../vault/templates/serverpod-passwords.yaml.ctmpl
+
+secrets:
+  vault_dev_root_token:
+    file: ../../secrets/vault_dev_root_token
+  vault_role_id:
+    file: ../../secrets/vault_role_id
+  vault_secret_id:
+    file: ../../secrets/vault_secret_id
+
+volumes:
+  ai_gateway_vault_agent:
+  ai_gateway_api_secrets:
+  ai_gateway_postgres_secrets:
+  ai_gateway_redis_secrets:

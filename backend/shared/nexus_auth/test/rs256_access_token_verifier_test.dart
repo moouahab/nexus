@@ -54,6 +54,38 @@ void main() {
         throwsA(isA<NexusAuthException>()),
       );
     });
+
+    test('verifies service token audience and required scopes', () {
+      final token = _serviceToken(
+        serviceName: 'projects',
+        audience: 'users-service',
+        scopes: ['users.profile.read', 'parties.membership.read'],
+      );
+
+      final context = Rs256AccessTokenVerifier(
+        publicKeyPem: _rsaPublicKeyPem,
+        audience: 'users-service',
+      ).verifyServiceToken(token, requiredScopes: ['users.profile.read']);
+
+      expect(context.serviceName, 'projects');
+      expect(context.audiences, ['users-service']);
+      expect(context.scopes, ['users.profile.read', 'parties.membership.read']);
+    });
+
+    test('rejects service token when verifying user access token', () {
+      final token = _serviceToken(
+        serviceName: 'projects',
+        audience: AuthTokenDefaults.audience,
+        scopes: ['projects.read'],
+      );
+
+      expect(
+        () => Rs256AccessTokenVerifier(
+          publicKeyPem: _rsaPublicKeyPem,
+        ).verify(token),
+        throwsA(isA<NexusAuthException>()),
+      );
+    });
   });
 }
 
@@ -74,6 +106,31 @@ String _accessToken({
           now.add(const Duration(minutes: 15)).millisecondsSinceEpoch ~/ 1000,
       AuthClaimNames.emailVerified: true,
       AuthClaimNames.authenticationMethods: ['username'],
+    },
+    header: {'kid': 'identity-access-token-current'},
+  ).sign(
+    RSAPrivateKey(_rsaPrivateKeyPem),
+    algorithm: JWTAlgorithm.RS256,
+    noIssueAt: true,
+  );
+}
+
+String _serviceToken({
+  required String serviceName,
+  required String audience,
+  required List<String> scopes,
+}) {
+  final now = DateTime.now().toUtc();
+  return JWT(
+    {
+      AuthClaimNames.subject: 'service:$serviceName',
+      AuthClaimNames.issuer: AuthTokenDefaults.issuer,
+      AuthClaimNames.audience: audience,
+      AuthClaimNames.tokenType: AuthTokenTypes.service,
+      AuthClaimNames.issuedAt: now.millisecondsSinceEpoch ~/ 1000,
+      AuthClaimNames.expiresAt:
+          now.add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/ 1000,
+      AuthClaimNames.scopes: scopes,
     },
     header: {'kid': 'identity-access-token-current'},
   ).sign(

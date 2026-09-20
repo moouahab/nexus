@@ -1,0 +1,6 @@
+aiGateway:
+  - health:
+  - capabilities:
+  - createRun:
+  - getRun:
+  - cancelRun:

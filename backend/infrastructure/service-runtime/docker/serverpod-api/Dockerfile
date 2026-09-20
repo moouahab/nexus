@@ -40,6 +40,7 @@ COPY --from=build /app/${SERVER_PACKAGE}/bin/server server
 COPY --from=service_runtime entrypoint.sh ${ENTRYPOINT_TARGET}
 RUN chmod 0555 ${ENTRYPOINT_TARGET}
 
+COPY --from=build /app/${SERVER_PACKAGE}/config/ config-defaults/
 COPY --from=build /app/${SERVER_PACKAGE}/config/ config/
 COPY --from=build /app/${SERVER_PACKAGE}/web/ web/
 COPY --from=build /app/${SERVER_PACKAGE}/migrations/ migrations/

@@ -1,0 +1,5 @@
+  - name: rate-limiting
+    config:
+      minute: 600
+      policy: local
+      hide_client_headers: false

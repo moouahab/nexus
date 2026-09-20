@@ -1,0 +1,92 @@
+/me:
+  get:
+    operationId: getMyProfile
+    responses:
+      '200': { $ref: '#/$defs/ProfileResponse' }
+      '401': { $ref: '#/$defs/ErrorResponse' }
+      '404': { $ref: '#/$defs/ErrorResponse' }
+  put:
+    operationId: completeMyProfile
+    requestBody: { $ref: '#/$defs/ProfileBody' }
+    responses:
+      '200': { $ref: '#/$defs/ProfileResponse' }
+      '400': { $ref: '#/$defs/ErrorResponse' }
+      '401': { $ref: '#/$defs/ErrorResponse' }
+      '409': { $ref: '#/$defs/ErrorResponse' }
+/profiles:
+  post:
+    operationId: completeProfile
+    description: User creates only their own profile; service requires users.profile.write for users-service.
+    requestBody: { $ref: '#/$defs/ProfileBody' }
+    responses:
+      '201': { $ref: '#/$defs/ProfileResponse' }
+      '400': { $ref: '#/$defs/ErrorResponse' }
+      '401': { $ref: '#/$defs/ErrorResponse' }
+      '403': { $ref: '#/$defs/ErrorResponse' }
+      '409': { $ref: '#/$defs/ErrorResponse' }
+/profiles/{profileId}:
+  get:
+    operationId: getProfile
+    description: User reads only their profile; service requires users.profile.read for users-service.
+    parameters: [{ $ref: '#/$defs/ProfileId' }]
+    responses:
+      '200': { $ref: '#/$defs/ProfileResponse' }
+      '401': { $ref: '#/$defs/ErrorResponse' }
+      '403': { $ref: '#/$defs/ErrorResponse' }
+      '404': { $ref: '#/$defs/ErrorResponse' }
+/profiles/by-identity/{identityId}:
+  get:
+    operationId: getProfileByIdentity
+    parameters:
+      - name: identityId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    responses:
+      '200': { $ref: '#/$defs/ProfileResponse' }
+      '401': { $ref: '#/$defs/ErrorResponse' }
+      '403': { $ref: '#/$defs/ErrorResponse' }
+      '404': { $ref: '#/$defs/ErrorResponse' }
+/profiles/{profileId}/primary-party:
+  put:
+    operationId: setPrimaryParty
+    description: User updates only their profile; service requires users.profile.write for users-service.
+    parameters: [{ $ref: '#/$defs/ProfileId' }]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../components/schemas.yaml#/$defs/PrimaryPartyUpdate' }
+    responses:
+      '200': { $ref: '#/$defs/ProfileResponse' }
+      '400': { $ref: '#/$defs/ErrorResponse' }
+      '401': { $ref: '#/$defs/ErrorResponse' }
+      '403': { $ref: '#/$defs/ErrorResponse' }
+      '404': { $ref: '#/$defs/ErrorResponse' }
+$defs:
+  ProfileId:
+    name: profileId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  ProfileBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../components/schemas.yaml#/$defs/CompleteProfile' }
+  ProfileResponse:
+    description: User profile
+    headers:
+      Cache-Control:
+        schema: { type: string, const: no-store }
+    content:
+      application/json:
+        schema: { $ref: '../components/schemas.yaml#/$defs/UserProfile' }
+  ErrorResponse:
+    description: Stable API error
+    headers:
+      Cache-Control:
+        schema: { type: string, const: no-store }
+    content:
+      application/json:
+        schema: { $ref: '../components/schemas.yaml#/$defs/Error' }

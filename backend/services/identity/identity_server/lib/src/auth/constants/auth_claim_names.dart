@@ -8,6 +8,7 @@ class AuthClaimNames {
   static const tokenType = 'typ';
   static const issuedAt = 'iat';
   static const expiresAt = 'exp';
+  static const scopes = 'scope';
   static const emailVerified = 'email_verified';
   static const authenticationMethods = 'amr';
 }

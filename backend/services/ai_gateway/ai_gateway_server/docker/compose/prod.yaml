@@ -1,0 +1,120 @@
+services:
+  api:
+    build:
+      context: ../../..
+      dockerfile: ../../infrastructure/service-runtime/docker/serverpod-api/Dockerfile
+      additional_contexts:
+        service_runtime: ../../../../../infrastructure/service-runtime/docker/serverpod-api
+        nexus_auth: ../../../../../shared/nexus_auth
+      args:
+        SERVER_PACKAGE: ai_gateway_server
+        CLIENT_PACKAGE: ai_gateway_client
+        RUNTIME_USER: ai_gateway
+        ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
+    command: ["production", "default", "normal", "monolith", "false"]
+    environment:
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-512}
+      PROJECTS_BASE_URL: ${PROJECTS_BASE_URL:-http://projects-api:8082}
+      PROJECTS_TIMEOUT_SECONDS: ${PROJECTS_TIMEOUT_SECONDS:-10}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose: ["8080", "8082"]
+    networks:
+      nexus_gateway:
+        aliases:
+          - ai-gateway-api
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    volumes:
+      - ai_gateway_api_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs:
+      - /app/config:size=4m,noexec,nosuid,nodev,mode=0700
+      - /tmp:size=32m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  vault_agent:
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/vault-agent
+    user: "0:0"
+    configs:
+      - source: vault_agent_production_config
+        target: /vault/config/agent.hcl.template
+      - source: vault_production_address
+        target: /vault/config/vault-address
+      - source: vault_production_ca_cert
+        target: /vault/tls/ca.crt
+      - source: vault_template_production_postgres_password
+        target: /vault/templates/postgres_password.ctmpl
+      - source: vault_template_production_serverpod_passwords
+        target: /vault/templates/serverpod-passwords.yaml.ctmpl
+    secrets:
+      - source: vault_production_role_id
+        target: role_id
+      - source: vault_production_secret_id
+        target: secret_id
+    volumes:
+      - ai_gateway_vault_agent:/vault/token
+      - ai_gateway_api_secrets:/vault/secrets/api
+      - ai_gateway_postgres_secrets:/vault/secrets/postgres
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID]
+    tmpfs:
+      - /vault/runtime:size=4m,noexec,nosuid,nodev,mode=0700
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres/postgres_password && test -s /vault/secrets/api/serverpod-passwords.yaml
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+configs:
+  vault_agent_production_config:
+    file: ../../../../../infrastructure/service-runtime/vault/agent-production.hcl
+  vault_production_address:
+    file: ../../../../../infrastructure/service-runtime/vault/production-vault-address
+  vault_production_ca_cert:
+    file: ../../../../../infrastructure/service-runtime/vault/tls/production-ca.crt
+  vault_template_production_postgres_password:
+    file: ../vault/templates/production/postgres_password.ctmpl
+  vault_template_production_serverpod_passwords:
+    file: ../vault/templates/production/serverpod-passwords.yaml.ctmpl
+
+secrets:
+  vault_production_role_id:
+    file: ../../secrets/production/vault_role_id
+  vault_production_secret_id:
+    file: ../../secrets/production/vault_secret_id
+
+volumes:
+  ai_gateway_vault_agent:
+  ai_gateway_api_secrets:
+  ai_gateway_postgres_secrets:
+
+networks:
+  nexus_gateway:
+    name: nexus_gateway
+    external: true

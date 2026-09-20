@@ -1,0 +1,25 @@
+  - name: parties-rest
+    url: http://parties-api:8082
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-parties-rest
+        paths: [/v1/parties]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]
+
+  - name: parties-serverpod-rpc
+    url: http://parties-api:8080/party
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-parties-rpc-compat
+        paths: [/v1/parties/party]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]

@@ -25,6 +25,7 @@ abstract class Project
     this.summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    this.tenantPartyId,
     this.ownerIdentityId,
     this.workspacePath,
     this.archivePath,
@@ -44,6 +45,7 @@ abstract class Project
     String? summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    _i1.UuidValue? tenantPartyId,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     String? archivePath,
@@ -69,6 +71,11 @@ abstract class Project
           ? null
           : _i3.ProjectVisibility.fromJson(
               (jsonSerialization['visibility'] as String),
+            ),
+      tenantPartyId: jsonSerialization['tenantPartyId'] == null
+          ? null
+          : _i1.UuidValueJsonExtension.fromJson(
+              jsonSerialization['tenantPartyId'],
             ),
       ownerIdentityId: jsonSerialization['ownerIdentityId'] == null
           ? null
@@ -117,6 +124,9 @@ abstract class Project
 
   _i3.ProjectVisibility visibility;
 
+  /// Party service UUID owning this workspace tenant boundary.
+  _i1.UuidValue? tenantPartyId;
+
   /// Identity service UUID of the owner, kept as an external reference.
   _i1.UuidValue? ownerIdentityId;
 
@@ -149,6 +159,7 @@ abstract class Project
     String? summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    _i1.UuidValue? tenantPartyId,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     String? archivePath,
@@ -168,6 +179,7 @@ abstract class Project
       if (summary != null) 'summary': summary,
       'status': status.toJson(),
       'visibility': visibility.toJson(),
+      if (tenantPartyId != null) 'tenantPartyId': tenantPartyId?.toJson(),
       if (ownerIdentityId != null) 'ownerIdentityId': ownerIdentityId?.toJson(),
       if (workspacePath != null) 'workspacePath': workspacePath,
       if (archivePath != null) 'archivePath': archivePath,
@@ -189,6 +201,7 @@ abstract class Project
       if (summary != null) 'summary': summary,
       'status': status.toJson(),
       'visibility': visibility.toJson(),
+      if (tenantPartyId != null) 'tenantPartyId': tenantPartyId?.toJson(),
       if (ownerIdentityId != null) 'ownerIdentityId': ownerIdentityId?.toJson(),
       if (workspacePath != null) 'workspacePath': workspacePath,
       if (archivePath != null) 'archivePath': archivePath,
@@ -240,6 +253,7 @@ class _ProjectImpl extends Project {
     String? summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    _i1.UuidValue? tenantPartyId,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     String? archivePath,
@@ -255,6 +269,7 @@ class _ProjectImpl extends Project {
          summary: summary,
          status: status,
          visibility: visibility,
+         tenantPartyId: tenantPartyId,
          ownerIdentityId: ownerIdentityId,
          workspacePath: workspacePath,
          archivePath: archivePath,
@@ -276,6 +291,7 @@ class _ProjectImpl extends Project {
     Object? summary = _Undefined,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    Object? tenantPartyId = _Undefined,
     Object? ownerIdentityId = _Undefined,
     Object? workspacePath = _Undefined,
     Object? archivePath = _Undefined,
@@ -292,6 +308,9 @@ class _ProjectImpl extends Project {
       summary: summary is String? ? summary : this.summary,
       status: status ?? this.status,
       visibility: visibility ?? this.visibility,
+      tenantPartyId: tenantPartyId is _i1.UuidValue?
+          ? tenantPartyId
+          : this.tenantPartyId,
       ownerIdentityId: ownerIdentityId is _i1.UuidValue?
           ? ownerIdentityId
           : this.ownerIdentityId,
@@ -347,6 +366,13 @@ class ProjectUpdateTable extends _i1.UpdateTable<ProjectTable> {
     _i3.ProjectVisibility value,
   ) => _i1.ColumnValue(
     table.visibility,
+    value,
+  );
+
+  _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> tenantPartyId(
+    _i1.UuidValue? value,
+  ) => _i1.ColumnValue(
+    table.tenantPartyId,
     value,
   );
 
@@ -427,6 +453,10 @@ class ProjectTable extends _i1.Table<_i1.UuidValue?> {
       _i1.EnumSerialization.byName,
       hasDefault: true,
     );
+    tenantPartyId = _i1.ColumnUuid(
+      'tenantPartyId',
+      this,
+    );
     ownerIdentityId = _i1.ColumnUuid(
       'ownerIdentityId',
       this,
@@ -477,6 +507,9 @@ class ProjectTable extends _i1.Table<_i1.UuidValue?> {
 
   late final _i1.ColumnEnum<_i3.ProjectVisibility> visibility;
 
+  /// Party service UUID owning this workspace tenant boundary.
+  late final _i1.ColumnUuid tenantPartyId;
+
   /// Identity service UUID of the owner, kept as an external reference.
   late final _i1.ColumnUuid ownerIdentityId;
 
@@ -504,6 +537,7 @@ class ProjectTable extends _i1.Table<_i1.UuidValue?> {
     summary,
     status,
     visibility,
+    tenantPartyId,
     ownerIdentityId,
     workspacePath,
     archivePath,

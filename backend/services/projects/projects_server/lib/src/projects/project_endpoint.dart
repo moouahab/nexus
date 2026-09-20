@@ -6,23 +6,28 @@ import 'application/project_registry_service.dart';
 
 class ProjectEndpoint extends Endpoint {
   static const _registry = ProjectRegistryService();
-  static const _auth = AuthContextResolver();
+  static const _userAuth = AuthContextResolver();
+  static const _serviceAuth = AuthContextResolver(audience: 'projects-service');
+  static const _readScope = 'projects.read';
+  static const _writeScope = 'projects.write';
 
   Future<Project> createMyProject(
     Session session, {
     required String slug,
     required String name,
+    required UuidValue tenantPartyId,
     String? summary,
     ProjectVisibility visibility = ProjectVisibility.private,
     String? workspacePath,
     List<String>? tags,
     Map<String, String>? metadata,
   }) {
-    final auth = _auth.requireContext(session);
+    final auth = _requireUserContext(session);
     return _registry.createProject(
       session,
       slug: slug,
       name: name,
+      tenantPartyId: tenantPartyId,
       summary: summary,
       visibility: visibility,
       ownerIdentityId: auth.identityId,
@@ -36,6 +41,7 @@ class ProjectEndpoint extends Endpoint {
     Session session, {
     required String slug,
     required String name,
+    required UuidValue tenantPartyId,
     String? summary,
     ProjectVisibility visibility = ProjectVisibility.private,
     UuidValue? ownerIdentityId,
@@ -43,14 +49,15 @@ class ProjectEndpoint extends Endpoint {
     List<String>? tags,
     Map<String, String>? metadata,
   }) {
-    final auth = _authContextForHttp(session);
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
     return _registry.createProject(
       session,
       slug: slug,
       name: name,
+      tenantPartyId: tenantPartyId,
       summary: summary,
       visibility: visibility,
-      ownerIdentityId: auth?.identityId ?? ownerIdentityId,
+      ownerIdentityId: caller.identityId ?? ownerIdentityId,
       workspacePath: workspacePath,
       tags: tags,
       metadata: metadata,
@@ -59,27 +66,50 @@ class ProjectEndpoint extends Endpoint {
 
   Future<List<Project>> listProjects(
     Session session, {
+    required UuidValue tenantPartyId,
     ProjectStatus? status,
     int limit = 50,
     int offset = 0,
-  }) {
-    _ensureAuthenticatedHttp(session);
+  }) async {
+    final caller = _requireCaller(session, serviceScopes: const [_readScope]);
+    if (caller.identityId != null) {
+      return _registry.listProjectsVisibleToIdentity(
+        session,
+        identityId: caller.identityId!,
+        tenantPartyId: tenantPartyId,
+        status: status,
+        limit: limit,
+        offset: offset,
+      );
+    }
     return _registry.listProjects(
       session,
+      tenantPartyId: tenantPartyId,
       status: status,
       limit: limit,
       offset: offset,
     );
   }
 
-  Future<Project> getProject(Session session, UuidValue projectId) {
-    _ensureAuthenticatedHttp(session);
+  Future<Project> getProject(Session session, UuidValue projectId) async {
+    await _requireProjectRead(session, projectId);
     return _registry.getProject(session, projectId);
   }
 
-  Future<Project> getProjectBySlug(Session session, String slug) {
-    _ensureAuthenticatedHttp(session);
-    return _registry.getProjectBySlug(session, slug);
+  Future<bool> canUseAiForProject(
+    Session session, {
+    required UuidValue projectId,
+    required UuidValue tenantPartyId,
+  }) async {
+    await _requireProjectRead(session, projectId);
+    final project = await _registry.getProject(session, projectId);
+    return project.tenantPartyId == tenantPartyId;
+  }
+
+  Future<Project> getProjectBySlug(Session session, String slug) async {
+    final project = await _registry.getProjectBySlug(session, slug);
+    await _requireProjectRead(session, project.id!);
+    return project;
   }
 
   Future<Project> updateProjectProfile(
@@ -92,8 +122,9 @@ class ProjectEndpoint extends Endpoint {
     List<String>? tags,
     Map<String, String>? metadata,
     UuidValue? actorIdentityId,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.updateProjectProfile(
       session,
       projectId: projectId,
@@ -113,8 +144,9 @@ class ProjectEndpoint extends Endpoint {
     required ProjectStatus status,
     UuidValue? actorIdentityId,
     String? reason,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.changeStatus(
       session,
       projectId: projectId,
@@ -131,8 +163,9 @@ class ProjectEndpoint extends Endpoint {
     String? reason,
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.archiveProject(
       session,
       projectId: projectId,
@@ -148,8 +181,9 @@ class ProjectEndpoint extends Endpoint {
     required UuidValue projectId,
     UuidValue? actorIdentityId,
     String? reason,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.restoreProject(
       session,
       projectId: projectId,
@@ -168,8 +202,9 @@ class ProjectEndpoint extends Endpoint {
     bool isPrimary = false,
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.assignProjectMember(
       session,
       projectId: projectId,
@@ -194,8 +229,9 @@ class ProjectEndpoint extends Endpoint {
     String? notes,
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.setProjectClient(
       session,
       projectId: projectId,
@@ -221,8 +257,9 @@ class ProjectEndpoint extends Endpoint {
     String? notes,
     UuidValue? actorIdentityId,
     Map<String, String>? metadata,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.setClientReferent(
       session,
       projectId: projectId,
@@ -242,8 +279,8 @@ class ProjectEndpoint extends Endpoint {
     required UuidValue projectId,
     ProjectParticipantRole? role,
     ProjectParticipantStatus? status,
-  }) {
-    _ensureAuthenticatedHttp(session);
+  }) async {
+    await _requireProjectRead(session, projectId);
     return _registry.listParticipants(
       session,
       projectId: projectId,
@@ -256,8 +293,9 @@ class ProjectEndpoint extends Endpoint {
     Session session, {
     required UuidValue participantId,
     UuidValue? actorIdentityId,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireParticipantManagement(session, participantId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.removeParticipant(
       session,
       participantId: participantId,
@@ -275,8 +313,9 @@ class ProjectEndpoint extends Endpoint {
     String? uri,
     Map<String, String>? metadata,
     UuidValue? actorIdentityId,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireProjectManagement(session, projectId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.linkResource(
       session,
       projectId: projectId,
@@ -294,8 +333,9 @@ class ProjectEndpoint extends Endpoint {
     Session session, {
     required UuidValue linkId,
     UuidValue? actorIdentityId,
-  }) {
-    final actor = _actorIdentityId(session, actorIdentityId);
+  }) async {
+    final caller = await _requireLinkManagement(session, linkId);
+    final actor = _actorIdentityId(caller, actorIdentityId);
     return _registry.detachLink(
       session,
       linkId: linkId,
@@ -308,8 +348,8 @@ class ProjectEndpoint extends Endpoint {
     required UuidValue projectId,
     ProjectLinkKind? kind,
     ProjectLinkStatus? status,
-  }) {
-    _ensureAuthenticatedHttp(session);
+  }) async {
+    await _requireProjectRead(session, projectId);
     return _registry.listLinks(
       session,
       projectId: projectId,
@@ -323,8 +363,8 @@ class ProjectEndpoint extends Endpoint {
     required UuidValue projectId,
     int limit = 100,
     int offset = 0,
-  }) {
-    _ensureAuthenticatedHttp(session);
+  }) async {
+    await _requireProjectRead(session, projectId);
     return _registry.listEvents(
       session,
       projectId: projectId,
@@ -333,19 +373,127 @@ class ProjectEndpoint extends Endpoint {
     );
   }
 
-  AuthContext? _authContextForHttp(Session session) {
-    if (session.request == null) return null;
-    return _auth.requireContext(session);
+  _ProjectCaller _requireCaller(
+    Session session, {
+    required Iterable<String> serviceScopes,
+  }) {
+    try {
+      return _ProjectCaller.user(_userAuth.requireContext(session));
+    } on NexusAuthException catch (error) {
+      if (error.code != NexusAuthExceptionCode.invalidAccessToken) {
+        throw _notAuthorized(error);
+      }
+      try {
+        return _ProjectCaller.service(
+          _serviceAuth.requireServiceContext(
+            session,
+            requiredScopes: serviceScopes,
+          ),
+        );
+      } on NexusAuthException catch (serviceError) {
+        throw _notAuthorized(serviceError);
+      }
+    }
+  }
+
+  AuthContext _requireUserContext(Session session) {
+    try {
+      return _userAuth.requireContext(session);
+    } on NexusAuthException catch (error) {
+      throw _notAuthorized(error);
+    }
+  }
+
+  NotAuthorizedException _notAuthorized(NexusAuthException error) {
+    return NotAuthorizedException(
+      reason: _authFailureReason(error),
+      message: 'Authentication failed.',
+    );
+  }
+
+  AuthenticationFailureReason _authFailureReason(NexusAuthException error) {
+    return switch (error.code) {
+      NexusAuthExceptionCode.missingAccessToken ||
+      NexusAuthExceptionCode.invalidAccessToken =>
+        AuthenticationFailureReason.unauthenticated,
+      NexusAuthExceptionCode.missingAuthSecret ||
+      NexusAuthExceptionCode.missingRequest =>
+        AuthenticationFailureReason.insufficientAccess,
+    };
   }
 
   UuidValue? _actorIdentityId(
-    Session session,
+    _ProjectCaller caller,
     UuidValue? internalActorIdentityId,
   ) {
-    return _authContextForHttp(session)?.identityId ?? internalActorIdentityId;
+    return caller.identityId ?? internalActorIdentityId;
   }
 
-  void _ensureAuthenticatedHttp(Session session) {
-    _authContextForHttp(session);
+  Future<_ProjectCaller> _requireProjectRead(
+    Session session,
+    UuidValue projectId,
+  ) async {
+    final caller = _requireCaller(session, serviceScopes: const [_readScope]);
+    if (caller.identityId != null) {
+      await _registry.requireIdentityCanReadProject(
+        session,
+        projectId: projectId,
+        identityId: caller.identityId!,
+      );
+    }
+    return caller;
   }
+
+  Future<_ProjectCaller> _requireProjectManagement(
+    Session session,
+    UuidValue projectId,
+  ) async {
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (caller.identityId != null) {
+      await _registry.requireIdentityCanManageProject(
+        session,
+        projectId: projectId,
+        identityId: caller.identityId!,
+      );
+    }
+    return caller;
+  }
+
+  Future<_ProjectCaller> _requireParticipantManagement(
+    Session session,
+    UuidValue participantId,
+  ) async {
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (caller.identityId != null) {
+      await _registry.requireIdentityCanManageParticipant(
+        session,
+        participantId: participantId,
+        identityId: caller.identityId!,
+      );
+    }
+    return caller;
+  }
+
+  Future<_ProjectCaller> _requireLinkManagement(
+    Session session,
+    UuidValue linkId,
+  ) async {
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (caller.identityId != null) {
+      await _registry.requireIdentityCanManageLink(
+        session,
+        linkId: linkId,
+        identityId: caller.identityId!,
+      );
+    }
+    return caller;
+  }
+}
+
+class _ProjectCaller {
+  _ProjectCaller.user(AuthContext context) : identityId = context.identityId;
+
+  _ProjectCaller.service(ServiceAuthContext _) : identityId = null;
+
+  final UuidValue? identityId;
 }

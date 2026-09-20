@@ -1,12 +1,16 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 import '../../application/interfaces/access_token_service.dart';
+import '../../application/interfaces/service_token_service.dart';
+import '../../constants/auth_claim_names.dart';
 import '../../constants/auth_token_defaults.dart';
 import '../../constants/auth_token_types.dart';
 import '../../domain/auth_claims.dart';
+import '../../domain/service_auth_claims.dart';
 import 'hmac_sha256_access_token_service.dart';
 
-class Rs256AccessTokenService implements AccessTokenService {
+class Rs256AccessTokenService
+    implements AccessTokenService, ServiceTokenService {
   Rs256AccessTokenService({
     required String privateKeyPem,
     required String publicKeyPem,
@@ -30,8 +34,17 @@ class Rs256AccessTokenService implements AccessTokenService {
 
   @override
   String createAccessToken(AuthClaims claims) {
+    return _createToken(claims.toJson());
+  }
+
+  @override
+  String createServiceToken(ServiceAuthClaims claims) {
+    return _createToken(claims.toJson());
+  }
+
+  String _createToken(Map<String, dynamic> claims) {
     final jwt = JWT(
-      claims.toJson(),
+      claims,
       header: {
         'kid': keyId,
       },
@@ -46,15 +59,7 @@ class Rs256AccessTokenService implements AccessTokenService {
   @override
   AuthClaims verifyAccessToken(String token) {
     try {
-      final jwt = JWT.verify(
-        token,
-        _publicKey,
-        issuer: _issuer,
-        audience: Audience([_audience]),
-      );
-      final claims = AuthClaims.fromJson(
-        (jwt.payload as Map).cast<String, dynamic>(),
-      );
+      final claims = AuthClaims.fromJson(_verifiedPayload(token));
       if (claims.tokenType != AuthTokenTypes.access || claims.isExpired) {
         throw const InvalidAccessTokenException('Invalid access token claims.');
       }
@@ -64,6 +69,40 @@ class Rs256AccessTokenService implements AccessTokenService {
     } on Object catch (error) {
       throw InvalidAccessTokenException('Invalid RS256 token: $error');
     }
+  }
+
+  @override
+  ServiceAuthClaims verifyServiceToken(
+    String token, {
+    Iterable<String> requiredScopes = const [],
+  }) {
+    try {
+      final payload = _verifiedPayload(token);
+      if (payload[AuthClaimNames.tokenType] != AuthTokenTypes.service) {
+        throw const InvalidAccessTokenException('Invalid token type.');
+      }
+      final claims = ServiceAuthClaims.fromJson(payload);
+      if (claims.isExpired || !claims.hasAllScopes(requiredScopes)) {
+        throw const InvalidAccessTokenException(
+          'Invalid service token claims.',
+        );
+      }
+      return claims;
+    } on InvalidAccessTokenException {
+      rethrow;
+    } on Object catch (error) {
+      throw InvalidAccessTokenException('Invalid RS256 token: $error');
+    }
+  }
+
+  Map<String, dynamic> _verifiedPayload(String token) {
+    final jwt = JWT.verify(
+      token,
+      _publicKey,
+      issuer: _issuer,
+      audience: Audience([_audience]),
+    );
+    return (jwt.payload as Map).cast<String, dynamic>();
   }
 
   static String _normalizePem(String value) {

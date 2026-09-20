@@ -1,0 +1,18 @@
+### A structured conclusion produced during a reasoning run.
+### `statement` contains the claim, never the user's original prompt.
+class: AiClaim
+table: ai_claim
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  runId: UuidValue, relation(parent=ai_run, onDelete=Cascade)
+  statement: String
+  claimType: String
+  confidence: String
+  verificationDecision: String
+  iteration: int
+  createdAt: DateTime, default=now
+indexes:
+  ai_claim_run_idx:
+    fields: runId
+  ai_claim_run_iteration_idx:
+    fields: runId, iteration

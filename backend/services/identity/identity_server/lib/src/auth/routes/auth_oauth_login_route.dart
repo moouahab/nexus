@@ -18,7 +18,7 @@ class AuthOAuthLoginRoute extends AuthJsonRoute {
       session,
       provider: _readProvider(readStringBodyField(body, 'provider')),
       code: readStringBodyField(body, 'code'),
-      redirectUri: readStringBodyField(body, 'redirectUri'),
+      redirectUri: readOptionalStringBodyField(body, 'redirectUri'),
       codeVerifier: readOptionalStringBodyField(body, 'codeVerifier'),
       tokenTransport: tokenTransport(request, body: body),
     );

@@ -1,0 +1,5 @@
+  - name: correlation-id
+    config:
+      header_name: x-request-id
+      generator: uuid
+      echo_downstream: true

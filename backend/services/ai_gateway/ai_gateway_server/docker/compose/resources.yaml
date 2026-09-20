@@ -1,0 +1,14 @@
+configs:
+  postgres_dev_config:
+    file: ../config/postgres-dev.conf
+
+  postgres_test_config:
+    file: ../config/postgres-test.conf
+
+secrets:
+  postgres_test_password:
+    file: ../../secrets/postgres_test_password
+
+volumes:
+  ai_gateway_data:
+  ai_gateway_test_data:

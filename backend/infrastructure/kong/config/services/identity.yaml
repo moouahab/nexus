@@ -1,0 +1,25 @@
+  - name: identity-auth-web
+    url: http://identity-api:8082/auth
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-auth
+        paths: [/v1/auth]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]
+
+  - name: identity-well-known-web
+    url: http://identity-api:8082/.well-known
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: well-known
+        paths: [/.well-known]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]

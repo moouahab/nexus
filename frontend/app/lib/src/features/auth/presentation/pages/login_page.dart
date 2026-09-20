@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/brand/brand.dart';
 import '../../../../core/config/router/routers.dart';
 import '../../data/auth_api.dart';
+import '../../data/google_oauth_service.dart';
 
 part 'login/login_brand_panel.dart';
 part 'login/login_center_divider.dart';
@@ -29,10 +31,18 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authApi = AuthApi();
+  final _googleOAuthService = GoogleOAuthService();
   var _rememberMe = false;
   var _obscurePassword = true;
   var _isSubmitting = false;
+  var _isGoogleSubmitting = false;
   String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_googleOAuthService.warmUp().catchError((_) {}));
+  }
 
   @override
   void dispose() {
@@ -79,6 +89,48 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _startGoogleLogin() async {
+    if (_isSubmitting || _isGoogleSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isGoogleSubmitting = true;
+      _submitError = null;
+    });
+
+    try {
+      debugPrint('[OAuth] Google flow started');
+      final authorization = await _googleOAuthService.requestAuthorization();
+      debugPrint('[OAuth] Sending token to backend');
+      await _authApi.oauthLogin(
+        provider: 'google',
+        code: authorization.code,
+        redirectUri: authorization.redirectUri,
+        codeVerifier: authorization.codeVerifier,
+      );
+      debugPrint('[OAuth] Backend authentication successful');
+      debugPrint('[OAuth] Local session saved');
+
+      if (!mounted) return;
+      debugPrint('[OAuth] Google flow completed');
+      Navigator.of(context).pushReplacementNamed(PageNavigation.home);
+    } on AuthApiException catch (exception) {
+      if (!mounted) return;
+      setState(() => _submitError = exception.message);
+    } on FormatException {
+      if (!mounted) return;
+      setState(() => _submitError = 'Réponse serveur invalide.');
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _submitError = _googleOAuthService.messageForError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleSubmitting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -119,6 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                       rememberMe: _rememberMe,
                       obscurePassword: _obscurePassword,
                       isSubmitting: _isSubmitting,
+                      isGoogleSubmitting: _isGoogleSubmitting,
                       submitError: _submitError,
                       onRememberChanged: (value) {
                         setState(() => _rememberMe = value ?? false);
@@ -127,6 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                         setState(() => _obscurePassword = !_obscurePassword);
                       },
                       onSubmit: _submit,
+                      onGoogleLogin: _startGoogleLogin,
                       onRegister: () {
                         Navigator.of(
                           context,
@@ -141,6 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                       rememberMe: _rememberMe,
                       obscurePassword: _obscurePassword,
                       isSubmitting: _isSubmitting,
+                      isGoogleSubmitting: _isGoogleSubmitting,
                       submitError: _submitError,
                       onRememberChanged: (value) {
                         setState(() => _rememberMe = value ?? false);
@@ -149,6 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                         setState(() => _obscurePassword = !_obscurePassword);
                       },
                       onSubmit: _submit,
+                      onGoogleLogin: _startGoogleLogin,
                       onRegister: () {
                         Navigator.of(
                           context,
@@ -163,6 +219,7 @@ class _LoginPageState extends State<LoginPage> {
                       rememberMe: _rememberMe,
                       obscurePassword: _obscurePassword,
                       isSubmitting: _isSubmitting,
+                      isGoogleSubmitting: _isGoogleSubmitting,
                       submitError: _submitError,
                       onRememberChanged: (value) {
                         setState(() => _rememberMe = value ?? false);
@@ -171,6 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                         setState(() => _obscurePassword = !_obscurePassword);
                       },
                       onSubmit: _submit,
+                      onGoogleLogin: _startGoogleLogin,
                       onRegister: () {
                         Navigator.of(
                           context,
@@ -184,6 +242,7 @@ class _LoginPageState extends State<LoginPage> {
                       rememberMe: _rememberMe,
                       obscurePassword: _obscurePassword,
                       isSubmitting: _isSubmitting,
+                      isGoogleSubmitting: _isGoogleSubmitting,
                       submitError: _submitError,
                       onRememberChanged: (value) {
                         setState(() => _rememberMe = value ?? false);
@@ -192,6 +251,7 @@ class _LoginPageState extends State<LoginPage> {
                         setState(() => _obscurePassword = !_obscurePassword);
                       },
                       onSubmit: _submit,
+                      onGoogleLogin: _startGoogleLogin,
                       onRegister: () {
                         Navigator.of(
                           context,

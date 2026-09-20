@@ -12,10 +12,15 @@ services:
         RUNTIME_USER: projects
         ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["development", "default", "normal", "monolith", "true"]
-    ports:
-      - "127.0.0.1:8280:8080"
-      - "127.0.0.1:8281:8081"
-      - "127.0.0.1:8282:8082"
+    expose:
+      - "8080"
+      - "8081"
+      - "8082"
+    networks:
+      default:
+      nexus_gateway:
+        aliases:
+          - projects-api
     depends_on:
       postgres:
         condition: service_healthy
@@ -25,7 +30,16 @@ services:
         condition: service_healthy
     volumes:
       - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
-      - projects_vault_secrets:/run/vault/secrets:ro
+      - projects_api_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /app/config:size=4m,noexec,nosuid,nodev,mode=0700,uid=100
+      - /tmp:size=32m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -49,7 +63,24 @@ services:
         target: /run/config/postgres.conf
     volumes:
       - projects_data:/var/lib/postgresql/data
-      - projects_vault_secrets:/run/vault/secrets:ro
+      - projects_postgres_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+      - /var/run/postgresql:size=16m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d projects"]
       interval: 5s
@@ -67,7 +98,21 @@ services:
       vault_agent:
         condition: service_healthy
     volumes:
-      - projects_vault_secrets:/run/vault/secrets:ro
+      - projects_redis_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /data:size=64m,noexec,nosuid,nodev
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -76,3 +121,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+networks:
+  nexus_gateway:
+    name: nexus_gateway
+    external: true

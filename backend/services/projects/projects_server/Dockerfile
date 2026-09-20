@@ -48,10 +48,16 @@ COPY --from=build /app/projects_server/migrations/ migrations/
 # This file is required to enable the endpoint log filter in Insights.
 COPY --from=build /app/projects_server/lib/src/generated/protocol.yaml lib/src/generated/protocol.yaml
 
+RUN addgroup -S nexus \
+  && adduser -S -G nexus nexus \
+  && chown -R nexus:nexus /app
+
 # Expose ports
 EXPOSE 8080
 EXPOSE 8081
 EXPOSE 8082
+
+USER nexus
 
 # Define the entrypoint command
 ENTRYPOINT ./server --mode=$runmode --server-id=$serverid --logging=$logging --role=$role

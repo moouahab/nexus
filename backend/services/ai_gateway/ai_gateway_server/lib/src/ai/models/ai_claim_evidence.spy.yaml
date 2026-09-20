@@ -1,0 +1,18 @@
+### Many-to-many association recording how evidence relates to a claim.
+class: AiClaimEvidence
+table: ai_claim_evidence
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  runId: UuidValue, relation(parent=ai_run, onDelete=Cascade)
+  claimId: UuidValue, relation(parent=ai_claim, onDelete=Cascade)
+  evidenceId: UuidValue, relation(parent=ai_evidence, onDelete=Cascade)
+  relation: String
+  createdAt: DateTime, default=now
+indexes:
+  ai_claim_evidence_claim_idx:
+    fields: claimId
+  ai_claim_evidence_evidence_idx:
+    fields: evidenceId
+  ai_claim_evidence_unique_idx:
+    fields: claimId, evidenceId
+    unique: true

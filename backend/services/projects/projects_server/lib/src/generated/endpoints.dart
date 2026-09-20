@@ -53,6 +53,11 @@ class Endpoints extends _i1.EndpointDispatch {
               type: _i1.getType<String>(),
               nullable: false,
             ),
+            'tenantPartyId': _i1.ParameterDescription(
+              name: 'tenantPartyId',
+              type: _i1.getType<_i1.UuidValue>(),
+              nullable: false,
+            ),
             'summary': _i1.ParameterDescription(
               name: 'summary',
               type: _i1.getType<String?>(),
@@ -88,6 +93,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     session,
                     slug: params['slug'],
                     name: params['name'],
+                    tenantPartyId: params['tenantPartyId'],
                     summary: params['summary'],
                     visibility: params['visibility'],
                     workspacePath: params['workspacePath'],
@@ -106,6 +112,11 @@ class Endpoints extends _i1.EndpointDispatch {
             'name': _i1.ParameterDescription(
               name: 'name',
               type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'tenantPartyId': _i1.ParameterDescription(
+              name: 'tenantPartyId',
+              type: _i1.getType<_i1.UuidValue>(),
               nullable: false,
             ),
             'summary': _i1.ParameterDescription(
@@ -148,6 +159,7 @@ class Endpoints extends _i1.EndpointDispatch {
                     session,
                     slug: params['slug'],
                     name: params['name'],
+                    tenantPartyId: params['tenantPartyId'],
                     summary: params['summary'],
                     visibility: params['visibility'],
                     ownerIdentityId: params['ownerIdentityId'],
@@ -159,6 +171,11 @@ class Endpoints extends _i1.EndpointDispatch {
         'listProjects': _i1.MethodConnector(
           name: 'listProjects',
           params: {
+            'tenantPartyId': _i1.ParameterDescription(
+              name: 'tenantPartyId',
+              type: _i1.getType<_i1.UuidValue>(),
+              nullable: false,
+            ),
             'status': _i1.ParameterDescription(
               name: 'status',
               type: _i1.getType<_i4.ProjectStatus?>(),
@@ -182,6 +199,7 @@ class Endpoints extends _i1.EndpointDispatch {
               ) async =>
                   (endpoints['project'] as _i2.ProjectEndpoint).listProjects(
                     session,
+                    tenantPartyId: params['tenantPartyId'],
                     status: params['status'],
                     limit: params['limit'],
                     offset: params['offset'],
@@ -204,6 +222,31 @@ class Endpoints extends _i1.EndpointDispatch {
                   (endpoints['project'] as _i2.ProjectEndpoint).getProject(
                     session,
                     params['projectId'],
+                  ),
+        ),
+        'canUseAiForProject': _i1.MethodConnector(
+          name: 'canUseAiForProject',
+          params: {
+            'projectId': _i1.ParameterDescription(
+              name: 'projectId',
+              type: _i1.getType<_i1.UuidValue>(),
+              nullable: false,
+            ),
+            'tenantPartyId': _i1.ParameterDescription(
+              name: 'tenantPartyId',
+              type: _i1.getType<_i1.UuidValue>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['project'] as _i2.ProjectEndpoint)
+                  .canUseAiForProject(
+                    session,
+                    projectId: params['projectId'],
+                    tenantPartyId: params['tenantPartyId'],
                   ),
         ),
         'getProjectBySlug': _i1.MethodConnector(

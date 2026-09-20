@@ -1,0 +1,18 @@
+  - name: ai-gateway-rest
+    url: http://ai-gateway-api:8082
+    connect_timeout: 5000
+    write_timeout: 30000
+    read_timeout: 30000
+    retries: 1
+    routes:
+      - name: v1-ai-rest
+        paths: [/v1/ai]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: local
+          hide_client_headers: false

@@ -28,6 +28,12 @@ wait_for_readable_file() {
 }
 
 wait_for_readable_file "$passwords_source" "Configuration Serverpod passwords Vault"
+for default_config in /app/config-defaults/*; do
+  config_name="${default_config##*/}"
+  if [ ! -e "/app/config/$config_name" ]; then
+    cp "$default_config" "/app/config/$config_name"
+  fi
+done
 cp "$passwords_source" "$passwords_target"
 
 set -- ./server --mode="$mode" --server-id="$server_id" --logging="$log_level" --role="$server_role"

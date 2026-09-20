@@ -3,6 +3,7 @@ import 'package:serverpod/serverpod.dart';
 import '../../../generated/protocol.dart' as protocol;
 import '../../application/exceptions/auth_use_case_exception.dart';
 import '../../application/interfaces/oauth_provider_verifier.dart';
+import '../../application/services/auth_audit.dart';
 import 'oauth_http_client.dart';
 
 class GoogleOAuthProviderVerifier implements OAuthProviderVerifier {
@@ -25,7 +26,7 @@ class GoogleOAuthProviderVerifier implements OAuthProviderVerifier {
   Future<OAuthProviderProfile> verify(
     Session session, {
     required String code,
-    required String redirectUri,
+    String? redirectUri,
     String? codeVerifier,
   }) async {
     final tokenResponse = await _httpClient.postForm(
@@ -35,11 +36,12 @@ class GoogleOAuthProviderVerifier implements OAuthProviderVerifier {
         'client_secret': _clientSecret,
         'code': code,
         'grant_type': 'authorization_code',
-        'redirect_uri': redirectUri,
+        'redirect_uri': ?redirectUri,
         'code_verifier': ?codeVerifier,
       },
     );
     if (tokenResponse.statusCode != 200) {
+      _logGoogleTokenFailure(session, tokenResponse);
       throw const AuthUseCaseException(
         AuthUseCaseExceptionCode.invalidOAuthCredentials,
       );
@@ -81,5 +83,30 @@ class GoogleOAuthProviderVerifier implements OAuthProviderVerifier {
     if (value is! String) return null;
     final normalized = value.trim().toLowerCase();
     return normalized.isEmpty ? null : normalized;
+  }
+
+  void _logGoogleTokenFailure(Session session, OAuthHttpResponse response) {
+    final body = response.body;
+    if (body is! Map<String, dynamic>) {
+      session.log(
+        '[AuthOAuth] google_token_exchange_failed '
+        'status=${response.statusCode} bodyType=${body.runtimeType}',
+      );
+      return;
+    }
+
+    AuthAudit.log(
+      session,
+      event: 'google_token_exchange',
+      outcome: 'failure',
+      reasonCode: _optionalString(body['error']),
+      provider: provider,
+    );
+    session.log(
+      '[AuthOAuth] google_token_exchange_failed '
+      'status=${response.statusCode} '
+      'error=${_optionalString(body['error']) ?? 'unknown'} '
+      'description=${_optionalString(body['error_description']) ?? 'none'}',
+    );
   }
 }

@@ -1,0 +1,295 @@
+import 'dart:io';
+
+import 'package:ai_gateway_server/src/ai/application/reasoning_artifact_repository.dart';
+import 'package:ai_gateway_server/src/ai/application/ai_run_queue.dart';
+import 'package:ai_gateway_server/src/ai/domain/reasoning_models.dart';
+import 'package:ai_gateway_server/src/generated/protocol.dart';
+import 'package:serverpod/serverpod.dart';
+import 'package:test/test.dart';
+
+import '../integration/test_tools/serverpod_test_tools.dart';
+
+void main() {
+  if (Platform.environment['AI_GATEWAY_RUN_DATABASE_TESTS'] != 'true') {
+    test(
+      'AI reasoning persistence integrity requires the test database',
+      () {},
+      skip: 'Set AI_GATEWAY_RUN_DATABASE_TESTS=true and start the test stack.',
+    );
+    return;
+  }
+
+  withServerpod('AI reasoning persistence integrity', (sessionBuilder, _) {
+    test(
+      'persists a claim, its evidence and their association atomically',
+      () async {
+        final session = sessionBuilder.build();
+        addTearDown(session.close);
+        final run = await _insertRun(session);
+
+        await const ServerpodReasoningArtifactStore().save(
+          session,
+          run.id!,
+          _outcome(),
+        );
+
+        expect(
+          await AiClaim.db.count(
+            session,
+            where: (table) => table.runId.equals(run.id!),
+          ),
+          1,
+        );
+        expect(
+          await AiEvidence.db.count(
+            session,
+            where: (table) => table.runId.equals(run.id!),
+          ),
+          1,
+        );
+        expect(
+          await AiClaimEvidence.db.count(
+            session,
+            where: (table) => table.runId.equals(run.id!),
+          ),
+          1,
+        );
+      },
+    );
+
+    test('rejects associations whose claim belongs to another run', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final firstRun = await _insertRun(session);
+      final secondRun = await _insertRun(session);
+      final claim = await _insertClaim(session, firstRun.id!);
+      final evidence = await _insertEvidence(session, secondRun.id!);
+
+      await expectLater(
+        AiClaimEvidence.db.insertRow(
+          session,
+          AiClaimEvidence(
+            runId: secondRun.id!,
+            claimId: claim.id!,
+            evidenceId: evidence.id!,
+            relation: 'supports',
+          ),
+        ),
+        throwsA(anything),
+      );
+    });
+
+    test(
+      'rejects associations whose evidence belongs to another run',
+      () async {
+        final session = sessionBuilder.build();
+        addTearDown(session.close);
+        final firstRun = await _insertRun(session);
+        final secondRun = await _insertRun(session);
+        final claim = await _insertClaim(session, firstRun.id!);
+        final evidence = await _insertEvidence(session, secondRun.id!);
+
+        await expectLater(
+          AiClaimEvidence.db.insertRow(
+            session,
+            AiClaimEvidence(
+              runId: firstRun.id!,
+              claimId: claim.id!,
+              evidenceId: evidence.id!,
+              relation: 'supports',
+            ),
+          ),
+          throwsA(anything),
+        );
+      },
+    );
+
+    test('deleting a run cascades through every reasoning artifact', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final run = await _insertRun(session);
+      await const ServerpodReasoningArtifactStore().save(
+        session,
+        run.id!,
+        _outcome(),
+      );
+
+      await AiRun.db.deleteRow(session, run);
+
+      expect(await AiClaim.db.count(session), 0);
+      expect(await AiEvidence.db.count(session), 0);
+      expect(await AiClaimEvidence.db.count(session), 0);
+    });
+
+    test('rolls back all writes when artifact persistence fails', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final run = await _insertRun(session);
+
+      await expectLater(
+        session.db.transaction((transaction) async {
+          await _insertEvidence(session, run.id!, transaction: transaction);
+          await _insertClaim(session, run.id!, transaction: transaction);
+          throw StateError('simulated persistence failure');
+        }),
+        throwsStateError,
+      );
+
+      expect(
+        await AiClaim.db.count(
+          session,
+          where: (table) => table.runId.equals(run.id!),
+        ),
+        0,
+      );
+      expect(
+        await AiEvidence.db.count(
+          session,
+          where: (table) => table.runId.equals(run.id!),
+        ),
+        0,
+      );
+    });
+
+    test('cancelling a processing job scrubs its durable payload', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final run = await _insertRun(session);
+      final job = await AiRunJob.db.insertRow(
+        session,
+        AiRunJob(
+          runId: run.id!,
+          inputJson: '{"prompt":"sensitive"}',
+          bearerToken: 'sensitive-token',
+          requesterScope: 'service:test',
+          tenantPartyId: run.tenantPartyId,
+          status: AiRunJobStatus.processing,
+          claimedAt: DateTime.now().toUtc(),
+        ),
+      );
+
+      await const ServerpodAiRunQueue().cancel(session, run.id!);
+
+      final cancelled = await AiRunJob.db.findById(session, job.id!);
+      expect(cancelled?.status, AiRunJobStatus.cancelled);
+      expect(cancelled?.inputJson, '{}');
+      expect(cancelled?.bearerToken, isNull);
+    });
+
+    test('worker finalization never overwrites a cancelled job', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final run = await _insertRun(session);
+      final job = await AiRunJob.db.insertRow(
+        session,
+        AiRunJob(
+          runId: run.id!,
+          inputJson: '{}',
+          requesterScope: 'service:test',
+          tenantPartyId: run.tenantPartyId,
+          status: AiRunJobStatus.cancelled,
+          completedAt: DateTime.now().toUtc(),
+        ),
+      );
+
+      await const AiRunClaimStore().finish(
+        session,
+        job,
+        status: AiRunJobStatus.completed,
+      );
+
+      final persisted = await AiRunJob.db.findById(session, job.id!);
+      expect(persisted?.status, AiRunJobStatus.cancelled);
+    });
+  });
+}
+
+Future<AiRun> _insertRun(Session session) => AiRun.db.insertRow(
+  session,
+  AiRun(
+    requestId: const Uuid().v7obj(),
+    projectId: const Uuid().v7obj(),
+    tenantPartyId: const Uuid().v7obj(),
+    capability: 'project_status',
+    status: AiRunStatus.running,
+    createdAt: DateTime.now().toUtc(),
+  ),
+);
+
+Future<AiClaim> _insertClaim(
+  Session session,
+  UuidValue runId, {
+  Transaction? transaction,
+}) => AiClaim.db.insertRow(
+  session,
+  AiClaim(
+    runId: runId,
+    statement: 'The project is active.',
+    claimType: 'fact',
+    confidence: 'verified',
+    verificationDecision: 'supported',
+    iteration: 1,
+  ),
+  transaction: transaction,
+);
+
+Future<AiEvidence> _insertEvidence(
+  Session session,
+  UuidValue runId, {
+  Transaction? transaction,
+}) => AiEvidence.db.insertRow(
+  session,
+  AiEvidence(
+    runId: runId,
+    sourceService: 'projects',
+    resourceType: 'project',
+    resourceId: const Uuid().v7(),
+    summary: '{"status":"active"}',
+    reliability: 0.95,
+    freshness: 1,
+    collectedAt: DateTime.now().toUtc(),
+  ),
+  transaction: transaction,
+);
+
+ReasoningOutcome _outcome() {
+  final now = DateTime.now().toUtc();
+  final evidence = EvidenceItem(
+    id: 'projects:project:one',
+    sourceService: 'projects',
+    resourceType: 'project',
+    resourceId: 'one',
+    summary: '{"status":"active"}',
+    collectedAt: now,
+    observedAt: now,
+    reliability: 95,
+    projectId: UuidValue.withValidation('018f0000-0000-7000-8000-000000000001'),
+    tenantPartyId: UuidValue.withValidation(
+      '018f0000-0000-7000-8000-000000000002',
+    ),
+  );
+  final claim = ClaimCandidate(
+    id: 'claim-one',
+    statement: 'The project is active.',
+    type: ClaimType.fact,
+    evidenceRelations: {evidence.id: EvidenceRelation.supports},
+  );
+  return ReasoningOutcome(
+    answer: 'Le projet est actif.',
+    level: ReasoningLevel.standard,
+    iterations: 1,
+    claims: [
+      ClaimVerification(
+        claim: claim,
+        decision: VerificationDecision.supported,
+        confidence: EvidenceConfidence.verified,
+        score: 95,
+        supportingEvidenceIds: [evidence.id],
+        contradictingEvidenceIds: const [],
+      ),
+    ],
+    evidence: [evidence],
+    validated: true,
+    finalDecision: CritiqueDecision.accept,
+  );
+}

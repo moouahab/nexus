@@ -58,6 +58,22 @@ void main() {
       false,
     );
     expect(
+      policy.canManageProject(ProjectParticipantRole.nexusOwner),
+      true,
+    );
+    expect(
+      policy.canManageProject(ProjectParticipantRole.nexusManager),
+      true,
+    );
+    expect(
+      policy.canManageProject(ProjectParticipantRole.nexusContributor),
+      false,
+    );
+    expect(
+      policy.canManageProject(ProjectParticipantRole.clientReferent),
+      false,
+    );
+    expect(
       policy.requiredFieldsFor(ProjectParticipantRole.clientReferent),
       {'displayName'},
     );

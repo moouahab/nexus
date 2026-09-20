@@ -1,0 +1,93 @@
+services:
+  api:
+    build:
+      context: ../../..
+      dockerfile: ../../infrastructure/service-runtime/docker/serverpod-api/Dockerfile
+      additional_contexts:
+        service_runtime: ../../../../../infrastructure/service-runtime/docker/serverpod-api
+        nexus_auth: ../../../../../shared/nexus_auth
+      args:
+        SERVER_PACKAGE: ai_gateway_server
+        CLIENT_PACKAGE: ai_gateway_client
+        RUNTIME_USER: ai_gateway
+        ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
+    command: ["development", "default", "normal", "monolith", "true"]
+    environment:
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      OLLAMA_MAX_TOKENS: ${OLLAMA_MAX_TOKENS:-512}
+      PROJECTS_BASE_URL: ${PROJECTS_BASE_URL:-http://projects-api:8082}
+      PROJECTS_TIMEOUT_SECONDS: ${PROJECTS_TIMEOUT_SECONDS:-10}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - "8080"
+      - "8081"
+      - "8082"
+    networks:
+      default:
+      nexus_gateway:
+        aliases:
+          - ai-gateway-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault_agent:
+        condition: service_healthy
+    volumes:
+      - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
+      - ai_gateway_api_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs:
+      - /app/config:size=4m,noexec,nosuid,nodev,mode=0700,uid=100
+      - /tmp:size=32m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/livez"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  postgres:
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/postgres
+    user: "0:0"
+    ports:
+      - "127.0.0.1:8590:5432"
+    depends_on:
+      vault_agent:
+        condition: service_healthy
+    configs:
+      - source: postgres_dev_config
+        target: /run/config/postgres.conf
+    volumes:
+      - ai_gateway_data:/var/lib/postgresql/data
+      - ai_gateway_postgres_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+      - /var/run/postgresql:size=16m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_gateway"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+networks:
+  nexus_gateway:
+    name: nexus_gateway
+    external: true

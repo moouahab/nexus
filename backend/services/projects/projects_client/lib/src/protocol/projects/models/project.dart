@@ -24,6 +24,7 @@ abstract class Project implements _i1.SerializableModel {
     this.summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    this.tenantPartyId,
     this.ownerIdentityId,
     this.workspacePath,
     this.archivePath,
@@ -43,6 +44,7 @@ abstract class Project implements _i1.SerializableModel {
     String? summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    _i1.UuidValue? tenantPartyId,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     String? archivePath,
@@ -68,6 +70,11 @@ abstract class Project implements _i1.SerializableModel {
           ? null
           : _i3.ProjectVisibility.fromJson(
               (jsonSerialization['visibility'] as String),
+            ),
+      tenantPartyId: jsonSerialization['tenantPartyId'] == null
+          ? null
+          : _i1.UuidValueJsonExtension.fromJson(
+              jsonSerialization['tenantPartyId'],
             ),
       ownerIdentityId: jsonSerialization['ownerIdentityId'] == null
           ? null
@@ -114,6 +121,9 @@ abstract class Project implements _i1.SerializableModel {
 
   _i3.ProjectVisibility visibility;
 
+  /// Party service UUID owning this workspace tenant boundary.
+  _i1.UuidValue? tenantPartyId;
+
   /// Identity service UUID of the owner, kept as an external reference.
   _i1.UuidValue? ownerIdentityId;
 
@@ -143,6 +153,7 @@ abstract class Project implements _i1.SerializableModel {
     String? summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    _i1.UuidValue? tenantPartyId,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     String? archivePath,
@@ -162,6 +173,7 @@ abstract class Project implements _i1.SerializableModel {
       if (summary != null) 'summary': summary,
       'status': status.toJson(),
       'visibility': visibility.toJson(),
+      if (tenantPartyId != null) 'tenantPartyId': tenantPartyId?.toJson(),
       if (ownerIdentityId != null) 'ownerIdentityId': ownerIdentityId?.toJson(),
       if (workspacePath != null) 'workspacePath': workspacePath,
       if (archivePath != null) 'archivePath': archivePath,
@@ -189,6 +201,7 @@ class _ProjectImpl extends Project {
     String? summary,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    _i1.UuidValue? tenantPartyId,
     _i1.UuidValue? ownerIdentityId,
     String? workspacePath,
     String? archivePath,
@@ -204,6 +217,7 @@ class _ProjectImpl extends Project {
          summary: summary,
          status: status,
          visibility: visibility,
+         tenantPartyId: tenantPartyId,
          ownerIdentityId: ownerIdentityId,
          workspacePath: workspacePath,
          archivePath: archivePath,
@@ -225,6 +239,7 @@ class _ProjectImpl extends Project {
     Object? summary = _Undefined,
     _i2.ProjectStatus? status,
     _i3.ProjectVisibility? visibility,
+    Object? tenantPartyId = _Undefined,
     Object? ownerIdentityId = _Undefined,
     Object? workspacePath = _Undefined,
     Object? archivePath = _Undefined,
@@ -241,6 +256,9 @@ class _ProjectImpl extends Project {
       summary: summary is String? ? summary : this.summary,
       status: status ?? this.status,
       visibility: visibility ?? this.visibility,
+      tenantPartyId: tenantPartyId is _i1.UuidValue?
+          ? tenantPartyId
+          : this.tenantPartyId,
       ownerIdentityId: ownerIdentityId is _i1.UuidValue?
           ? ownerIdentityId
           : this.ownerIdentityId,

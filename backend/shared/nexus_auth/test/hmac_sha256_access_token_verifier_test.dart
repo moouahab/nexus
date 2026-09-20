@@ -52,6 +52,63 @@ void main() {
         throwsA(isA<NexusAuthException>()),
       );
     });
+
+    test('verifies service token audience and required scopes', () {
+      final token = _createToken(
+        secret: 'test-secret',
+        claims: _serviceClaims(
+          serviceName: 'projects',
+          audience: 'users-service',
+          scopes: ['users.profile.read', 'parties.membership.read'],
+        ),
+      );
+
+      final context = HmacSha256AccessTokenVerifier(
+        secret: 'test-secret',
+        audience: 'users-service',
+      ).verifyServiceToken(token, requiredScopes: ['users.profile.read']);
+
+      expect(context.serviceName, 'projects');
+      expect(context.audiences, ['users-service']);
+      expect(context.scopes, ['users.profile.read', 'parties.membership.read']);
+    });
+
+    test('rejects service token with wrong audience or missing scope', () {
+      final token = _createToken(
+        secret: 'test-secret',
+        claims: _serviceClaims(
+          serviceName: 'projects',
+          audience: 'users-service',
+          scopes: ['users.profile.read'],
+        ),
+      );
+
+      expect(
+        () => HmacSha256AccessTokenVerifier(
+          secret: 'test-secret',
+          audience: 'projects-service',
+        ).verifyServiceToken(token),
+        throwsA(isA<NexusAuthException>()),
+      );
+      expect(
+        () =>
+            HmacSha256AccessTokenVerifier(
+              secret: 'test-secret',
+              audience: 'users-service',
+            ).verifyServiceToken(
+              token,
+              requiredScopes: ['parties.membership.read'],
+            ),
+        throwsA(isA<NexusAuthException>()),
+      );
+      expect(
+        () => HmacSha256AccessTokenVerifier(
+          secret: 'test-secret',
+          audience: 'users-service',
+        ).verify(token),
+        throwsA(isA<NexusAuthException>()),
+      );
+    });
   });
 }
 
@@ -74,6 +131,27 @@ Map<String, dynamic> _claims({
         1000,
     AuthClaimNames.emailVerified: true,
     AuthClaimNames.authenticationMethods: ['username'],
+  };
+}
+
+Map<String, dynamic> _serviceClaims({
+  required String serviceName,
+  required String audience,
+  required List<String> scopes,
+  DateTime? expiresAt,
+}) {
+  final now = DateTime.now().toUtc();
+  return {
+    AuthClaimNames.subject: 'service:$serviceName',
+    AuthClaimNames.issuer: AuthTokenDefaults.issuer,
+    AuthClaimNames.audience: audience,
+    AuthClaimNames.tokenType: AuthTokenTypes.service,
+    AuthClaimNames.issuedAt: now.millisecondsSinceEpoch ~/ 1000,
+    AuthClaimNames.expiresAt:
+        (expiresAt ?? now.add(const Duration(minutes: 5)))
+            .millisecondsSinceEpoch ~/
+        1000,
+    AuthClaimNames.scopes: scopes.join(' '),
   };
 }
 

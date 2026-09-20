@@ -1,0 +1,5 @@
+### Minimal persistent FutureCall message. The sensitive payload stays server-side.
+class: AiRunWork
+serverOnly: true
+fields:
+  runId: UuidValue

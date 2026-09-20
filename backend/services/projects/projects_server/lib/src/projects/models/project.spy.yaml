@@ -16,6 +16,9 @@ fields:
   status: ProjectStatus, default=active
   visibility: ProjectVisibility, default=private
 
+  ### Party service UUID owning this workspace tenant boundary.
+  tenantPartyId: UuidValue?
+
   ### Identity service UUID of the owner, kept as an external reference.
   ownerIdentityId: UuidValue?
 
@@ -38,7 +41,11 @@ indexes:
     unique: true
   project_status_idx:
     fields: status
+  project_tenant_idx:
+    fields: tenantPartyId
   project_owner_idx:
     fields: ownerIdentityId
+  project_tenant_status_idx:
+    fields: tenantPartyId, status
   project_created_at_idx:
     fields: createdAt

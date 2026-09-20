@@ -2,11 +2,12 @@ import 'package:serverpod/serverpod.dart';
 import 'package:nexus_auth/nexus_auth.dart';
 
 import '../generated/protocol.dart';
+import 'application/party_authorization.dart';
 import 'application/party_service.dart';
 
 class PartyEndpoint extends Endpoint {
   static const _parties = PartyService();
-  static const _auth = AuthContextResolver();
+  static const _authorization = PartyAuthorization();
 
   Future<Party> createParty(
     Session session, {
@@ -43,7 +44,10 @@ class PartyEndpoint extends Endpoint {
     String? title,
     Map<String, String>? metadata,
   }) {
-    _ensureInternalCall(session);
+    _requireServiceContext(
+      session,
+      const [PartyAuthorization.membershipWriteScope],
+    );
     return _parties.createPartyWithOwner(
       session,
       userProfileId: userProfileId,
@@ -91,7 +95,10 @@ class PartyEndpoint extends Endpoint {
     UuidValue? invitedByIdentityId,
     Map<String, String>? metadata,
   }) {
-    _ensureInternalCall(session);
+    _requireServiceContext(
+      session,
+      const [PartyAuthorization.membershipWriteScope],
+    );
     return _parties.joinParty(
       session,
       userProfileId: userProfileId,
@@ -110,7 +117,10 @@ class PartyEndpoint extends Endpoint {
     required UuidValue userProfileId,
     PartyMembershipStatus? status,
   }) {
-    _ensureInternalCall(session);
+    _requireServiceContext(
+      session,
+      const [PartyAuthorization.membershipReadScope],
+    );
     return _parties.listMemberships(
       session,
       userProfileId: userProfileId,
@@ -119,14 +129,41 @@ class PartyEndpoint extends Endpoint {
   }
 
   void _ensureAuthenticatedHttp(Session session) {
-    if (session.request == null) return;
-    _auth.requireContext(session);
+    try {
+      _authorization.requireUser(session);
+    } on NexusAuthException catch (error) {
+      throw NotAuthorizedException(
+        reason: _authFailureReason(error),
+        message: 'Authentication failed.',
+      );
+    }
   }
 
-  void _ensureInternalCall(Session session) {
-    if (session.request == null) return;
-    throw StateError(
-      'Party membership operations require a trusted service boundary.',
-    );
+  ServiceAuthContext _requireServiceContext(
+    Session session,
+    Iterable<String> requiredScopes,
+  ) {
+    try {
+      return _authorization.requireService(
+        session,
+        scopes: requiredScopes,
+      );
+    } on NexusAuthException catch (error) {
+      throw NotAuthorizedException(
+        reason: _authFailureReason(error),
+        message: 'Authentication failed.',
+      );
+    }
+  }
+
+  AuthenticationFailureReason _authFailureReason(NexusAuthException error) {
+    return switch (error.code) {
+      NexusAuthExceptionCode.missingAccessToken ||
+      NexusAuthExceptionCode.invalidAccessToken =>
+        AuthenticationFailureReason.unauthenticated,
+      NexusAuthExceptionCode.missingAuthSecret ||
+      NexusAuthExceptionCode.missingRequest =>
+        AuthenticationFailureReason.insufficientAccess,
+    };
   }
 }

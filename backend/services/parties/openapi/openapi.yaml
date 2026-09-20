@@ -1,0 +1,198 @@
+openapi: 3.1.0
+info:
+  title: NEXUS Parties API
+  version: 1.0.0
+  description: Platform-neutral HTTP API for organizations and memberships.
+servers:
+  - url: /v1/parties
+security:
+  - bearerAuth: []
+paths:
+  /parties:
+    get:
+      operationId: listParties
+      parameters:
+        - {name: kind, in: query, schema: {type: string}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, default: 50}}
+        - {name: offset, in: query, schema: {type: integer, default: 0}}
+      responses:
+        "200":
+          description: Parties visible to the authenticated user.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: "#/components/schemas/Party"}}
+        "401": {$ref: "#/components/responses/AuthRequired"}
+    post:
+      operationId: createParty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreatePartyRequest"}
+      responses:
+        "200":
+          description: Created party.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Party"}
+        "401": {$ref: "#/components/responses/AuthRequired"}
+  /parties/{partyId}:
+    get:
+      operationId: getParty
+      parameters:
+        - {$ref: "#/components/parameters/PartyId"}
+      responses:
+        "200":
+          description: Party details.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Party"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /parties/with-owner:
+    post:
+      operationId: createPartyWithOwner
+      description: Requires a service token with `parties.membership.write`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/CreatePartyRequest"}
+                - type: object
+                  required: [userProfileId]
+                  properties:
+                    userProfileId: {type: string, format: uuid}
+                    title: {type: string}
+      responses:
+        "201":
+          description: Owner membership.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PartyMembership"}
+  /parties/{partyId}/memberships:
+    post:
+      operationId: joinParty
+      description: Requires a service token with `parties.membership.write`.
+      parameters:
+        - {$ref: "#/components/parameters/PartyId"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userProfileId]
+              properties:
+                userProfileId: {type: string, format: uuid}
+                role: {type: string}
+                status: {type: string}
+                isPrimary: {type: boolean, default: false}
+                title: {type: string}
+                invitedByIdentityId: {type: string, format: uuid}
+                metadata: {type: object, additionalProperties: {type: string}}
+      responses:
+        "201":
+          description: Created membership.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PartyMembership"}
+  /memberships:
+    get:
+      operationId: listMemberships
+      description: Requires a service token with `parties.membership.read`.
+      parameters:
+        - name: userProfileId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+        - name: status
+          in: query
+          schema: {type: string}
+      responses:
+        "200":
+          description: Profile memberships.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: "#/components/schemas/PartyMembership"}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    PartyId:
+      name: partyId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  responses:
+    AuthRequired:
+      description: Authentication required.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/ErrorResponse"}
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/ErrorResponse"}
+  schemas:
+    CreatePartyRequest:
+      type: object
+      required: [kind, name]
+      properties:
+        kind: {type: string}
+        name: {type: string}
+        legalName: {type: string}
+        registrationNumber: {type: string}
+        country: {type: string}
+        website: {type: string}
+        metadata: {type: object, additionalProperties: {type: string}}
+    Party:
+      type: object
+      required: [id, kind, status, name, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        kind: {type: string}
+        status: {type: string}
+        name: {type: string}
+        legalName: {type: string}
+        registrationNumber: {type: string}
+        country: {type: string}
+        website: {type: string}
+        metadata: {type: object, additionalProperties: {type: string}}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    PartyMembership:
+      type: object
+      required: [id, userProfileId, partyId, role, status, isPrimary, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        userProfileId: {type: string, format: uuid}
+        partyId: {type: string, format: uuid}
+        role: {type: string}
+        status: {type: string}
+        isPrimary: {type: boolean}
+        title: {type: string}
+        invitedByIdentityId: {type: string, format: uuid}
+        metadata: {type: object, additionalProperties: {type: string}}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties:
+            code: {type: string}
+            message: {type: string}

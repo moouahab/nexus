@@ -1,0 +1,19 @@
+enum: AiRunStatus
+values:
+  - queued
+  - planning
+  - collectingEvidence
+  - drafting
+  - verifying
+  - criticizing
+  - revising
+  - validating
+  # Kept for backward compatibility with existing runs and clients.
+  - running
+  - completed
+  - needsInformation
+  - needsHumanApproval
+  - rejected
+  - failed
+  - cancelled
+  - unsupported

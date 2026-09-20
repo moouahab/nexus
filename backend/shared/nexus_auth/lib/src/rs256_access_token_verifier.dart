@@ -1,8 +1,11 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 import 'auth_context.dart';
+import 'auth_claim_names.dart';
 import 'auth_token_defaults.dart';
+import 'auth_token_types.dart';
 import 'nexus_auth_exception.dart';
+import 'service_auth_context.dart';
 
 class Rs256AccessTokenVerifier {
   Rs256AccessTokenVerifier({
@@ -49,6 +52,47 @@ class Rs256AccessTokenVerifier {
   final String audience;
 
   AuthContext verify(String token) {
+    final claims = _verifiedClaims(token);
+    final context = AuthContext.fromClaims(claims);
+    if (context.isExpired) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Expired access token.',
+      );
+    }
+    return context;
+  }
+
+  ServiceAuthContext verifyServiceToken(
+    String token, {
+    Iterable<String> requiredScopes = const [],
+  }) {
+    final claims = _verifiedClaims(token);
+    if (claims[AuthClaimNames.tokenType] != AuthTokenTypes.service) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Expected service token.',
+      );
+    }
+
+    final context = ServiceAuthContext.fromClaims(claims);
+    if (context.isExpired) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Expired service token.',
+      );
+    }
+    if (!context.audiences.contains(audience)) {
+      throw NexusAuthException.invalidAccessToken(
+        'Service token is not intended for audience "$audience".',
+      );
+    }
+    if (!context.hasAllScopes(requiredScopes)) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Service token is missing required scopes.',
+      );
+    }
+    return context;
+  }
+
+  Map<String, dynamic> _verifiedClaims(String token) {
     try {
       final jwt = JWT.verify(
         token,
@@ -56,14 +100,10 @@ class Rs256AccessTokenVerifier {
         issuer: issuer,
         audience: Audience([audience]),
       );
-      return AuthContext.fromClaims(
-        (jwt.payload as Map).cast<String, dynamic>(),
-      );
-    } on NexusAuthException {
-      rethrow;
+      return (jwt.payload as Map).cast<String, dynamic>();
     } on Object catch (error) {
       throw NexusAuthException.invalidAccessToken(
-        'Invalid RS256 access token: $error',
+        'Invalid RS256 token: $error',
       );
     }
   }

@@ -7,6 +7,7 @@ import 'auth_context.dart';
 import 'auth_token_defaults.dart';
 import 'auth_token_types.dart';
 import 'nexus_auth_exception.dart';
+import 'service_auth_context.dart';
 
 class HmacSha256AccessTokenVerifier {
   HmacSha256AccessTokenVerifier({
@@ -22,6 +23,50 @@ class HmacSha256AccessTokenVerifier {
   final String audience;
 
   AuthContext verify(String token) {
+    final claims = _verifiedClaims(token);
+    final context = AuthContext.fromClaims(claims);
+    final claimChecks = <bool Function()>[
+      () => context.issuer == issuer,
+      () => context.audience == audience,
+      () => !context.isExpired,
+    ];
+    if (!claimChecks.every((check) => check())) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Invalid access token claims.',
+      );
+    }
+
+    return context;
+  }
+
+  ServiceAuthContext verifyServiceToken(
+    String token, {
+    Iterable<String> requiredScopes = const [],
+  }) {
+    final claims = _verifiedClaims(token);
+    if (claims[AuthClaimNames.tokenType] != AuthTokenTypes.service) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Expected service token.',
+      );
+    }
+
+    final context = ServiceAuthContext.fromClaims(claims);
+    final claimChecks = <bool Function()>[
+      () => context.issuer == issuer,
+      () => context.audiences.contains(audience),
+      () => context.hasAllScopes(requiredScopes),
+      () => !context.isExpired,
+    ];
+    if (!claimChecks.every((check) => check())) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Invalid service token claims.',
+      );
+    }
+
+    return context;
+  }
+
+  Map<String, dynamic> _verifiedClaims(String token) {
     final parts = token.split('.');
     if (parts.length != 3) {
       throw const NexusAuthException.invalidAccessToken('Malformed token.');
@@ -45,20 +90,7 @@ class HmacSha256AccessTokenVerifier {
     }
 
     final claims = _decodeJson(parts[1]);
-    final context = AuthContext.fromClaims(claims);
-    final claimChecks = <bool Function()>[
-      () => context.issuer == issuer,
-      () => context.audience == audience,
-      () => claims[AuthClaimNames.tokenType] == AuthTokenTypes.access,
-      () => !context.isExpired,
-    ];
-    if (!claimChecks.every((check) => check())) {
-      throw const NexusAuthException.invalidAccessToken(
-        'Invalid access token claims.',
-      );
-    }
-
-    return context;
+    return claims;
   }
 
   String _sign(String signingInput) {

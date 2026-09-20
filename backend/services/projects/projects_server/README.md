@@ -13,6 +13,18 @@ It owns:
 It does not own authentication, user profiles, organizations, legal records, or
 the business logic of linked resources.
 
+## Public Cross-platform API
+
+The generated Serverpod RPC API remains available to Dart and Flutter clients.
+The web server also exposes a platform-neutral JSON API. Kong mounts these
+routes below `/v1/projects`; see `openapi.yaml` for the complete contract.
+
+All routes use `Authorization: Bearer`. User access is checked against project
+membership and tenant. Service tokens target `projects-service` and require
+`projects.read` or `projects.write`. Public DTOs use UUID strings and UTC
+ISO-8601 dates, omit Serverpod metadata and server filesystem paths, and are
+returned with `Cache-Control: no-store`. Request bodies are limited to 1 MiB.
+
 ## Local Runtime
 
 Use the local setup script from `projects_server/`:

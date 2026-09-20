@@ -1,0 +1,15 @@
+.dart_tool/
+.packages
+pubspec_overrides.yaml
+build/
+coverage/
+test-results/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+config/passwords.yaml
+secrets/
+.env
+.env.*
+!.env.example

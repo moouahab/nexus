@@ -1,0 +1,33 @@
+### Audit-safe run metadata. Prompt and provider credentials are deliberately not stored.
+class: AiRun
+table: ai_run
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  requestId: UuidValue
+  projectId: UuidValue
+  tenantPartyId: UuidValue
+  missionId: UuidValue?
+  capability: String
+  status: AiRunStatus, default=queued
+  requesterIdentityId: UuidValue?
+  requesterService: String?
+  failureCode: String?
+  provider: String?
+  model: String?
+  outputText: String?
+  reasoningLevel: String?
+  currentIteration: int?
+  maxIterations: int?
+  validated: bool?, default=false
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+indexes:
+  ai_run_request_id_idx:
+    fields: requestId
+    unique: true
+  ai_run_project_idx:
+    fields: projectId
+  ai_run_tenant_idx:
+    fields: tenantPartyId
+  ai_run_created_at_idx:
+    fields: createdAt

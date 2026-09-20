@@ -34,18 +34,18 @@ template_config {
 
 template {
   source      = "/vault/templates/postgres_password.ctmpl"
-  destination = "/vault/secrets/postgres_password"
+  destination = "/vault/secrets/postgres/postgres_password"
   perms       = "0440"
 }
 
 template {
   source      = "/vault/templates/redis_password.ctmpl"
-  destination = "/vault/secrets/redis_password"
+  destination = "/vault/secrets/redis/redis_password"
   perms       = "0444"
 }
 
 template {
   source      = "/vault/templates/serverpod-passwords.yaml.ctmpl"
-  destination = "/vault/secrets/serverpod-passwords.yaml"
+  destination = "/vault/secrets/api/serverpod-passwords.yaml"
   perms       = "0444"
 }

@@ -1,0 +1,20 @@
+### Immutable reference to evidence used by a reasoning run.
+### The source payload is not duplicated; `summary` is a bounded normalized view.
+class: AiEvidence
+table: ai_evidence
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  runId: UuidValue, relation(parent=ai_run, onDelete=Cascade)
+  sourceService: String
+  resourceType: String
+  resourceId: String
+  summary: String?
+  reliability: double
+  freshness: double
+  observedAt: DateTime?
+  collectedAt: DateTime, default=now
+indexes:
+  ai_evidence_run_idx:
+    fields: runId
+  ai_evidence_resource_idx:
+    fields: sourceService, resourceType, resourceId

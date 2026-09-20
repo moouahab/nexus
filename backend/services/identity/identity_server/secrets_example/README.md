@@ -41,6 +41,25 @@ Prepared for OAuth providers:
 - `apple_oauth_client_id`
 - `apple_oauth_client_secret`
 
+Prepared for service-to-service token issuance:
+
+- `auth_service_clients`: JSON registry of service clients allowed to request
+  service tokens.
+
+Example value:
+
+```json
+{
+  "projects": {
+    "secret": "replace-with-a-long-random-secret",
+    "audiences": ["ai-gateway"],
+    "scopes": ["ai.context.preview", "ai.run.create"]
+  }
+}
+```
+
+Leave it as `{}` to keep `/auth/service-token` effectively disabled.
+
 For local Gmail SMTP testing, copy this directory to `secrets/` and set:
 
 - `smtp_host`: `smtp.gmail.com`

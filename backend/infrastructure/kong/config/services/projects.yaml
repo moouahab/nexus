@@ -1,0 +1,25 @@
+  - name: projects-rest
+    url: http://projects-api:8082
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-projects-rest
+        paths: [/v1/projects]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]
+
+  - name: projects-serverpod-rpc
+    url: http://projects-api:8080/project
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-projects-rpc-compat
+        paths: [/v1/projects/project]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]
