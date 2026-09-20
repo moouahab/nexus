@@ -37,7 +37,7 @@ class ApiSecurityProbeTest(unittest.TestCase):
     def test_main_checks_missing_and_malformed_auth_for_every_operation(self):
         calls = []
 
-        def fake_request(target, path, method="GET", headers=None):
+        def fake_request(target, path, method="GET", headers=None, opener=None):
             calls.append((target, path, method, headers))
             if method == "TRACE":
                 return 405, {}, b""

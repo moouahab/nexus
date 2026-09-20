@@ -3,11 +3,25 @@ import 'package:nexus_auth/nexus_auth.dart';
 
 import '../generated/protocol.dart';
 import 'application/project_registry_service.dart';
+import 'application/tenant_authorization.dart';
+import 'infrastructure/tenant_authorization_factory.dart';
 
 class ProjectEndpoint extends Endpoint {
+  ProjectEndpoint({
+    AuthContextResolver userAuth = const AuthContextResolver(),
+    AuthContextResolver serviceAuth = const AuthContextResolver(
+      audience: 'projects-service',
+    ),
+    TenantAuthorization? tenantAuthorization,
+  }) : _userAuth = userAuth,
+       _serviceAuth = serviceAuth,
+       _tenantAuthorization =
+           tenantAuthorization ?? TenantAuthorizationFactory.fromEnvironment();
+
   static const _registry = ProjectRegistryService();
-  static const _userAuth = AuthContextResolver();
-  static const _serviceAuth = AuthContextResolver(audience: 'projects-service');
+  final AuthContextResolver _userAuth;
+  final AuthContextResolver _serviceAuth;
+  final TenantAuthorization _tenantAuthorization;
   static const _readScope = 'projects.read';
   static const _writeScope = 'projects.write';
 
@@ -21,8 +35,12 @@ class ProjectEndpoint extends Endpoint {
     String? workspacePath,
     List<String>? tags,
     Map<String, String>? metadata,
-  }) {
+  }) async {
     final auth = _requireUserContext(session);
+    await _requireTenantManagement(
+      session,
+      tenantPartyId: tenantPartyId,
+    );
     return _registry.createProject(
       session,
       slug: slug,
@@ -48,8 +66,16 @@ class ProjectEndpoint extends Endpoint {
     String? workspacePath,
     List<String>? tags,
     Map<String, String>? metadata,
-  }) {
+  }) async {
     final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (caller.identityId != null) {
+      await _requireTenantManagement(
+        session,
+        tenantPartyId: tenantPartyId,
+      );
+    } else if (!caller.serviceContext!.allowsTenant(tenantPartyId)) {
+      throw _serviceBoundaryDenied();
+    }
     return _registry.createProject(
       session,
       slug: slug,
@@ -81,6 +107,9 @@ class ProjectEndpoint extends Endpoint {
         limit: limit,
         offset: offset,
       );
+    }
+    if (!caller.serviceContext!.allowsTenant(tenantPartyId)) {
+      throw _serviceBoundaryDenied();
     }
     return _registry.listProjects(
       session,
@@ -435,11 +464,15 @@ class ProjectEndpoint extends Endpoint {
   ) async {
     final caller = _requireCaller(session, serviceScopes: const [_readScope]);
     if (caller.identityId != null) {
-      await _registry.requireIdentityCanReadProject(
-        session,
-        projectId: projectId,
-        identityId: caller.identityId!,
+      await _concealObjectAuthorization(
+        () => _registry.requireIdentityCanReadProject(
+          session,
+          projectId: projectId,
+          identityId: caller.identityId!,
+        ),
       );
+    } else {
+      await _requireServiceProjectAccess(session, caller, projectId);
     }
     return caller;
   }
@@ -450,11 +483,15 @@ class ProjectEndpoint extends Endpoint {
   ) async {
     final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
     if (caller.identityId != null) {
-      await _registry.requireIdentityCanManageProject(
-        session,
-        projectId: projectId,
-        identityId: caller.identityId!,
+      await _concealObjectAuthorization(
+        () => _registry.requireIdentityCanManageProject(
+          session,
+          projectId: projectId,
+          identityId: caller.identityId!,
+        ),
       );
+    } else {
+      await _requireServiceProjectAccess(session, caller, projectId);
     }
     return caller;
   }
@@ -465,11 +502,28 @@ class ProjectEndpoint extends Endpoint {
   ) async {
     final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
     if (caller.identityId != null) {
-      await _registry.requireIdentityCanManageParticipant(
-        session,
-        participantId: participantId,
-        identityId: caller.identityId!,
+      await _concealObjectAuthorization(
+        () => _registry.requireIdentityCanManageParticipant(
+          session,
+          participantId: participantId,
+          identityId: caller.identityId!,
+        ),
       );
+    } else {
+      final participant = await ProjectParticipant.db.findById(
+        session,
+        participantId,
+      );
+      if (participant == null) {
+        throw _serviceBoundaryDenied();
+      }
+      if (!caller.serviceContext!.allowsResource(participantId)) {
+        await _requireServiceProjectAccess(
+          session,
+          caller,
+          participant.projectId,
+        );
+      }
     }
     return caller;
   }
@@ -480,20 +534,95 @@ class ProjectEndpoint extends Endpoint {
   ) async {
     final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
     if (caller.identityId != null) {
-      await _registry.requireIdentityCanManageLink(
-        session,
-        linkId: linkId,
-        identityId: caller.identityId!,
+      await _concealObjectAuthorization(
+        () => _registry.requireIdentityCanManageLink(
+          session,
+          linkId: linkId,
+          identityId: caller.identityId!,
+        ),
       );
+    } else {
+      final link = await ProjectLink.db.findById(session, linkId);
+      if (link == null) {
+        throw _serviceBoundaryDenied();
+      }
+      if (!caller.serviceContext!.allowsResource(linkId)) {
+        await _requireServiceProjectAccess(session, caller, link.projectId);
+      }
     }
     return caller;
+  }
+
+  Future<void> _concealObjectAuthorization(
+    Future<void> Function() authorize,
+  ) async {
+    try {
+      await authorize();
+    } on NotAuthorizedException {
+      throw StateError('Resource not found.');
+    }
+  }
+
+  Future<void> _requireServiceProjectAccess(
+    Session session,
+    _ProjectCaller caller,
+    UuidValue projectId,
+  ) async {
+    final context = caller.serviceContext!;
+    if (context.globalAccess || context.projectId == projectId.toString()) {
+      return;
+    }
+    if (context.tenantPartyId != null) {
+      final project = await _registry.getProject(session, projectId);
+      if (context.allowsProject(
+        projectId,
+        tenantId: project.tenantPartyId,
+      )) {
+        return;
+      }
+    }
+    throw _serviceBoundaryDenied();
+  }
+
+  NotAuthorizedException _serviceBoundaryDenied() => NotAuthorizedException(
+    reason: AuthenticationFailureReason.insufficientAccess,
+    message: 'Service token resource boundary denied.',
+  );
+
+  Future<void> _requireTenantManagement(
+    Session session, {
+    required UuidValue tenantPartyId,
+  }) async {
+    final bearerToken = _bearerToken(session);
+    final allowed = await _tenantAuthorization.canManageTenant(
+      tenantPartyId: tenantPartyId,
+      bearerToken: bearerToken,
+    );
+    if (!allowed) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'Tenant project creation denied.',
+      );
+    }
+  }
+
+  String? _bearerToken(Session session) {
+    final request = session.request;
+    if (request == null) return null;
+    return const BearerAccessTokenReader().read({
+      for (final entry in request.headers.entries)
+        entry.key.toLowerCase(): entry.value.toList(growable: false),
+    });
   }
 }
 
 class _ProjectCaller {
-  _ProjectCaller.user(AuthContext context) : identityId = context.identityId;
+  _ProjectCaller.user(AuthContext context)
+    : identityId = context.identityId,
+      serviceContext = null;
 
-  _ProjectCaller.service(ServiceAuthContext _) : identityId = null;
+  _ProjectCaller.service(this.serviceContext) : identityId = null;
 
   final UuidValue? identityId;
+  final ServiceAuthContext? serviceContext;
 }

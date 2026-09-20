@@ -86,6 +86,88 @@ void main() {
         throwsA(isA<NexusAuthException>()),
       );
     });
+
+    test('rejects service tokens presented to another Nexus audience', () {
+      final aiToken = _serviceToken(
+        serviceName: 'worker',
+        audience: 'ai-gateway',
+        scopes: ['ai.run.create'],
+      );
+      final projectsToken = _serviceToken(
+        serviceName: 'ai-gateway',
+        audience: 'projects-service',
+        scopes: ['projects.read'],
+      );
+
+      expect(
+        () => Rs256AccessTokenVerifier(
+          publicKeyPem: _rsaPublicKeyPem,
+          audience: 'projects-service',
+        ).verifyServiceToken(aiToken, requiredScopes: ['projects.write']),
+        throwsA(isA<NexusAuthException>()),
+      );
+      expect(
+        () => Rs256AccessTokenVerifier(
+          publicKeyPem: _rsaPublicKeyPem,
+          audience: 'ai-gateway',
+        ).verifyServiceToken(projectsToken, requiredScopes: ['ai.run.read']),
+        throwsA(isA<NexusAuthException>()),
+      );
+    });
+
+    test('rejects expired service tokens and missing scopes', () {
+      final expired = _serviceToken(
+        serviceName: 'worker',
+        audience: 'ai-gateway',
+        scopes: ['ai.run.read'],
+        expiresAt: DateTime.now().toUtc().subtract(const Duration(minutes: 1)),
+      );
+      final createOnly = _serviceToken(
+        serviceName: 'worker',
+        audience: 'ai-gateway',
+        scopes: ['ai.run.create'],
+      );
+      final verifier = Rs256AccessTokenVerifier(
+        publicKeyPem: _rsaPublicKeyPem,
+        audience: 'ai-gateway',
+      );
+
+      expect(
+        () => verifier.verifyServiceToken(expired),
+        throwsA(isA<NexusAuthException>()),
+      );
+      expect(
+        () => verifier.verifyServiceToken(
+          createOnly,
+          requiredScopes: ['ai.run.read'],
+        ),
+        throwsA(isA<NexusAuthException>()),
+      );
+      expect(
+        () => verifier.verifyServiceToken(
+          createOnly,
+          requiredScopes: ['ai.run.cancel'],
+        ),
+        throwsA(isA<NexusAuthException>()),
+      );
+    });
+
+    test('rejects service tokens from an untrusted issuer', () {
+      final token = _serviceToken(
+        serviceName: 'worker',
+        audience: 'projects-service',
+        scopes: ['projects.read'],
+        issuer: 'https://attacker.invalid',
+      );
+
+      expect(
+        () => Rs256AccessTokenVerifier(
+          publicKeyPem: _rsaPublicKeyPem,
+          audience: 'projects-service',
+        ).verifyServiceToken(token, requiredScopes: ['projects.read']),
+        throwsA(isA<NexusAuthException>()),
+      );
+    });
   });
 }
 
@@ -119,17 +201,21 @@ String _serviceToken({
   required String serviceName,
   required String audience,
   required List<String> scopes,
+  String issuer = AuthTokenDefaults.issuer,
+  DateTime? expiresAt,
 }) {
   final now = DateTime.now().toUtc();
   return JWT(
     {
       AuthClaimNames.subject: 'service:$serviceName',
-      AuthClaimNames.issuer: AuthTokenDefaults.issuer,
+      AuthClaimNames.issuer: issuer,
       AuthClaimNames.audience: audience,
       AuthClaimNames.tokenType: AuthTokenTypes.service,
       AuthClaimNames.issuedAt: now.millisecondsSinceEpoch ~/ 1000,
       AuthClaimNames.expiresAt:
-          now.add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/ 1000,
+          (expiresAt ?? now.add(const Duration(minutes: 5)))
+              .millisecondsSinceEpoch ~/
+          1000,
       AuthClaimNames.scopes: scopes,
     },
     header: {'kid': 'identity-access-token-current'},

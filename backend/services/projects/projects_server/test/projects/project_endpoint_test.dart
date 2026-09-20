@@ -1,6 +1,8 @@
 import 'package:projects_server/src/generated/protocol.dart';
 import 'package:projects_server/src/projects/application/project_registry_service.dart';
+import 'package:projects_server/src/projects/application/tenant_authorization.dart';
 import 'package:projects_server/src/projects/project_endpoint.dart';
+import 'package:nexus_auth/nexus_auth.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 
@@ -204,6 +206,39 @@ void main() {
       );
     });
 
+    test('denies creating a project under another tenantPartyId', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+
+      final endpoint = ProjectEndpoint(
+        userAuth: _TestAuthContextResolver.user(ownerIdentityId),
+        tenantAuthorization: _TenantAuthorization(tenantA),
+      );
+      final created = await endpoint.createMyProject(
+        session,
+        slug: 'authorized-tenant-a-project',
+        name: 'Authorized Tenant A Project',
+        tenantPartyId: tenantA,
+      );
+      expect(created.tenantPartyId, tenantA);
+      await expectLater(
+        endpoint.createMyProject(
+          session,
+          slug: 'forged-tenant-b-project',
+          name: 'Forged Tenant B Project',
+          tenantPartyId: tenantB,
+        ),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+      expect(
+        await Project.db.findFirstRow(
+          session,
+          where: (table) => table.slug.equals('forged-tenant-b-project'),
+        ),
+        isNull,
+      );
+    });
+
     test('denies horizontal access to projects and child resources', () async {
       final session = sessionBuilder.build();
       addTearDown(session.close);
@@ -272,6 +307,56 @@ void main() {
               AuthenticationFailureReason.insufficientAccess,
             ),
           ),
+        );
+      }
+
+      final endpoint = ProjectEndpoint(
+        userAuth: _TestAuthContextResolver.user(tenantAOwner),
+      );
+      for (final operation in <Future<Object?> Function()>[
+        () => endpoint.getProject(session, projectB.id!),
+        () => endpoint.getProjectBySlug(session, projectB.slug),
+        () => endpoint.canUseAiForProject(
+          session,
+          projectId: projectB.id!,
+          tenantPartyId: tenantB,
+        ),
+        () => endpoint.updateProjectProfile(
+          session,
+          projectId: projectB.id!,
+          name: 'Cross-tenant update',
+        ),
+        () => endpoint.changeProjectStatus(
+          session,
+          projectId: projectB.id!,
+          status: ProjectStatus.paused,
+        ),
+        () => endpoint.archiveProject(session, projectId: projectB.id!),
+        () => endpoint.restoreProject(session, projectId: projectB.id!),
+        () => endpoint.listParticipants(session, projectId: projectB.id!),
+        () => endpoint.assignProjectMember(
+          session,
+          projectId: projectB.id!,
+          role: ProjectParticipantRole.nexusContributor,
+          identityId: tenantAOwner,
+        ),
+        () => endpoint.removeParticipant(
+          session,
+          participantId: participantB.id!,
+        ),
+        () => endpoint.listLinks(session, projectId: projectB.id!),
+        () => endpoint.linkResource(
+          session,
+          projectId: projectB.id!,
+          kind: ProjectLinkKind.document,
+          externalId: 'cross-tenant-document',
+        ),
+        () => endpoint.detachLink(session, linkId: linkB.id!),
+        () => endpoint.listEvents(session, projectId: projectB.id!),
+      ]) {
+        await expectLater(
+          operation(),
+          throwsA(_concealedResourceNotFound),
         );
       }
 
@@ -371,6 +456,68 @@ void main() {
         );
       },
     );
+
+    test('enforces projects.read and projects.write service scopes', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final project = await registry.createProject(
+        session,
+        slug: 'service-scope-matrix',
+        name: 'Service Scope Matrix',
+        tenantPartyId: tenantB,
+      );
+      final rejectingUser = _TestAuthContextResolver.rejectUser();
+      final readEndpoint = ProjectEndpoint(
+        userAuth: rejectingUser,
+        serviceAuth: _TestAuthContextResolver.service({'projects.read'}),
+      );
+      final writeEndpoint = ProjectEndpoint(
+        userAuth: rejectingUser,
+        serviceAuth: _TestAuthContextResolver.service({'projects.write'}),
+      );
+
+      expect(
+        (await readEndpoint.getProject(session, project.id!)).id,
+        project.id,
+      );
+      await expectLater(
+        readEndpoint.updateProjectProfile(
+          session,
+          projectId: project.id!,
+          name: 'Forbidden service write',
+        ),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+      expect(
+        (await registry.getProject(session, project.id!)).name,
+        'Service Scope Matrix',
+      );
+
+      expect(
+        (await writeEndpoint.updateProjectProfile(
+          session,
+          projectId: project.id!,
+          name: 'Authorized service write',
+        )).name,
+        'Authorized service write',
+      );
+      await expectLater(
+        writeEndpoint.getProject(session, project.id!),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+
+      final wrongProjectEndpoint = ProjectEndpoint(
+        userAuth: rejectingUser,
+        serviceAuth: _TestAuthContextResolver.service(
+          {'projects.read'},
+          projectId: tenantA.toString(),
+        ),
+      );
+      await expectLater(
+        wrongProjectEndpoint.getProject(session, project.id!),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+    });
 
     test('updates profile and writes timeline event', () async {
       final session = sessionBuilder.build();
@@ -585,4 +732,86 @@ void main() {
       );
     });
   });
+}
+
+class _TestAuthContextResolver extends AuthContextResolver {
+  _TestAuthContextResolver.user(this.identityId)
+    : serviceScopes = null,
+      projectId = null;
+
+  _TestAuthContextResolver.rejectUser()
+    : identityId = null,
+      serviceScopes = null,
+      projectId = null;
+
+  _TestAuthContextResolver.service(
+    Set<String> scopes, {
+    this.projectId,
+  }) : identityId = null,
+       serviceScopes = scopes;
+
+  final UuidValue? identityId;
+  final Set<String>? serviceScopes;
+  final String? projectId;
+
+  @override
+  AuthContext requireContext(Session session) {
+    final authenticatedIdentity = identityId;
+    if (authenticatedIdentity == null) {
+      throw const NexusAuthException.invalidAccessToken('Not a user token.');
+    }
+    return AuthContext(
+      identityId: authenticatedIdentity,
+      authSessionId: UuidValue.withValidation(
+        '018f0000-0000-7000-8000-000000000901',
+      ),
+      issuer: AuthTokenDefaults.issuer,
+      audience: AuthTokenDefaults.audience,
+      emailVerified: true,
+      authenticationMethods: const ['pwd'],
+      issuedAt: DateTime.utc(2026),
+      expiresAt: DateTime.utc(2099),
+    );
+  }
+
+  @override
+  ServiceAuthContext requireServiceContext(
+    Session session, {
+    Iterable<String> requiredScopes = const [],
+  }) {
+    final tokenScopes = serviceScopes;
+    if (tokenScopes == null ||
+        requiredScopes.any((scope) => !tokenScopes.contains(scope))) {
+      throw const NexusAuthException.invalidAccessToken(
+        'Service token scope denied.',
+      );
+    }
+    return ServiceAuthContext(
+      serviceName: 'security-test',
+      issuer: AuthTokenDefaults.issuer,
+      audiences: const ['projects-service'],
+      scopes: tokenScopes.toList(growable: false),
+      issuedAt: DateTime.utc(2026),
+      expiresAt: DateTime.utc(2099),
+      globalAccess: projectId == null,
+      projectId: projectId,
+    );
+  }
+}
+
+final _concealedResourceNotFound = isA<StateError>().having(
+  (error) => error.message,
+  'message',
+  'Resource not found.',
+);
+
+final class _TenantAuthorization implements TenantAuthorization {
+  const _TenantAuthorization(this.allowedTenant);
+  final UuidValue allowedTenant;
+
+  @override
+  Future<bool> canManageTenant({
+    required UuidValue tenantPartyId,
+    required String? bearerToken,
+  }) async => tenantPartyId == allowedTenant;
 }

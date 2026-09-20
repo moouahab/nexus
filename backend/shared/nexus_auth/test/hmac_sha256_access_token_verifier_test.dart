@@ -60,6 +60,7 @@ void main() {
           serviceName: 'projects',
           audience: 'users-service',
           scopes: ['users.profile.read', 'parties.membership.read'],
+          projectId: 'project-a',
         ),
       );
 
@@ -71,6 +72,9 @@ void main() {
       expect(context.serviceName, 'projects');
       expect(context.audiences, ['users-service']);
       expect(context.scopes, ['users.profile.read', 'parties.membership.read']);
+      expect(context.projectId, 'project-a');
+      expect(context.allowsProject('project-a'), isTrue);
+      expect(context.allowsProject('project-b'), isFalse);
     });
 
     test('rejects service token with wrong audience or missing scope', () {
@@ -138,6 +142,7 @@ Map<String, dynamic> _serviceClaims({
   required String serviceName,
   required String audience,
   required List<String> scopes,
+  String? projectId,
   DateTime? expiresAt,
 }) {
   final now = DateTime.now().toUtc();
@@ -152,6 +157,7 @@ Map<String, dynamic> _serviceClaims({
             .millisecondsSinceEpoch ~/
         1000,
     AuthClaimNames.scopes: scopes.join(' '),
+    if (projectId != null) AuthClaimNames.projectId: projectId,
   };
 }
 

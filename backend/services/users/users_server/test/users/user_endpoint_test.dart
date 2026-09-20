@@ -1,7 +1,9 @@
+import 'package:nexus_auth/nexus_auth.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 import 'package:users_server/src/generated/protocol.dart';
 import 'package:users_server/src/users/application/user_profile_service.dart';
+import 'package:users_server/src/users/application/party_access_validator.dart';
 import 'package:users_server/src/users/user_endpoint.dart';
 import '../integration/test_tools/serverpod_test_tools.dart';
 
@@ -123,6 +125,46 @@ void main() {
       expect(updated.updatedAt, isNotNull);
     });
 
+    test(
+      'validates primaryPartyId against the authenticated membership',
+      () async {
+        final testSession = session();
+        final identityId = const Uuid().v7obj();
+        final allowedParty = const Uuid().v7obj();
+        final foreignParty = const Uuid().v7obj();
+        final endpoint = UserEndpoint(
+          userAuth: _UserAuth(identityId),
+          partyAccess: _PartyAccess(allowedParty),
+        );
+
+        final profile = await endpoint.completeMyProfile(
+          testSession,
+          displayName: 'Tenant A User',
+          primaryPartyId: allowedParty,
+        );
+        expect(profile.primaryPartyId, allowedParty);
+
+        await expectLater(
+          endpoint.setPrimaryParty(
+            testSession,
+            userProfileId: profile.id!,
+            primaryPartyId: foreignParty,
+          ),
+          throwsA(
+            isA<NotAuthorizedException>().having(
+              (error) => error.message,
+              'safe message',
+              'Primary party access denied.',
+            ),
+          ),
+        );
+        expect(
+          (await profiles.getProfile(testSession, profile.id!)).primaryPartyId,
+          allowedParty,
+        );
+      },
+    );
+
     test('keeps identity profiles and primary parties isolated', () async {
       final testSession = session();
       final identityA = const Uuid().v7obj();
@@ -186,4 +228,32 @@ void main() {
       );
     });
   });
+}
+
+final class _PartyAccess implements PartyAccessValidator {
+  const _PartyAccess(this.allowedParty);
+  final UuidValue allowedParty;
+
+  @override
+  Future<bool> canUseParty({
+    required UuidValue partyId,
+    required String? bearerToken,
+  }) async => partyId == allowedParty;
+}
+
+final class _UserAuth extends AuthContextResolver {
+  const _UserAuth(this.identityId);
+  final UuidValue identityId;
+
+  @override
+  AuthContext requireContext(Session session) => AuthContext(
+    identityId: identityId,
+    authSessionId: const Uuid().v7obj(),
+    issuer: AuthTokenDefaults.issuer,
+    audience: AuthTokenDefaults.audience,
+    emailVerified: true,
+    authenticationMethods: const ['pwd'],
+    issuedAt: DateTime.utc(2026),
+    expiresAt: DateTime.utc(2099),
+  );
 }

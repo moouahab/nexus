@@ -369,91 +369,190 @@ class AiRunUpdateTable extends _i1.UpdateTable<AiRunTable> {
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> requestId(
     _i1.UuidValue value,
-  ) => _i1.ColumnValue(table.requestId, value);
+  ) => _i1.ColumnValue(
+    table.requestId,
+    value,
+  );
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> projectId(
     _i1.UuidValue value,
-  ) => _i1.ColumnValue(table.projectId, value);
+  ) => _i1.ColumnValue(
+    table.projectId,
+    value,
+  );
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> tenantPartyId(
     _i1.UuidValue value,
-  ) => _i1.ColumnValue(table.tenantPartyId, value);
+  ) => _i1.ColumnValue(
+    table.tenantPartyId,
+    value,
+  );
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> missionId(
     _i1.UuidValue? value,
-  ) => _i1.ColumnValue(table.missionId, value);
+  ) => _i1.ColumnValue(
+    table.missionId,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> capability(String value) =>
-      _i1.ColumnValue(table.capability, value);
+  _i1.ColumnValue<String, String> capability(String value) => _i1.ColumnValue(
+    table.capability,
+    value,
+  );
 
   _i1.ColumnValue<_i2.AiRunStatus, _i2.AiRunStatus> status(
     _i2.AiRunStatus value,
-  ) => _i1.ColumnValue(table.status, value);
+  ) => _i1.ColumnValue(
+    table.status,
+    value,
+  );
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> requesterIdentityId(
     _i1.UuidValue? value,
-  ) => _i1.ColumnValue(table.requesterIdentityId, value);
+  ) => _i1.ColumnValue(
+    table.requesterIdentityId,
+    value,
+  );
 
   _i1.ColumnValue<String, String> requesterService(String? value) =>
-      _i1.ColumnValue(table.requesterService, value);
+      _i1.ColumnValue(
+        table.requesterService,
+        value,
+      );
 
-  _i1.ColumnValue<String, String> failureCode(String? value) =>
-      _i1.ColumnValue(table.failureCode, value);
+  _i1.ColumnValue<String, String> failureCode(String? value) => _i1.ColumnValue(
+    table.failureCode,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> provider(String? value) =>
-      _i1.ColumnValue(table.provider, value);
+  _i1.ColumnValue<String, String> provider(String? value) => _i1.ColumnValue(
+    table.provider,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> model(String? value) =>
-      _i1.ColumnValue(table.model, value);
+  _i1.ColumnValue<String, String> model(String? value) => _i1.ColumnValue(
+    table.model,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> outputText(String? value) =>
-      _i1.ColumnValue(table.outputText, value);
+  _i1.ColumnValue<String, String> outputText(String? value) => _i1.ColumnValue(
+    table.outputText,
+    value,
+  );
 
   _i1.ColumnValue<String, String> reasoningLevel(String? value) =>
-      _i1.ColumnValue(table.reasoningLevel, value);
+      _i1.ColumnValue(
+        table.reasoningLevel,
+        value,
+      );
 
-  _i1.ColumnValue<int, int> currentIteration(int? value) =>
-      _i1.ColumnValue(table.currentIteration, value);
+  _i1.ColumnValue<int, int> currentIteration(int? value) => _i1.ColumnValue(
+    table.currentIteration,
+    value,
+  );
 
-  _i1.ColumnValue<int, int> maxIterations(int? value) =>
-      _i1.ColumnValue(table.maxIterations, value);
+  _i1.ColumnValue<int, int> maxIterations(int? value) => _i1.ColumnValue(
+    table.maxIterations,
+    value,
+  );
 
-  _i1.ColumnValue<bool, bool> validated(bool? value) =>
-      _i1.ColumnValue(table.validated, value);
+  _i1.ColumnValue<bool, bool> validated(bool? value) => _i1.ColumnValue(
+    table.validated,
+    value,
+  );
 
   _i1.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
-      _i1.ColumnValue(table.createdAt, value);
+      _i1.ColumnValue(
+        table.createdAt,
+        value,
+      );
 
   _i1.ColumnValue<DateTime, DateTime> updatedAt(DateTime? value) =>
-      _i1.ColumnValue(table.updatedAt, value);
+      _i1.ColumnValue(
+        table.updatedAt,
+        value,
+      );
 }
 
 class AiRunTable extends _i1.Table<_i1.UuidValue?> {
   AiRunTable({super.tableRelation}) : super(tableName: 'ai_run') {
     updateTable = AiRunUpdateTable(this);
-    requestId = _i1.ColumnUuid('requestId', this);
-    projectId = _i1.ColumnUuid('projectId', this);
-    tenantPartyId = _i1.ColumnUuid('tenantPartyId', this);
-    missionId = _i1.ColumnUuid('missionId', this);
-    capability = _i1.ColumnString('capability', this);
+    requestId = _i1.ColumnUuid(
+      'requestId',
+      this,
+    );
+    projectId = _i1.ColumnUuid(
+      'projectId',
+      this,
+    );
+    tenantPartyId = _i1.ColumnUuid(
+      'tenantPartyId',
+      this,
+    );
+    missionId = _i1.ColumnUuid(
+      'missionId',
+      this,
+    );
+    capability = _i1.ColumnString(
+      'capability',
+      this,
+    );
     status = _i1.ColumnEnum(
       'status',
       this,
       _i1.EnumSerialization.byName,
       hasDefault: true,
     );
-    requesterIdentityId = _i1.ColumnUuid('requesterIdentityId', this);
-    requesterService = _i1.ColumnString('requesterService', this);
-    failureCode = _i1.ColumnString('failureCode', this);
-    provider = _i1.ColumnString('provider', this);
-    model = _i1.ColumnString('model', this);
-    outputText = _i1.ColumnString('outputText', this);
-    reasoningLevel = _i1.ColumnString('reasoningLevel', this);
-    currentIteration = _i1.ColumnInt('currentIteration', this);
-    maxIterations = _i1.ColumnInt('maxIterations', this);
-    validated = _i1.ColumnBool('validated', this, hasDefault: true);
-    createdAt = _i1.ColumnDateTime('createdAt', this, hasDefault: true);
-    updatedAt = _i1.ColumnDateTime('updatedAt', this);
+    requesterIdentityId = _i1.ColumnUuid(
+      'requesterIdentityId',
+      this,
+    );
+    requesterService = _i1.ColumnString(
+      'requesterService',
+      this,
+    );
+    failureCode = _i1.ColumnString(
+      'failureCode',
+      this,
+    );
+    provider = _i1.ColumnString(
+      'provider',
+      this,
+    );
+    model = _i1.ColumnString(
+      'model',
+      this,
+    );
+    outputText = _i1.ColumnString(
+      'outputText',
+      this,
+    );
+    reasoningLevel = _i1.ColumnString(
+      'reasoningLevel',
+      this,
+    );
+    currentIteration = _i1.ColumnInt(
+      'currentIteration',
+      this,
+    );
+    maxIterations = _i1.ColumnInt(
+      'maxIterations',
+      this,
+    );
+    validated = _i1.ColumnBool(
+      'validated',
+      this,
+      hasDefault: true,
+    );
+    createdAt = _i1.ColumnDateTime(
+      'createdAt',
+      this,
+      hasDefault: true,
+    );
+    updatedAt = _i1.ColumnDateTime(
+      'updatedAt',
+      this,
+    );
   }
 
   late final AiRunUpdateTable updateTable;
@@ -685,7 +784,10 @@ class AiRunRepository {
     AiRun row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.insertRow<AiRun>(row, transaction: transaction);
+    return session.db.insertRow<AiRun>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Updates all [AiRun]s in the list and returns the updated rows. If
@@ -770,7 +872,10 @@ class AiRunRepository {
     List<AiRun> rows, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<AiRun>(rows, transaction: transaction);
+    return session.db.delete<AiRun>(
+      rows,
+      transaction: transaction,
+    );
   }
 
   /// Deletes a single [AiRun].
@@ -779,7 +884,10 @@ class AiRunRepository {
     AiRun row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.deleteRow<AiRun>(row, transaction: transaction);
+    return session.db.deleteRow<AiRun>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Deletes all rows matching the [where] expression.

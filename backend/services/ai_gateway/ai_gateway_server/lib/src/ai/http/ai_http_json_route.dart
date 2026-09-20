@@ -6,6 +6,7 @@ import 'package:serverpod/serverpod.dart';
 
 import '../application/ai_gateway_application.dart';
 import '../application/ai_provider.dart';
+import '../application/ai_run_queue.dart';
 
 abstract class AiHttpJsonRoute extends Route {
   AiHttpJsonRoute({required this.application, super.methods, super.path});
@@ -51,6 +52,8 @@ abstract class AiHttpJsonRoute extends Route {
       return errorResponse(400, 'VALIDATION_FAILED');
     } on AiProviderException {
       return errorResponse(503, 'AI_PROVIDER_UNAVAILABLE');
+    } on AiRunIdempotencyConflict {
+      return errorResponse(409, 'IDEMPOTENCY_CONFLICT');
     } on StateError catch (error) {
       final message = error.message.toString();
       if (message == 'AI run not found.') {

@@ -8,6 +8,7 @@ fields:
   inputJson: String
   bearerToken: String?
   idempotencyKey: String?
+  requestFingerprint: String?
   requesterScope: String
   tenantPartyId: UuidValue
   status: AiRunJobStatus, default=queued
@@ -24,4 +25,3 @@ indexes:
   ai_run_job_idempotency_idx:
     fields: tenantPartyId, requesterScope, idempotencyKey
     unique: true
-

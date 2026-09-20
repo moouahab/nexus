@@ -703,6 +703,18 @@ components:
               items:
                 type: string
                 minLength: 1
+        globalAccess:
+          type: boolean
+          default: false
+          description: Requires allowGlobalAccess on the service registration.
+        tenantPartyId:
+          $ref: '#/components/schemas/Uuid'
+        projectId:
+          $ref: '#/components/schemas/Uuid'
+        resourceId:
+          $ref: '#/components/schemas/Uuid'
+        delegatedIdentityId:
+          $ref: '#/components/schemas/Uuid'
     ServiceTokenResponse:
       type: object
       required: [tokenType, accessToken, expiresIn, serviceName, audience, scopes]
@@ -722,6 +734,16 @@ components:
           type: array
           items:
             type: string
+        globalAccess:
+          type: boolean
+        tenantPartyId:
+          $ref: '#/components/schemas/Uuid'
+        projectId:
+          $ref: '#/components/schemas/Uuid'
+        resourceId:
+          $ref: '#/components/schemas/Uuid'
+        delegatedIdentityId:
+          $ref: '#/components/schemas/Uuid'
     Health:
       type: object
       required: [service, status, checks]

@@ -10,6 +10,11 @@ class ServiceAuthClaims {
     required this.scopes,
     required this.issuedAt,
     required this.expiresAt,
+    this.globalAccess = false,
+    this.tenantPartyId,
+    this.projectId,
+    this.resourceId,
+    this.delegatedIdentityId,
   });
 
   factory ServiceAuthClaims.service({
@@ -19,6 +24,11 @@ class ServiceAuthClaims {
     DateTime? issuedAt,
     Duration lifetime = AuthTokenDefaults.serviceTokenLifetime,
     String issuer = AuthTokenDefaults.issuer,
+    bool globalAccess = false,
+    String? tenantPartyId,
+    String? projectId,
+    String? resourceId,
+    String? delegatedIdentityId,
   }) {
     final normalizedServiceName = _requiredTokenValue(
       serviceName,
@@ -34,6 +44,14 @@ class ServiceAuthClaims {
       scopes: normalizedScopes,
       issuedAt: now,
       expiresAt: now.add(lifetime),
+      globalAccess: globalAccess,
+      tenantPartyId: _optionalTokenValue(tenantPartyId, 'tenantPartyId'),
+      projectId: _optionalTokenValue(projectId, 'projectId'),
+      resourceId: _optionalTokenValue(resourceId, 'resourceId'),
+      delegatedIdentityId: _optionalTokenValue(
+        delegatedIdentityId,
+        'delegatedIdentityId',
+      ),
     );
   }
 
@@ -52,6 +70,23 @@ class ServiceAuthClaims {
       scopes: _scopesFromJson(json[AuthClaimNames.scopes]),
       issuedAt: _dateTimeFromEpochSeconds(json[AuthClaimNames.issuedAt]),
       expiresAt: _dateTimeFromEpochSeconds(json[AuthClaimNames.expiresAt]),
+      globalAccess: json[AuthClaimNames.globalAccess] == true,
+      tenantPartyId: _optionalTokenValue(
+        json[AuthClaimNames.tenantPartyId] as String?,
+        'tenantPartyId',
+      ),
+      projectId: _optionalTokenValue(
+        json[AuthClaimNames.projectId] as String?,
+        'projectId',
+      ),
+      resourceId: _optionalTokenValue(
+        json[AuthClaimNames.resourceId] as String?,
+        'resourceId',
+      ),
+      delegatedIdentityId: _optionalTokenValue(
+        json[AuthClaimNames.delegatedIdentityId] as String?,
+        'delegatedIdentityId',
+      ),
     );
   }
 
@@ -61,6 +96,11 @@ class ServiceAuthClaims {
   final List<String> scopes;
   final DateTime issuedAt;
   final DateTime expiresAt;
+  final bool globalAccess;
+  final String? tenantPartyId;
+  final String? projectId;
+  final String? resourceId;
+  final String? delegatedIdentityId;
 
   String get subject => 'service:$serviceName';
 
@@ -79,8 +119,20 @@ class ServiceAuthClaims {
       AuthClaimNames.issuedAt: _epochSeconds(issuedAt),
       AuthClaimNames.expiresAt: _epochSeconds(expiresAt),
       AuthClaimNames.scopes: scopes.join(' '),
+      if (globalAccess) AuthClaimNames.globalAccess: true,
+      if (tenantPartyId != null) AuthClaimNames.tenantPartyId: tenantPartyId,
+      if (projectId != null) AuthClaimNames.projectId: projectId,
+      if (resourceId != null) AuthClaimNames.resourceId: resourceId,
+      if (delegatedIdentityId != null)
+        AuthClaimNames.delegatedIdentityId: delegatedIdentityId,
     };
   }
+
+  bool get hasResourceBoundary =>
+      globalAccess ||
+      tenantPartyId != null ||
+      projectId != null ||
+      resourceId != null;
 
   static String _requiredTokenValue(String value, String name) {
     final normalized = value.trim();
@@ -92,6 +144,11 @@ class ServiceAuthClaims {
       );
     }
     return normalized;
+  }
+
+  static String? _optionalTokenValue(String? value, String name) {
+    if (value == null) return null;
+    return _requiredTokenValue(value, name);
   }
 
   static List<String> _normalizeScopes(List<String> scopes) {

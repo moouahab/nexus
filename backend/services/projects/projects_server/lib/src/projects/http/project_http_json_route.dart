@@ -7,14 +7,22 @@ import 'package:serverpod/serverpod.dart';
 import '../project_endpoint.dart';
 
 abstract class ProjectHttpJsonRoute extends Route {
-  ProjectHttpJsonRoute({super.methods, super.path});
+  ProjectHttpJsonRoute({
+    super.methods,
+    super.path,
+    ProjectEndpoint? projects,
+    AuthContextResolver userAuth = const AuthContextResolver(),
+    AuthContextResolver serviceAuth = const AuthContextResolver(
+      audience: 'projects-service',
+    ),
+  }) : projects = projects ?? ProjectEndpoint(),
+       _userAuth = userAuth,
+       _serviceAuth = serviceAuth;
 
   static const maxBodyBytes = 1024 * 1024;
-  static const _userAuth = AuthContextResolver();
-  static const _serviceAuth = AuthContextResolver(
-    audience: 'projects-service',
-  );
-  final ProjectEndpoint projects = ProjectEndpoint();
+  final AuthContextResolver _userAuth;
+  final AuthContextResolver _serviceAuth;
+  final ProjectEndpoint projects;
 
   Future<Map<String, dynamic>> execute(Session session, Request request);
   int get successStatusCode => 200;
@@ -24,11 +32,15 @@ abstract class ProjectHttpJsonRoute extends Route {
       NexusObservability.observeHttp(
         session,
         request,
-        () => _handleCall(session, request),
+        () => handleJsonCall(session, request),
         service: 'projects',
       );
 
-  Future<Result> _handleCall(Session session, Request request) async {
+  /// Executes authentication, authorization and HTTP error mapping.
+  ///
+  /// Exposed separately so transport-parity tests do not need to initialize a
+  /// global telemetry exporter merely to exercise the route contract.
+  Future<Result> handleJsonCall(Session session, Request request) async {
     try {
       _requireAuthenticatedCaller(session);
       return jsonResponse(

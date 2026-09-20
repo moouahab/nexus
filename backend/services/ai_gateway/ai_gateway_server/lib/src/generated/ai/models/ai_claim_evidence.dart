@@ -185,31 +185,61 @@ class AiClaimEvidenceUpdateTable extends _i1.UpdateTable<AiClaimEvidenceTable> {
   AiClaimEvidenceUpdateTable(super.table);
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> runId(_i1.UuidValue value) =>
-      _i1.ColumnValue(table.runId, value);
+      _i1.ColumnValue(
+        table.runId,
+        value,
+      );
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> claimId(_i1.UuidValue value) =>
-      _i1.ColumnValue(table.claimId, value);
+      _i1.ColumnValue(
+        table.claimId,
+        value,
+      );
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> evidenceId(
     _i1.UuidValue value,
-  ) => _i1.ColumnValue(table.evidenceId, value);
+  ) => _i1.ColumnValue(
+    table.evidenceId,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> relation(String value) =>
-      _i1.ColumnValue(table.relation, value);
+  _i1.ColumnValue<String, String> relation(String value) => _i1.ColumnValue(
+    table.relation,
+    value,
+  );
 
   _i1.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
-      _i1.ColumnValue(table.createdAt, value);
+      _i1.ColumnValue(
+        table.createdAt,
+        value,
+      );
 }
 
 class AiClaimEvidenceTable extends _i1.Table<_i1.UuidValue?> {
   AiClaimEvidenceTable({super.tableRelation})
     : super(tableName: 'ai_claim_evidence') {
     updateTable = AiClaimEvidenceUpdateTable(this);
-    runId = _i1.ColumnUuid('runId', this);
-    claimId = _i1.ColumnUuid('claimId', this);
-    evidenceId = _i1.ColumnUuid('evidenceId', this);
-    relation = _i1.ColumnString('relation', this);
-    createdAt = _i1.ColumnDateTime('createdAt', this, hasDefault: true);
+    runId = _i1.ColumnUuid(
+      'runId',
+      this,
+    );
+    claimId = _i1.ColumnUuid(
+      'claimId',
+      this,
+    );
+    evidenceId = _i1.ColumnUuid(
+      'evidenceId',
+      this,
+    );
+    relation = _i1.ColumnString(
+      'relation',
+      this,
+    );
+    createdAt = _i1.ColumnDateTime(
+      'createdAt',
+      this,
+      hasDefault: true,
+    );
   }
 
   late final AiClaimEvidenceUpdateTable updateTable;
@@ -402,7 +432,10 @@ class AiClaimEvidenceRepository {
     AiClaimEvidence row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.insertRow<AiClaimEvidence>(row, transaction: transaction);
+    return session.db.insertRow<AiClaimEvidence>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Updates all [AiClaimEvidence]s in the list and returns the updated rows. If
@@ -489,7 +522,10 @@ class AiClaimEvidenceRepository {
     List<AiClaimEvidence> rows, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<AiClaimEvidence>(rows, transaction: transaction);
+    return session.db.delete<AiClaimEvidence>(
+      rows,
+      transaction: transaction,
+    );
   }
 
   /// Deletes a single [AiClaimEvidence].
@@ -498,7 +534,10 @@ class AiClaimEvidenceRepository {
     AiClaimEvidence row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.deleteRow<AiClaimEvidence>(row, transaction: transaction);
+    return session.db.deleteRow<AiClaimEvidence>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Deletes all rows matching the [where] expression.

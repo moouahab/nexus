@@ -1,0 +1,10 @@
+environment: local-disposable
+allowedHosts:
+  - localhost
+  - 127.0.0.1
+  - ::1
+allowedCidrs:
+  - 127.0.0.0/8
+  - ::1/128
+destructive: false
+maxRedirects: 0

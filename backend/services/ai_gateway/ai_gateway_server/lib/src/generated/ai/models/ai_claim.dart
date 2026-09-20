@@ -206,37 +206,76 @@ class AiClaimUpdateTable extends _i1.UpdateTable<AiClaimTable> {
   AiClaimUpdateTable(super.table);
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> runId(_i1.UuidValue value) =>
-      _i1.ColumnValue(table.runId, value);
+      _i1.ColumnValue(
+        table.runId,
+        value,
+      );
 
-  _i1.ColumnValue<String, String> statement(String value) =>
-      _i1.ColumnValue(table.statement, value);
+  _i1.ColumnValue<String, String> statement(String value) => _i1.ColumnValue(
+    table.statement,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> claimType(String value) =>
-      _i1.ColumnValue(table.claimType, value);
+  _i1.ColumnValue<String, String> claimType(String value) => _i1.ColumnValue(
+    table.claimType,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> confidence(String value) =>
-      _i1.ColumnValue(table.confidence, value);
+  _i1.ColumnValue<String, String> confidence(String value) => _i1.ColumnValue(
+    table.confidence,
+    value,
+  );
 
   _i1.ColumnValue<String, String> verificationDecision(String value) =>
-      _i1.ColumnValue(table.verificationDecision, value);
+      _i1.ColumnValue(
+        table.verificationDecision,
+        value,
+      );
 
-  _i1.ColumnValue<int, int> iteration(int value) =>
-      _i1.ColumnValue(table.iteration, value);
+  _i1.ColumnValue<int, int> iteration(int value) => _i1.ColumnValue(
+    table.iteration,
+    value,
+  );
 
   _i1.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
-      _i1.ColumnValue(table.createdAt, value);
+      _i1.ColumnValue(
+        table.createdAt,
+        value,
+      );
 }
 
 class AiClaimTable extends _i1.Table<_i1.UuidValue?> {
   AiClaimTable({super.tableRelation}) : super(tableName: 'ai_claim') {
     updateTable = AiClaimUpdateTable(this);
-    runId = _i1.ColumnUuid('runId', this);
-    statement = _i1.ColumnString('statement', this);
-    claimType = _i1.ColumnString('claimType', this);
-    confidence = _i1.ColumnString('confidence', this);
-    verificationDecision = _i1.ColumnString('verificationDecision', this);
-    iteration = _i1.ColumnInt('iteration', this);
-    createdAt = _i1.ColumnDateTime('createdAt', this, hasDefault: true);
+    runId = _i1.ColumnUuid(
+      'runId',
+      this,
+    );
+    statement = _i1.ColumnString(
+      'statement',
+      this,
+    );
+    claimType = _i1.ColumnString(
+      'claimType',
+      this,
+    );
+    confidence = _i1.ColumnString(
+      'confidence',
+      this,
+    );
+    verificationDecision = _i1.ColumnString(
+      'verificationDecision',
+      this,
+    );
+    iteration = _i1.ColumnInt(
+      'iteration',
+      this,
+    );
+    createdAt = _i1.ColumnDateTime(
+      'createdAt',
+      this,
+      hasDefault: true,
+    );
   }
 
   late final AiClaimUpdateTable updateTable;
@@ -435,7 +474,10 @@ class AiClaimRepository {
     AiClaim row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.insertRow<AiClaim>(row, transaction: transaction);
+    return session.db.insertRow<AiClaim>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Updates all [AiClaim]s in the list and returns the updated rows. If
@@ -520,7 +562,10 @@ class AiClaimRepository {
     List<AiClaim> rows, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<AiClaim>(rows, transaction: transaction);
+    return session.db.delete<AiClaim>(
+      rows,
+      transaction: transaction,
+    );
   }
 
   /// Deletes a single [AiClaim].
@@ -529,7 +574,10 @@ class AiClaimRepository {
     AiClaim row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.deleteRow<AiClaim>(row, transaction: transaction);
+    return session.db.deleteRow<AiClaim>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Deletes all rows matching the [where] expression.

@@ -27,7 +27,11 @@ class EndpointAiGateway extends _i1.EndpointRef {
   String get name => 'aiGateway';
 
   _i2.Future<_i3.AiGatewayHealth> health() =>
-      caller.callServerEndpoint<_i3.AiGatewayHealth>('aiGateway', 'health', {});
+      caller.callServerEndpoint<_i3.AiGatewayHealth>(
+        'aiGateway',
+        'health',
+        {},
+      );
 
   _i2.Future<List<_i4.AiCapability>> capabilities() =>
       caller.callServerEndpoint<List<_i4.AiCapability>>(
@@ -43,22 +47,32 @@ class EndpointAiGateway extends _i1.EndpointRef {
     Map<String, String>? input,
     _i1.UuidValue? missionId,
     String? idempotencyKey,
-  }) => caller.callServerEndpoint<_i5.AiRun>('aiGateway', 'createRun', {
-    'projectId': projectId,
-    'tenantPartyId': tenantPartyId,
-    'capability': capability,
-    'input': input,
-    'missionId': missionId,
-    'idempotencyKey': idempotencyKey,
-  });
+  }) => caller.callServerEndpoint<_i5.AiRun>(
+    'aiGateway',
+    'createRun',
+    {
+      'projectId': projectId,
+      'tenantPartyId': tenantPartyId,
+      'capability': capability,
+      'input': input,
+      'missionId': missionId,
+      'idempotencyKey': idempotencyKey,
+    },
+  );
 
-  _i2.Future<_i5.AiRun> getRun(_i1.UuidValue runId) => caller
-      .callServerEndpoint<_i5.AiRun>('aiGateway', 'getRun', {'runId': runId});
+  _i2.Future<_i5.AiRun> getRun(_i1.UuidValue runId) =>
+      caller.callServerEndpoint<_i5.AiRun>(
+        'aiGateway',
+        'getRun',
+        {'runId': runId},
+      );
 
   _i2.Future<_i5.AiRun> cancelRun(_i1.UuidValue runId) =>
-      caller.callServerEndpoint<_i5.AiRun>('aiGateway', 'cancelRun', {
-        'runId': runId,
-      });
+      caller.callServerEndpoint<_i5.AiRun>(
+        'aiGateway',
+        'cancelRun',
+        {'runId': runId},
+      );
 }
 
 class Client extends _i1.ServerpodClientShared {
@@ -71,7 +85,12 @@ class Client extends _i1.ServerpodClientShared {
     super.authenticationKeyManager,
     Duration? streamingConnectionTimeout,
     Duration? connectionTimeout,
-    Function(_i1.MethodCallContext, Object, StackTrace)? onFailedCall,
+    Function(
+      _i1.MethodCallContext,
+      Object,
+      StackTrace,
+    )?
+    onFailedCall,
     Function(_i1.MethodCallContext)? onSucceededCall,
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(

@@ -219,7 +219,7 @@ test-projects:
 test-ai-gateway:
 	cd $(AI_GATEWAY_DIR) && dart test
 
-.PHONY: security-static security-probe security-full security-tooling
+.PHONY: security-static security-probe security-full security-tooling security-authorization
 security-static:
 	./security/scripts/run_static.sh
 
@@ -232,3 +232,6 @@ security-full:
 security-tooling:
 	bash -n security/scripts/run_static.sh security/scripts/run_dast.sh
 	python3 -m unittest discover -s security/tests -v
+
+security-authorization:
+	./security/scripts/run_authorization.sh

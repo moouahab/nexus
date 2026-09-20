@@ -14,10 +14,15 @@ import 'package:serverpod/serverpod.dart' as _i1;
 
 abstract class AiGatewayHealth
     implements _i1.SerializableModel, _i1.ProtocolSerialization {
-  AiGatewayHealth._({required this.service, required this.status});
+  AiGatewayHealth._({
+    required this.service,
+    required this.status,
+  });
 
-  factory AiGatewayHealth({required String service, required String status}) =
-      _AiGatewayHealthImpl;
+  factory AiGatewayHealth({
+    required String service,
+    required String status,
+  }) = _AiGatewayHealthImpl;
 
   factory AiGatewayHealth.fromJson(Map<String, dynamic> jsonSerialization) {
     return AiGatewayHealth(
@@ -33,7 +38,10 @@ abstract class AiGatewayHealth
   /// Returns a shallow copy of this [AiGatewayHealth]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
-  AiGatewayHealth copyWith({String? service, String? status});
+  AiGatewayHealth copyWith({
+    String? service,
+    String? status,
+  });
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -59,14 +67,22 @@ abstract class AiGatewayHealth
 }
 
 class _AiGatewayHealthImpl extends AiGatewayHealth {
-  _AiGatewayHealthImpl({required String service, required String status})
-    : super._(service: service, status: status);
+  _AiGatewayHealthImpl({
+    required String service,
+    required String status,
+  }) : super._(
+         service: service,
+         status: status,
+       );
 
   /// Returns a shallow copy of this [AiGatewayHealth]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
   @override
-  AiGatewayHealth copyWith({String? service, String? status}) {
+  AiGatewayHealth copyWith({
+    String? service,
+    String? status,
+  }) {
     return AiGatewayHealth(
       service: service ?? this.service,
       status: status ?? this.status,

@@ -9,3 +9,4 @@
 20260919103511245-add-reasoning-evidence
 20260919103727079-add-reasoning-evidence-constraints
 20260919195133567-durable-ai-run-queue
+20260920141244671-ai-run-idempotency-fingerprint

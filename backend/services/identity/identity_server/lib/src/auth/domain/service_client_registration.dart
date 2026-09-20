@@ -4,6 +4,7 @@ class ServiceClientRegistration {
     required this.secret,
     required this.allowedAudiences,
     required this.allowedScopes,
+    this.allowGlobalAccess = false,
   });
 
   factory ServiceClientRegistration.fromJson(
@@ -15,6 +16,7 @@ class ServiceClientRegistration {
       secret: _requiredSecret(json['secret']),
       allowedAudiences: _stringSet(json['audiences'], 'audiences'),
       allowedScopes: _stringSet(json['scopes'], 'scopes'),
+      allowGlobalAccess: json['allowGlobalAccess'] == true,
     );
   }
 
@@ -22,6 +24,7 @@ class ServiceClientRegistration {
   final String secret;
   final Set<String> allowedAudiences;
   final Set<String> allowedScopes;
+  final bool allowGlobalAccess;
 
   bool allowsAudience(String audience) => allowedAudiences.contains(audience);
 

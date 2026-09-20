@@ -11,13 +11,13 @@ abstract class _ProjectRegistrySupport {
 
   Future<Project> _requiredProject(Session session, UuidValue projectId) async {
     final project = await Project.db.findById(session, projectId);
-    if (project == null) throw StateError('Project not found.');
+    if (project == null) throw StateError('Resource not found.');
     return project;
   }
 
   Future<ProjectLink> _requiredLink(Session session, UuidValue linkId) async {
     final link = await ProjectLink.db.findById(session, linkId);
-    if (link == null) throw StateError('Project link not found.');
+    if (link == null) throw StateError('Resource not found.');
     return link;
   }
 
@@ -29,7 +29,7 @@ abstract class _ProjectRegistrySupport {
       session,
       participantId,
     );
-    if (participant == null) throw StateError('Project participant not found.');
+    if (participant == null) throw StateError('Resource not found.');
     return participant;
   }
 

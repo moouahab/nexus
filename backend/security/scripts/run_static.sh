@@ -28,9 +28,13 @@ docker run --rm \
 docker run --rm \
   -v "$ROOT:/src:ro" -v "$REPORTS:/reports:rw" \
   "$SEMGREP_IMAGE" semgrep scan --config p/security-audit --config p/secrets \
+  --config /src/security/semgrep/nexus.yml \
   --metrics=off --error --no-git-ignore --exclude '**/secrets/**' \
   --exclude '**/.dart_tool/**' --exclude '**/generated/**' \
   --json --json-output=/reports/semgrep.json /src || status=1
+
+python3 "$ROOT/security/scripts/normalize_findings.py" \
+  --reports "$REPORTS" --output "$REPORTS/findings.json" || status=1
 
 echo "security reports: $REPORTS"
 exit "$status"

@@ -47,6 +47,12 @@ services:
     read_only: true
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     tmpfs:
       - /data:size=64m,noexec,nosuid,nodev
       - /tmp:size=16m,noexec,nosuid,nodev

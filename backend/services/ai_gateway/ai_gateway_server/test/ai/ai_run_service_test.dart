@@ -4,6 +4,7 @@ import 'package:ai_gateway_server/src/ai/application/ai_run_queue.dart';
 import 'package:ai_gateway_server/src/ai/application/ai_run_service.dart';
 import 'package:ai_gateway_server/src/ai/application/project_authorization.dart';
 import 'package:ai_gateway_server/src/generated/protocol.dart';
+import 'package:nexus_auth/nexus_auth.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 
@@ -45,7 +46,16 @@ void main() {
 
       await expectLater(
         service.get(_UnusedSession(), runId, requesterIdentityId: attackerId),
-        throwsA(isA<StateError>()),
+        throwsA(_concealedRunNotFound),
+      );
+
+      await expectLater(
+        service.get(
+          _UnusedSession(),
+          _uuid('018f0000-0000-7000-8000-000000009999'),
+          requesterIdentityId: attackerId,
+        ),
+        throwsA(_concealedRunNotFound),
       );
 
       expect(authorization.projectId, projectId);
@@ -69,6 +79,32 @@ void main() {
 
     expect(repository.updateCount, 0);
     expect(repository.run.status, AiRunStatus.running);
+  });
+
+  test('service token cannot read an AI run outside its project', () async {
+    final service = AiRunService(
+      authorization: _RecordingAuthorization(allowedIdentityId: ownerId),
+      repository: _MemoryRunStore(run()),
+    );
+    final context = ServiceAuthContext(
+      serviceName: 'projects',
+      issuer: AuthTokenDefaults.issuer,
+      audiences: const ['ai-gateway'],
+      scopes: const ['ai.run.read'],
+      issuedAt: DateTime.utc(2026),
+      expiresAt: DateTime.utc(2099),
+      projectId: '018f0000-0000-7000-8000-000000000099',
+    );
+
+    await expectLater(
+      service.get(
+        _UnusedSession(),
+        runId,
+        requesterService: 'projects',
+        serviceContext: context,
+      ),
+      throwsA(_concealedRunNotFound),
+    );
   });
 
   test('authorized caller can read and cancel its project run', () async {
@@ -150,6 +186,12 @@ void main() {
   });
 }
 
+final _concealedRunNotFound = isA<StateError>().having(
+  (error) => error.message,
+  'message',
+  'AI run not found.',
+);
+
 UuidValue _uuid(String value) => UuidValue.withValidation(value);
 
 final class _RecordingAuthorization implements ProjectAuthorization {
@@ -230,6 +272,7 @@ final class _MemoryQueue implements AiRunQueue {
   int enqueueCount = 0;
   String? requesterScope;
   String? idempotencyKey;
+  String? requestFingerprint;
 
   @override
   Future<AiRun> enqueue(
@@ -239,10 +282,12 @@ final class _MemoryQueue implements AiRunQueue {
     required String requesterScope,
     required String? bearerToken,
     required String? idempotencyKey,
+    required String? requestFingerprint,
   }) async {
     enqueueCount++;
     this.requesterScope = requesterScope;
     this.idempotencyKey = idempotencyKey;
+    this.requestFingerprint = requestFingerprint;
     return run.copyWith(id: _uuid('018f0000-0000-7000-8000-000000000009'));
   }
 

@@ -4,11 +4,12 @@ set -Eeuo pipefail
 readonly ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 readonly REPORTS="$ROOT/security/reports"
 readonly TARGET="${NEXUS_PENTEST_TARGET:-http://127.0.0.1:8000}"
+readonly SCOPE_MANIFEST="${NEXUS_PENTEST_SCOPE:-$ROOT/security/policy/local.scope.yaml}"
 readonly MODE="${1:-probe}"
 readonly ZAP_IMAGE="${ZAP_IMAGE:-ghcr.io/zaproxy/zaproxy:2.17.0}"
 readonly SCHEMATHESIS_IMAGE="${SCHEMATHESIS_IMAGE:-schemathesis/schemathesis:4.24.3}"
 
-python3 "$ROOT/security/scripts/target_guard.py" "$TARGET" >/dev/null
+python3 "$ROOT/security/scripts/target_guard.py" "$TARGET" "$SCOPE_MANIFEST" >/dev/null
 mkdir -p "$REPORTS"
 python3 "$ROOT/security/scripts/api_security_probe.py" \
   "$TARGET" "$REPORTS/api-security-probe.json"

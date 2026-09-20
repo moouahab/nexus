@@ -12,7 +12,7 @@ import urllib.request
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from target_guard import validate_target
+from target_guard import load_scope_manifest, scoped_opener, validate_target
 
 
 @dataclass
@@ -84,7 +84,7 @@ def concrete_path(path: str) -> str:
     return path
 
 
-def request(target: str, path: str, method: str = "GET", headers=None):
+def request(target: str, path: str, method: str = "GET", headers=None, opener=None):
     request_headers = {"Accept": "application/json"}
     request_headers.update(headers or {})
     data = None
@@ -101,7 +101,8 @@ def request(target: str, path: str, method: str = "GET", headers=None):
     # are compile-time constants, so urllib cannot be redirected to file://.
     try:
         # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
-        with urllib.request.urlopen(req, timeout=10) as response:
+        open_request = opener.open if opener is not None else urllib.request.urlopen
+        with open_request(req, timeout=10) as response:
             return response.status, dict(response.headers), response.read(262144)
     except urllib.error.HTTPError as error:
         return error.code, dict(error.headers), error.read(262144)
@@ -111,13 +112,15 @@ def main() -> int:
     if len(sys.argv) != 3:
         print("usage: api_security_probe.py TARGET REPORT.json", file=sys.stderr)
         return 2
-    target = validate_target(sys.argv[1])
+    policy = load_scope_manifest()
+    target = validate_target(sys.argv[1], policy)
+    opener = scoped_opener(policy)
     report_path = Path(sys.argv[2])
     findings: list[Finding] = []
 
     public = ["/v1/auth/health", "/.well-known/jwks.json", "/v1/ai/health"]
     for path in public:
-        status, headers, body = request(target, path)
+        status, headers, body = request(target, path, opener=opener)
         findings.append(Finding(f"public:{path}", "medium", status == 200, f"HTTP {status}"))
         request_id = headers.get("x-request-id") or headers.get("X-Request-Id")
         findings.append(Finding(f"request-id:{path}", "low", bool(request_id), "present" if request_id else "missing"))
@@ -127,13 +130,14 @@ def main() -> int:
     for operation in PROTECTED_OPERATIONS:
         path = concrete_path(operation.path)
         check = f"{operation.service}:{operation.method}:{operation.path}"
-        status, _, _ = request(target, path, method=operation.method)
+        status, _, _ = request(target, path, method=operation.method, opener=opener)
         findings.append(Finding(f"missing-auth:{check}", "critical", status in {401, 403}, f"HTTP {status}"))
         status, _, _ = request(
             target,
             path,
             method=operation.method,
             headers={"Authorization": "Bearer invalid.invalid.invalid"},
+            opener=opener,
         )
         findings.append(Finding(f"malformed-jwt:{check}", "critical", status in {401, 403}, f"HTTP {status}"))
 
@@ -141,11 +145,12 @@ def main() -> int:
         target,
         "/v1/auth/health",
         headers={"Origin": "https://attacker.invalid", "Accept": "application/json"},
+        opener=opener,
     )
     allow_origin = headers.get("access-control-allow-origin") or headers.get("Access-Control-Allow-Origin")
     findings.append(Finding("cors-hostile-origin", "high", allow_origin != "https://attacker.invalid", f"HTTP {status}; allow-origin={allow_origin!r}"))
 
-    status, _, _ = request(target, "/v1/auth/health", method="TRACE")
+    status, _, _ = request(target, "/v1/auth/health", method="TRACE", opener=opener)
     findings.append(Finding("trace-method", "medium", status in {404, 405}, f"HTTP {status}"))
 
     report_path.parent.mkdir(parents=True, exist_ok=True)

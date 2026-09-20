@@ -4,6 +4,7 @@ environment:
   sdk: '^3.8.0'
 resolution: workspace
 dependencies:
+  crypto: ^3.0.6
   nexus_auth:
     path: ../../../shared/nexus_auth
   serverpod: 3.4.11

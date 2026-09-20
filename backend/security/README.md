@@ -24,10 +24,65 @@ running local NEXUS stack.
 - the existing Dart analyzer, tests, OpenAPI validation and infrastructure
   validation remain part of the normal backend CI.
 
+NEXUS-specific rules live in `security/semgrep/nexus.yml`. They focus on
+outbound requests without timeouts, missing interservice authorization, SSRF
+candidates, sensitive logging and raw exception disclosure. A match is a
+review lead, not automatically a confirmed vulnerability.
+
+The local rules also flag service authentication calls which omit an explicit
+`requiredScopes` boundary. Route/RPC authorization parity, project read versus
+management authorization, and REST/OpenAPI inventory parity are deliberately
+enforced by deterministic architecture tests instead of broad Semgrep
+patterns: those properties are split across route adapters, endpoint methods
+and application services, so a single-file pattern would create misleading
+false positives and false negatives. Semgrep's Dart parser can also report
+partial parsing for newer language syntax; its JSON `errors` array must be
+retained with the findings as coverage evidence.
+
 Runtime `secrets/` directories are deliberately excluded from filesystem/SAST
 reports: those files are already forbidden by service `.gitignore` rules and
 must never be copied into a report. Gitleaks still detects any secret that was
 actually committed when the CI history scan runs.
+
+### Unified findings and CI gate
+
+`security/scripts/normalize_findings.py` consumes Semgrep JSON, SARIF and native
+JSON. It produces the deduplicated `security/reports/findings.json` with the
+common NEXUS evidence fields. Scanner results are unconfirmed by default.
+After deterministic reproduction, add the fingerprint and reviewed decision
+to `security/policy/finding-triage.json`. The CI gate fails on confirmed High
+or Critical findings:
+
+```bash
+python3 security/scripts/normalize_findings.py --gate
+```
+
+### Backup/restore and resilience
+
+The backup proof accepts only a `*_postgres_test-*` container and a `*_test`
+database. It restores into a randomly named temporary database, compares the
+table inventory and exact per-table row counts, emits JSON evidence, and deletes only its temporary objects. The source
+database is never dropped or rewritten.
+
+```bash
+NEXUS_DISPOSABLE_DATABASE=I_UNDERSTAND_THIS_IS_DISPOSABLE \
+  security/scripts/backup_restore_test.sh \
+  projects_server-postgres_test-1 projects_test
+```
+
+The initial resilience check only restarts a test API and waits for a
+scope-guarded local health URL. It is a dry run unless both execution and the
+disposable-stack acknowledgement are provided:
+
+```bash
+security/scripts/resilience_test.sh projects_server-api_test-1 \
+  http://127.0.0.1:8000/v1/projects/health
+```
+
+Database/Redis loss and destructive chaos require a dedicated disposable
+orchestration profile and are intentionally excluded from this first check.
+The backup proof compares schema table inventory and exact row counts; it does
+not yet compute a canonical content checksum for every PostgreSQL data type.
 
 ### Safe probe
 
@@ -63,12 +118,13 @@ data. Run it only against a disposable local stack and database.
 make security-full
 ```
 
-The scanner refuses non-loopback targets. An authorized remote test requires
-the explicit acknowledgement below; never use it on a third-party system:
+The scanner refuses targets outside its scope manifest. Authorized staging
+requires a reviewed manifest containing the host and CIDRs; a textual
+acknowledgement cannot bypass the guard:
 
 ```bash
 NEXUS_PENTEST_TARGET=https://staging.example.test \
-NEXUS_PENTEST_ALLOW_REMOTE=I_HAVE_WRITTEN_AUTHORIZATION \
+NEXUS_PENTEST_SCOPE=security/policy/authorized-staging.scope.yaml \
 make security-full
 ```
 

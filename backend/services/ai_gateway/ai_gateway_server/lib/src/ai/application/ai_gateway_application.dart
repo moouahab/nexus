@@ -54,6 +54,7 @@ final class AiGatewayApplication {
     UuidValue? missionId,
   }) async {
     final caller = requireCaller(session, 'ai.run.read');
+    caller.requireProjectAccess(projectId, tenantPartyId: tenantPartyId);
     final allowed = await runs.authorization.canUseProject(
       projectId: projectId,
       tenantPartyId: tenantPartyId,
@@ -80,6 +81,7 @@ final class AiGatewayApplication {
     String? idempotencyKey,
   }) {
     final caller = requireCaller(session, 'ai.run.create');
+    caller.requireProjectAccess(projectId, tenantPartyId: tenantPartyId);
     return runs.create(
       session,
       projectId: projectId,
@@ -91,6 +93,7 @@ final class AiGatewayApplication {
       requesterService: caller.serviceName,
       bearerToken: caller.bearerToken,
       idempotencyKey: idempotencyKey,
+      serviceContext: caller.serviceContext,
     );
   }
 
@@ -102,6 +105,7 @@ final class AiGatewayApplication {
       requesterIdentityId: caller.identityId,
       requesterService: caller.serviceName,
       bearerToken: caller.bearerToken,
+      serviceContext: caller.serviceContext,
     );
   }
 
@@ -113,6 +117,7 @@ final class AiGatewayApplication {
       requesterIdentityId: caller.identityId,
       requesterService: caller.serviceName,
       bearerToken: caller.bearerToken,
+      serviceContext: caller.serviceContext,
     );
   }
 
@@ -143,17 +148,38 @@ final class AiGatewayApplication {
 }
 
 final class AiCaller {
-  const AiCaller({this.identityId, this.serviceName, this.bearerToken});
+  const AiCaller({
+    this.identityId,
+    this.serviceName,
+    this.bearerToken,
+    this.serviceContext,
+  });
   factory AiCaller.user(AuthContext context, {required String? bearerToken}) =>
       AiCaller(identityId: context.identityId, bearerToken: bearerToken);
   factory AiCaller.service(
     ServiceAuthContext context, {
     required String? bearerToken,
-  }) => AiCaller(serviceName: context.serviceName, bearerToken: bearerToken);
+  }) => AiCaller(
+    serviceName: context.serviceName,
+    bearerToken: bearerToken,
+    serviceContext: context,
+  );
 
   final UuidValue? identityId;
   final String? serviceName;
   final String? bearerToken;
+  final ServiceAuthContext? serviceContext;
+
+  void requireProjectAccess(
+    UuidValue projectId, {
+    required UuidValue tenantPartyId,
+  }) {
+    final context = serviceContext;
+    if (context != null &&
+        !context.allowsProject(projectId, tenantId: tenantPartyId)) {
+      throw StateError('Service token resource boundary denied.');
+    }
+  }
 }
 
 final class ContextPreview {

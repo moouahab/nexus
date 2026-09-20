@@ -13,6 +13,7 @@ abstract interface class AiRunQueue {
     required String requesterScope,
     required String? bearerToken,
     required String? idempotencyKey,
+    required String? requestFingerprint,
   });
 
   Future<void> cancel(Session session, UuidValue runId);
@@ -29,6 +30,7 @@ final class ServerpodAiRunQueue implements AiRunQueue {
     required String requesterScope,
     required String? bearerToken,
     required String? idempotencyKey,
+    required String? requestFingerprint,
   }) async {
     if (idempotencyKey != null) {
       final existingJob = await AiRunJob.db.findFirstRow(
@@ -39,6 +41,7 @@ final class ServerpodAiRunQueue implements AiRunQueue {
             t.idempotencyKey.equals(idempotencyKey),
       );
       if (existingJob != null) {
+        _requireMatchingFingerprint(existingJob, requestFingerprint);
         return (await AiRun.db.findById(session, existingJob.runId))!;
       }
     }
@@ -57,6 +60,7 @@ final class ServerpodAiRunQueue implements AiRunQueue {
             inputJson: jsonEncode(input),
             bearerToken: bearerToken,
             idempotencyKey: idempotencyKey,
+            requestFingerprint: requestFingerprint,
             requesterScope: requesterScope,
             tenantPartyId: run.tenantPartyId,
           ),
@@ -90,7 +94,17 @@ final class ServerpodAiRunQueue implements AiRunQueue {
             t.idempotencyKey.equals(idempotencyKey),
       );
       if (winner == null) rethrow;
+      _requireMatchingFingerprint(winner, requestFingerprint);
       return (await AiRun.db.findById(session, winner.runId))!;
+    }
+  }
+
+  void _requireMatchingFingerprint(
+    AiRunJob existing,
+    String? requestFingerprint,
+  ) {
+    if (existing.requestFingerprint != requestFingerprint) {
+      throw const AiRunIdempotencyConflict();
     }
   }
 
@@ -116,6 +130,14 @@ final class ServerpodAiRunQueue implements AiRunQueue {
               t.status.equals(AiRunJobStatus.processing)),
     );
   }
+}
+
+/// A stable idempotency key was reused for a semantically different request.
+final class AiRunIdempotencyConflict implements Exception {
+  const AiRunIdempotencyConflict();
+
+  @override
+  String toString() => 'Idempotency key conflicts with the original request.';
 }
 
 final class ClaimedAiRunJob {

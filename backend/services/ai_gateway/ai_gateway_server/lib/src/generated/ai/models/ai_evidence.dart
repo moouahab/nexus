@@ -234,45 +234,95 @@ class AiEvidenceUpdateTable extends _i1.UpdateTable<AiEvidenceTable> {
   AiEvidenceUpdateTable(super.table);
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> runId(_i1.UuidValue value) =>
-      _i1.ColumnValue(table.runId, value);
+      _i1.ColumnValue(
+        table.runId,
+        value,
+      );
 
   _i1.ColumnValue<String, String> sourceService(String value) =>
-      _i1.ColumnValue(table.sourceService, value);
+      _i1.ColumnValue(
+        table.sourceService,
+        value,
+      );
 
-  _i1.ColumnValue<String, String> resourceType(String value) =>
-      _i1.ColumnValue(table.resourceType, value);
+  _i1.ColumnValue<String, String> resourceType(String value) => _i1.ColumnValue(
+    table.resourceType,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> resourceId(String value) =>
-      _i1.ColumnValue(table.resourceId, value);
+  _i1.ColumnValue<String, String> resourceId(String value) => _i1.ColumnValue(
+    table.resourceId,
+    value,
+  );
 
-  _i1.ColumnValue<String, String> summary(String? value) =>
-      _i1.ColumnValue(table.summary, value);
+  _i1.ColumnValue<String, String> summary(String? value) => _i1.ColumnValue(
+    table.summary,
+    value,
+  );
 
-  _i1.ColumnValue<double, double> reliability(double value) =>
-      _i1.ColumnValue(table.reliability, value);
+  _i1.ColumnValue<double, double> reliability(double value) => _i1.ColumnValue(
+    table.reliability,
+    value,
+  );
 
-  _i1.ColumnValue<double, double> freshness(double value) =>
-      _i1.ColumnValue(table.freshness, value);
+  _i1.ColumnValue<double, double> freshness(double value) => _i1.ColumnValue(
+    table.freshness,
+    value,
+  );
 
   _i1.ColumnValue<DateTime, DateTime> observedAt(DateTime? value) =>
-      _i1.ColumnValue(table.observedAt, value);
+      _i1.ColumnValue(
+        table.observedAt,
+        value,
+      );
 
   _i1.ColumnValue<DateTime, DateTime> collectedAt(DateTime value) =>
-      _i1.ColumnValue(table.collectedAt, value);
+      _i1.ColumnValue(
+        table.collectedAt,
+        value,
+      );
 }
 
 class AiEvidenceTable extends _i1.Table<_i1.UuidValue?> {
   AiEvidenceTable({super.tableRelation}) : super(tableName: 'ai_evidence') {
     updateTable = AiEvidenceUpdateTable(this);
-    runId = _i1.ColumnUuid('runId', this);
-    sourceService = _i1.ColumnString('sourceService', this);
-    resourceType = _i1.ColumnString('resourceType', this);
-    resourceId = _i1.ColumnString('resourceId', this);
-    summary = _i1.ColumnString('summary', this);
-    reliability = _i1.ColumnDouble('reliability', this);
-    freshness = _i1.ColumnDouble('freshness', this);
-    observedAt = _i1.ColumnDateTime('observedAt', this);
-    collectedAt = _i1.ColumnDateTime('collectedAt', this, hasDefault: true);
+    runId = _i1.ColumnUuid(
+      'runId',
+      this,
+    );
+    sourceService = _i1.ColumnString(
+      'sourceService',
+      this,
+    );
+    resourceType = _i1.ColumnString(
+      'resourceType',
+      this,
+    );
+    resourceId = _i1.ColumnString(
+      'resourceId',
+      this,
+    );
+    summary = _i1.ColumnString(
+      'summary',
+      this,
+    );
+    reliability = _i1.ColumnDouble(
+      'reliability',
+      this,
+    );
+    freshness = _i1.ColumnDouble(
+      'freshness',
+      this,
+    );
+    observedAt = _i1.ColumnDateTime(
+      'observedAt',
+      this,
+    );
+    collectedAt = _i1.ColumnDateTime(
+      'collectedAt',
+      this,
+      hasDefault: true,
+    );
   }
 
   late final AiEvidenceUpdateTable updateTable;
@@ -477,7 +527,10 @@ class AiEvidenceRepository {
     AiEvidence row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.insertRow<AiEvidence>(row, transaction: transaction);
+    return session.db.insertRow<AiEvidence>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Updates all [AiEvidence]s in the list and returns the updated rows. If
@@ -562,7 +615,10 @@ class AiEvidenceRepository {
     List<AiEvidence> rows, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<AiEvidence>(rows, transaction: transaction);
+    return session.db.delete<AiEvidence>(
+      rows,
+      transaction: transaction,
+    );
   }
 
   /// Deletes a single [AiEvidence].
@@ -571,7 +627,10 @@ class AiEvidenceRepository {
     AiEvidence row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.deleteRow<AiEvidence>(row, transaction: transaction);
+    return session.db.deleteRow<AiEvidence>(
+      row,
+      transaction: transaction,
+    );
   }
 
   /// Deletes all rows matching the [where] expression.

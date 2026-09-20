@@ -11,15 +11,19 @@ abstract class PartyHttpJsonRoute extends Route {
   PartyHttpJsonRoute({
     PartyService? parties,
     PartyAuthorization? authorization,
+    AuthContextResolver userAuth = const AuthContextResolver(),
+    AuthContextResolver serviceAuth = const AuthContextResolver(
+      audience: 'parties-service',
+    ),
     super.methods,
   }) : parties = parties ?? const PartyService(),
-       authorization = authorization ?? const PartyAuthorization();
+       authorization = authorization ?? const PartyAuthorization(),
+       _userAuth = userAuth,
+       _serviceAuth = serviceAuth;
 
   static const maxBodyBytes = 1024 * 1024;
-  static const _userAuth = AuthContextResolver();
-  static const _serviceAuth = AuthContextResolver(
-    audience: 'parties-service',
-  );
+  final AuthContextResolver _userAuth;
+  final AuthContextResolver _serviceAuth;
   final PartyService parties;
   final PartyAuthorization authorization;
 
@@ -31,11 +35,11 @@ abstract class PartyHttpJsonRoute extends Route {
       NexusObservability.observeHttp(
         session,
         request,
-        () => _handleCall(session, request),
+        () => handleJsonCall(session, request),
         service: 'parties',
       );
 
-  Future<Result> _handleCall(Session session, Request request) async {
+  Future<Result> handleJsonCall(Session session, Request request) async {
     try {
       _requireAuthenticatedCaller(session);
       return jsonResponse(

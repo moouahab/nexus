@@ -141,6 +141,51 @@ jobs:
         working-directory: ${{ matrix.server }}
         run: docker compose --profile test down --volumes --remove-orphans
 
+  ai-persistence-tests:
+    name: AI Gateway persistence tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Flutter and Dart
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: services/ai_gateway
+        run: dart pub get
+
+      - name: Create disposable test secret
+        working-directory: services/ai_gateway/ai_gateway_server
+        run: |
+          mkdir -p secrets
+          printf '%s' 'ci-postgres-test-password' > secrets/postgres_test_password
+
+      - name: Start disposable PostgreSQL
+        working-directory: services/ai_gateway/ai_gateway_server
+        run: >-
+          docker compose -p nexus-ai-persistence-ci --profile test
+          up --build --wait postgres_test
+
+      - name: Run mandatory AI persistence tests
+        working-directory: services/ai_gateway/ai_gateway_server
+        env:
+          AI_GATEWAY_RUN_DATABASE_TESTS: 'true'
+          SERVERPOD_PASSWORD_database: ci-postgres-test-password
+        run: dart test test/ai/reasoning_persistence_database_test.dart
+
+      - name: Stop test containers
+        if: always()
+        working-directory: services/ai_gateway/ai_gateway_server
+        run: >-
+          docker compose -p nexus-ai-persistence-ci --profile test
+          down --volumes --remove-orphans
+
   infrastructure-and-contracts:
     name: Infrastructure and API contracts
     runs-on: ubuntu-latest

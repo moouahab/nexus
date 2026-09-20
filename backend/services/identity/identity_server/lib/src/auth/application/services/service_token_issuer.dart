@@ -13,6 +13,11 @@ class ServiceTokenIssueResult {
     required this.audience,
     required this.scopes,
     required this.expiresIn,
+    required this.globalAccess,
+    this.tenantPartyId,
+    this.projectId,
+    this.resourceId,
+    this.delegatedIdentityId,
   });
 
   final String accessToken;
@@ -20,6 +25,11 @@ class ServiceTokenIssueResult {
   final String audience;
   final List<String> scopes;
   final Duration expiresIn;
+  final bool globalAccess;
+  final String? tenantPartyId;
+  final String? projectId;
+  final String? resourceId;
+  final String? delegatedIdentityId;
 }
 
 class ServiceTokenIssuer {
@@ -40,6 +50,11 @@ class ServiceTokenIssuer {
     required String serviceSecret,
     required String audience,
     required List<String> scopes,
+    bool globalAccess = false,
+    String? tenantPartyId,
+    String? projectId,
+    String? resourceId,
+    String? delegatedIdentityId,
   }) {
     final client = _clientRegistry.findByServiceName(serviceName);
     if (client == null || !_constantTimeEquals(client.secret, serviceSecret)) {
@@ -54,11 +69,30 @@ class ServiceTokenIssuer {
       );
     }
 
+    if (globalAccess && !client.allowGlobalAccess) {
+      throw const AuthUseCaseException(
+        AuthUseCaseExceptionCode.invalidCredentials,
+      );
+    }
+    if (!globalAccess &&
+        tenantPartyId == null &&
+        projectId == null &&
+        resourceId == null) {
+      throw const AuthUseCaseException(
+        AuthUseCaseExceptionCode.invalidCredentials,
+      );
+    }
+
     final claims = ServiceAuthClaims.service(
       serviceName: client.serviceName,
       audience: audience,
       scopes: scopes,
       lifetime: _tokenLifetime,
+      globalAccess: globalAccess,
+      tenantPartyId: tenantPartyId,
+      projectId: projectId,
+      resourceId: resourceId,
+      delegatedIdentityId: delegatedIdentityId,
     );
 
     return ServiceTokenIssueResult(
@@ -67,6 +101,11 @@ class ServiceTokenIssuer {
       audience: claims.audience,
       scopes: claims.scopes,
       expiresIn: _tokenLifetime,
+      globalAccess: claims.globalAccess,
+      tenantPartyId: claims.tenantPartyId,
+      projectId: claims.projectId,
+      resourceId: claims.resourceId,
+      delegatedIdentityId: claims.delegatedIdentityId,
     );
   }
 

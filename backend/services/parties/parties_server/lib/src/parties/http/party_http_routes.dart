@@ -2,27 +2,32 @@ import 'package:serverpod/serverpod.dart';
 
 import '../../generated/protocol.dart';
 import '../application/party_authorization.dart';
+import '../party_endpoint.dart';
 import 'party_http_dto.dart';
 import 'party_http_json_route.dart';
 
 void registerPartyHttpRoutes(Serverpod pod) {
+  final endpoint = PartyEndpoint();
   pod.webServer
-    ..addRoute(_PartiesRoute(), '/parties')
-    ..addRoute(_PartyRoute(), '/parties/:partyId')
+    ..addRoute(_PartiesRoute(endpoint), '/parties')
+    ..addRoute(_PartyRoute(endpoint), '/parties/:partyId')
+    ..addRoute(_MyPartyAccessRoute(endpoint), '/parties/:partyId/my-access')
     ..addRoute(_CreatePartyWithOwnerRoute(), '/parties/with-owner')
     ..addRoute(_JoinPartyRoute(), '/parties/:partyId/memberships')
     ..addRoute(_MembershipsRoute(), '/memberships');
 }
 
 final class _PartiesRoute extends PartyHttpJsonRoute {
-  _PartiesRoute() : super(methods: const {Method.get, Method.post});
+  _PartiesRoute(this.endpoint)
+    : super(methods: const {Method.get, Method.post});
+
+  final PartyEndpoint endpoint;
 
   @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
-    authorization.requireUser(session);
     if (request.method == Method.post) {
       final json = await readJsonObject(request);
-      final party = await parties.createParty(
+      final party = await endpoint.createParty(
         session,
         kind: parseEnum(requiredString(json, 'kind'), PartyKind.values, 'kind'),
         name: requiredString(json, 'name'),
@@ -38,7 +43,7 @@ final class _PartiesRoute extends PartyHttpJsonRoute {
     final query = request.url.queryParameters;
     final kind = query['kind'];
     final status = query['status'];
-    final results = await parties.listParties(
+    final results = await endpoint.listParties(
       session,
       kind: kind == null ? null : parseEnum(kind, PartyKind.values, 'kind'),
       status: status == null
@@ -61,14 +66,33 @@ final class _PartiesRoute extends PartyHttpJsonRoute {
 }
 
 final class _PartyRoute extends PartyHttpJsonRoute {
-  _PartyRoute() : super(methods: const {Method.get});
+  _PartyRoute(this.endpoint) : super(methods: const {Method.get});
+
+  final PartyEndpoint endpoint;
 
   @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
-    authorization.requireUser(session);
     final id = request.pathParameters.raw[#partyId];
     if (id == null) throw const FormatException('Missing partyId.');
-    return partyJson(await parties.getParty(session, parseUuid(id, 'partyId')));
+    return partyJson(
+      await endpoint.getParty(session, parseUuid(id, 'partyId')),
+    );
+  }
+}
+
+final class _MyPartyAccessRoute extends PartyHttpJsonRoute {
+  _MyPartyAccessRoute(this.endpoint) : super(methods: const {Method.get});
+
+  final PartyEndpoint endpoint;
+
+  @override
+  Future<Map<String, dynamic>> execute(Session session, Request request) async {
+    final id = request.pathParameters.raw[#partyId];
+    if (id == null) throw const FormatException('Missing partyId.');
+    return endpoint.getMyPartyAccess(
+      session,
+      parseUuid(id, 'partyId'),
+    );
   }
 }
 

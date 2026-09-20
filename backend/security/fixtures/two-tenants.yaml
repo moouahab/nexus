@@ -1,0 +1,28 @@
+version: 1
+purpose: deterministic multi-tenant authorization tests
+
+tenantA:
+  partyId: 018f0000-0000-7000-8000-000000000001
+  ownerIdentityId: 018f0000-0000-7000-8000-000000000101
+  adminIdentityId: 018f0000-0000-7000-8000-000000000102
+  memberIdentityId: 018f0000-0000-7000-8000-000000000103
+  clientReferentIdentityId: 018f0000-0000-7000-8000-000000000104
+  projectId: 018f0000-0000-7000-8000-000000000201
+  aiRunId: 018f0000-0000-7000-8000-000000000301
+
+tenantB:
+  partyId: 018f0000-0000-7000-8000-000000000002
+  ownerIdentityId: 018f0000-0000-7000-8000-000000000111
+  adminIdentityId: 018f0000-0000-7000-8000-000000000112
+  memberIdentityId: 018f0000-0000-7000-8000-000000000113
+  clientReferentIdentityId: 018f0000-0000-7000-8000-000000000114
+  projectId: 018f0000-0000-7000-8000-000000000211
+  aiRunId: 018f0000-0000-7000-8000-000000000311
+
+expectations:
+  userAOwnTenant: allow
+  userAOwnProject: allow
+  userATenantB: deny
+  userAProjectB: deny
+  userAAiRunB: deny
+  userACreateUnderTenantB: deny

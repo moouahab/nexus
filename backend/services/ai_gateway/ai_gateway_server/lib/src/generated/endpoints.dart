@@ -20,7 +20,11 @@ class Endpoints extends _i1.EndpointDispatch {
   void initializeEndpoints(_i1.Server server) {
     var endpoints = <String, _i1.Endpoint>{
       'aiGateway': _i2.AiGatewayEndpoint()
-        ..initialize(server, 'aiGateway', null),
+        ..initialize(
+          server,
+          'aiGateway',
+          null,
+        ),
     };
     connectors['aiGateway'] = _i1.EndpointConnector(
       name: 'aiGateway',
@@ -29,16 +33,22 @@ class Endpoints extends _i1.EndpointDispatch {
         'health': _i1.MethodConnector(
           name: 'health',
           params: {},
-          call: (_i1.Session session, Map<String, dynamic> params) async =>
-              (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).health(session),
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['aiGateway'] as _i2.AiGatewayEndpoint)
+                  .health(session),
         ),
         'capabilities': _i1.MethodConnector(
           name: 'capabilities',
           params: {},
-          call: (_i1.Session session, Map<String, dynamic> params) async =>
-              (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).capabilities(
-                session,
-              ),
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['aiGateway'] as _i2.AiGatewayEndpoint)
+                  .capabilities(session),
         ),
         'createRun': _i1.MethodConnector(
           name: 'createRun',
@@ -74,16 +84,20 @@ class Endpoints extends _i1.EndpointDispatch {
               nullable: true,
             ),
           },
-          call: (_i1.Session session, Map<String, dynamic> params) async =>
-              (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).createRun(
-                session,
-                projectId: params['projectId'],
-                tenantPartyId: params['tenantPartyId'],
-                capability: params['capability'],
-                input: params['input'],
-                missionId: params['missionId'],
-                idempotencyKey: params['idempotencyKey'],
-              ),
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).createRun(
+                    session,
+                    projectId: params['projectId'],
+                    tenantPartyId: params['tenantPartyId'],
+                    capability: params['capability'],
+                    input: params['input'],
+                    missionId: params['missionId'],
+                    idempotencyKey: params['idempotencyKey'],
+                  ),
         ),
         'getRun': _i1.MethodConnector(
           name: 'getRun',
@@ -94,11 +108,15 @@ class Endpoints extends _i1.EndpointDispatch {
               nullable: false,
             ),
           },
-          call: (_i1.Session session, Map<String, dynamic> params) async =>
-              (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).getRun(
-                session,
-                params['runId'],
-              ),
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).getRun(
+                    session,
+                    params['runId'],
+                  ),
         ),
         'cancelRun': _i1.MethodConnector(
           name: 'cancelRun',
@@ -109,11 +127,15 @@ class Endpoints extends _i1.EndpointDispatch {
               nullable: false,
             ),
           },
-          call: (_i1.Session session, Map<String, dynamic> params) async =>
-              (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).cancelRun(
-                session,
-                params['runId'],
-              ),
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['aiGateway'] as _i2.AiGatewayEndpoint).cancelRun(
+                    session,
+                    params['runId'],
+                  ),
         ),
       },
     );

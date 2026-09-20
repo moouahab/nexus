@@ -3,11 +3,25 @@ import 'package:nexus_auth/nexus_auth.dart';
 
 import '../generated/protocol.dart';
 import 'application/user_profile_service.dart';
+import 'application/party_access_validator.dart';
+import 'infrastructure/party_access_validator_factory.dart';
 
 class UserEndpoint extends Endpoint {
+  UserEndpoint({
+    AuthContextResolver userAuth = const AuthContextResolver(),
+    AuthContextResolver serviceAuth = const AuthContextResolver(
+      audience: 'users-service',
+    ),
+    PartyAccessValidator? partyAccess,
+  }) : _userAuth = userAuth,
+       _serviceAuth = serviceAuth,
+       _partyAccess =
+           partyAccess ?? PartyAccessValidatorFactory.fromEnvironment();
+
   static const _profiles = UserProfileService();
-  static const _userAuth = AuthContextResolver();
-  static const _serviceAuth = AuthContextResolver(audience: 'users-service');
+  final AuthContextResolver _userAuth;
+  final AuthContextResolver _serviceAuth;
+  final PartyAccessValidator _partyAccess;
   static const _readScope = 'users.profile.read';
   static const _writeScope = 'users.profile.write';
 
@@ -22,8 +36,9 @@ class UserEndpoint extends Endpoint {
     String? locale,
     String? timezone,
     Map<String, String>? metadata,
-  }) {
+  }) async {
     final auth = _requireAuthContext(session);
+    await _requirePartyAccess(session, primaryPartyId);
     return _profiles.completeProfile(
       session,
       identityId: auth.identityId,
@@ -56,8 +71,17 @@ class UserEndpoint extends Endpoint {
     String? locale,
     String? timezone,
     Map<String, String>? metadata,
-  }) {
+  }) async {
     final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (primaryPartyId != null) {
+      if (caller.identityId == null) {
+        throw NotAuthorizedException(
+          reason: AuthenticationFailureReason.insufficientAccess,
+          message: 'Delegated user authorization is required.',
+        );
+      }
+      await _requirePartyAccess(session, primaryPartyId);
+    }
     return _profiles.completeProfile(
       session,
       identityId: caller.identityId ?? identityId,
@@ -109,11 +133,38 @@ class UserEndpoint extends Endpoint {
       _requireCaller(session, serviceScopes: const [_writeScope]),
       profile,
     );
+    await _requirePartyAccess(session, primaryPartyId);
     return _profiles.setPrimaryParty(
       session,
       userProfileId: userProfileId,
       primaryPartyId: primaryPartyId,
     );
+  }
+
+  Future<void> _requirePartyAccess(
+    Session session,
+    UuidValue? partyId,
+  ) async {
+    if (partyId == null) return;
+    final allowed = await _partyAccess.canUseParty(
+      partyId: partyId,
+      bearerToken: _bearerToken(session),
+    );
+    if (!allowed) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'Primary party access denied.',
+      );
+    }
+  }
+
+  String? _bearerToken(Session session) {
+    final request = session.request;
+    if (request == null) return null;
+    return const BearerAccessTokenReader().read({
+      for (final entry in request.headers.entries)
+        entry.key.toLowerCase(): entry.value.toList(growable: false),
+    });
   }
 
   void _ensureOwnProfile(_UserCaller caller, UserProfile profile) {

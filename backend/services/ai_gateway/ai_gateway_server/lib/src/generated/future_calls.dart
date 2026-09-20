@@ -53,7 +53,10 @@ class FutureCalls extends _i1.FutureCallDispatch<_FutureCallRef> {
   }
 
   @override
-  void initialize(_i1.FutureCallManager futureCallManager, String serverId) {
+  void initialize(
+    _i1.FutureCallManager futureCallManager,
+    String serverId,
+  ) {
     var registeredFutureCalls = <String, _i1.FutureCall>{
       'AiRunExecuteFutureCall': AiRunExecuteFutureCall(),
     };
@@ -65,29 +68,39 @@ class FutureCalls extends _i1.FutureCallDispatch<_FutureCallRef> {
   }
 
   @override
-  _FutureCallRef callAtTime(DateTime time, {String? identifier}) {
-    return _FutureCallRef((name, object) {
-      return _effectiveFutureCallManager.scheduleFutureCall(
-        name,
-        object,
-        time,
-        _effectiveServerId,
-        identifier,
-      );
-    });
+  _FutureCallRef callAtTime(
+    DateTime time, {
+    String? identifier,
+  }) {
+    return _FutureCallRef(
+      (name, object) {
+        return _effectiveFutureCallManager.scheduleFutureCall(
+          name,
+          object,
+          time,
+          _effectiveServerId,
+          identifier,
+        );
+      },
+    );
   }
 
   @override
-  _FutureCallRef callWithDelay(Duration delay, {String? identifier}) {
-    return _FutureCallRef((name, object) {
-      return _effectiveFutureCallManager.scheduleFutureCall(
-        name,
-        object,
-        DateTime.now().toUtc().add(delay),
-        _effectiveServerId,
-        identifier,
-      );
-    });
+  _FutureCallRef callWithDelay(
+    Duration delay, {
+    String? identifier,
+  }) {
+    return _FutureCallRef(
+      (name, object) {
+        return _effectiveFutureCallManager.scheduleFutureCall(
+          name,
+          object,
+          DateTime.now().toUtc().add(delay),
+          _effectiveServerId,
+          identifier,
+        );
+      },
+    );
   }
 
   @override
@@ -110,13 +123,22 @@ class _AiRunFutureCallDispatcher {
   final _InvokeFutureCall _invokeFutureCall;
 
   Future<void> execute(_i2.AiRunWork work) {
-    return _invokeFutureCall('AiRunExecuteFutureCall', work);
+    return _invokeFutureCall(
+      'AiRunExecuteFutureCall',
+      work,
+    );
   }
 }
 
 class AiRunExecuteFutureCall extends _i1.FutureCall<_i2.AiRunWork> {
   @override
-  _i3.Future<void> invoke(_i1.Session session, _i2.AiRunWork? work) async {
-    await _i4.AiRunFutureCall().execute(session, work!);
+  _i3.Future<void> invoke(
+    _i1.Session session,
+    _i2.AiRunWork? work,
+  ) async {
+    await _i4.AiRunFutureCall().execute(
+      session,
+      work!,
+    );
   }
 }

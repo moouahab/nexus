@@ -33,7 +33,10 @@ abstract class AiRunWork
   AiRunWork copyWith({_i1.UuidValue? runId});
   @override
   Map<String, dynamic> toJson() {
-    return {'__className__': 'AiRunWork', 'runId': runId.toJson()};
+    return {
+      '__className__': 'AiRunWork',
+      'runId': runId.toJson(),
+    };
   }
 
   @override

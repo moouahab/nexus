@@ -15,6 +15,7 @@ void main() {
         serviceSecret: 'projects-secret',
         audience: 'ai-gateway',
         scopes: ['ai.run.create', 'ai.context.preview'],
+        tenantPartyId: 'tenant-a',
       );
 
       final context =
@@ -30,6 +31,8 @@ void main() {
       expect(result.audience, 'ai-gateway');
       expect(result.scopes, ['ai.context.preview', 'ai.run.create']);
       expect(context.serviceName, 'projects');
+      expect(context.tenantPartyId, 'tenant-a');
+      expect(context.globalAccess, isFalse);
     });
 
     test('rejects unknown service and wrong secret', () {
@@ -73,6 +76,30 @@ void main() {
           serviceSecret: 'projects-secret',
           audience: 'ai-gateway',
           scopes: ['ai.run.cancel'],
+        ),
+        throwsA(isA<AuthUseCaseException>()),
+      );
+    });
+
+    test('rejects unbounded tokens unless registration opts into global', () {
+      final issuer = _issuer();
+
+      expect(
+        () => issuer.issue(
+          serviceName: 'projects',
+          serviceSecret: 'projects-secret',
+          audience: 'ai-gateway',
+          scopes: ['ai.run.create'],
+        ),
+        throwsA(isA<AuthUseCaseException>()),
+      );
+      expect(
+        () => issuer.issue(
+          serviceName: 'projects',
+          serviceSecret: 'projects-secret',
+          audience: 'ai-gateway',
+          scopes: ['ai.run.create'],
+          globalAccess: true,
         ),
         throwsA(isA<AuthUseCaseException>()),
       );

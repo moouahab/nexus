@@ -53,10 +53,15 @@ Example value:
   "projects": {
     "secret": "replace-with-a-long-random-secret",
     "audiences": ["ai-gateway"],
-    "scopes": ["ai.context.preview", "ai.run.create"]
+    "scopes": ["ai.context.preview", "ai.run.create"],
+    "allowGlobalAccess": false
   }
 }
 ```
+
+Tokens are denied unless the request includes a `tenantPartyId`, `projectId`,
+or `resourceId`. Set `allowGlobalAccess` to `true` only for a deliberately
+global registration; it permits requests with `globalAccess: true`.
 
 Leave it as `{}` to keep `/auth/service-token` effectively disabled.
 

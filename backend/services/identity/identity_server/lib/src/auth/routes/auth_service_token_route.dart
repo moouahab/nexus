@@ -19,6 +19,11 @@ class AuthServiceTokenRoute extends AuthJsonRoute {
       serviceSecret: readStringBodyField(body, 'serviceSecret'),
       audience: readStringBodyField(body, 'audience'),
       scopes: scopes,
+      globalAccess: body['globalAccess'] == true,
+      tenantPartyId: _optionalString(body, 'tenantPartyId'),
+      projectId: _optionalString(body, 'projectId'),
+      resourceId: _optionalString(body, 'resourceId'),
+      delegatedIdentityId: _optionalString(body, 'delegatedIdentityId'),
     );
 
     return AuthResult(
@@ -30,8 +35,27 @@ class AuthServiceTokenRoute extends AuthJsonRoute {
         'serviceName': result.serviceName,
         'audience': result.audience,
         'scopes': result.scopes,
+        'globalAccess': result.globalAccess,
+        if (result.tenantPartyId != null) 'tenantPartyId': result.tenantPartyId,
+        if (result.projectId != null) 'projectId': result.projectId,
+        if (result.resourceId != null) 'resourceId': result.resourceId,
+        if (result.delegatedIdentityId != null)
+          'delegatedIdentityId': result.delegatedIdentityId,
       },
     );
+  }
+
+  String? _optionalString(Map<String, dynamic> body, String name) {
+    final value = body[name];
+    if (value == null) return null;
+    if (value is! String || value.trim().isEmpty) {
+      throw FormatException('Expected optional "$name" string.');
+    }
+    try {
+      return UuidValue.withValidation(value.trim()).toString();
+    } on Object {
+      throw FormatException('Expected "$name" to be a UUID.');
+    }
   }
 
   List<String> _readScopes(Map<String, dynamic> body) {

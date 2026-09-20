@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:serverpod/serverpod.dart';
 import 'package:nexus_auth/nexus_auth.dart';
 
@@ -40,7 +43,12 @@ final class AiRunService {
     String? requesterService,
     String? bearerToken,
     String? idempotencyKey,
+    ServiceAuthContext? serviceContext,
   }) async {
+    if (serviceContext != null &&
+        !serviceContext.allowsProject(projectId, tenantId: tenantPartyId)) {
+      throw StateError('Service token resource boundary denied.');
+    }
     final normalizedCapability = capability.trim().toLowerCase();
     if (normalizedCapability.isEmpty || normalizedCapability.length > 80) {
       throw ArgumentError.value(
@@ -84,6 +92,16 @@ final class AiRunService {
       ),
     );
     final policy = OrchestrationPolicy.forLevel(level);
+    final normalizedInput = {...input, 'prompt': prompt.trim()};
+    final requestFingerprint = normalizedIdempotencyKey == null
+        ? null
+        : _requestFingerprint(
+            projectId: projectId,
+            tenantPartyId: tenantPartyId,
+            missionId: missionId,
+            capability: normalizedCapability,
+            input: normalizedInput,
+          );
     final queued = await queue.enqueue(
       session,
       run: AiRun(
@@ -103,12 +121,41 @@ final class AiRunService {
         validated: false,
         createdAt: DateTime.now().toUtc(),
       ),
-      input: {...input, 'prompt': prompt.trim()},
+      input: normalizedInput,
       requesterScope: requesterScope,
       bearerToken: bearerToken,
       idempotencyKey: normalizedIdempotencyKey,
+      requestFingerprint: requestFingerprint,
     );
     return queued;
+  }
+
+  String _requestFingerprint({
+    required UuidValue projectId,
+    required UuidValue tenantPartyId,
+    required UuidValue? missionId,
+    required String capability,
+    required Map<String, dynamic> input,
+  }) {
+    final request = <String, dynamic>{
+      'capability': capability,
+      'input': input,
+      'missionId': missionId?.toString(),
+      'projectId': projectId.toString(),
+      'tenantPartyId': tenantPartyId.toString(),
+    };
+    return sha256.convert(utf8.encode(_canonicalJson(request))).toString();
+  }
+
+  String _canonicalJson(Object? value) {
+    if (value is Map) {
+      final keys = value.keys.map((key) => key.toString()).toList()..sort();
+      return '{${keys.map((key) => '${jsonEncode(key)}:${_canonicalJson(value[key])}').join(',')}}';
+    }
+    if (value is List) {
+      return '[${value.map(_canonicalJson).join(',')}]';
+    }
+    return jsonEncode(value);
   }
 
   UuidValue _correlationId() {
@@ -149,9 +196,18 @@ final class AiRunService {
     UuidValue? requesterIdentityId,
     String? requesterService,
     String? bearerToken,
+    ServiceAuthContext? serviceContext,
   }) async {
     final run = await repository.findById(session, id);
     if (run == null) throw StateError('AI run not found.');
+    if (serviceContext != null &&
+        !serviceContext.allowsResource(
+          id,
+          projectId: run.projectId,
+          tenantId: run.tenantPartyId,
+        )) {
+      throw StateError('AI run not found.');
+    }
     await _requireCanUseRun(
       run,
       requesterIdentityId: requesterIdentityId,
@@ -167,6 +223,7 @@ final class AiRunService {
     UuidValue? requesterIdentityId,
     String? requesterService,
     String? bearerToken,
+    ServiceAuthContext? serviceContext,
   }) async {
     final run = await get(
       session,
@@ -174,6 +231,7 @@ final class AiRunService {
       requesterIdentityId: requesterIdentityId,
       requesterService: requesterService,
       bearerToken: bearerToken,
+      serviceContext: serviceContext,
     );
     if (!_cancellableStatuses.contains(run.status)) {
       throw StateError('AI run cannot be cancelled from ${run.status.name}.');
@@ -214,7 +272,8 @@ final class AiRunService {
       bearerToken: bearerToken,
     );
     if (!authorized) {
-      throw StateError('Project authorization unavailable or denied.');
+      // Do not reveal whether a run exists to callers outside its project.
+      throw StateError('AI run not found.');
     }
   }
 }

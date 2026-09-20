@@ -13,6 +13,7 @@ services:
         ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["development", "default", "normal", "monolith", "true"]
     environment:
+      PARTIES_BASE_URL: ${PARTIES_BASE_URL:-http://kong:8000/v1/parties/}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}

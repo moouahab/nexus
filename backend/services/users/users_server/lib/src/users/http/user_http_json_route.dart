@@ -5,11 +5,18 @@ import 'package:nexus_auth/nexus_auth.dart';
 import 'package:serverpod/serverpod.dart';
 
 abstract class UserHttpJsonRoute extends Route {
-  UserHttpJsonRoute({super.methods});
+  UserHttpJsonRoute({
+    AuthContextResolver userAuth = const AuthContextResolver(),
+    AuthContextResolver serviceAuth = const AuthContextResolver(
+      audience: 'users-service',
+    ),
+    super.methods,
+  }) : _userAuth = userAuth,
+       _serviceAuth = serviceAuth;
 
   static const maxBodyBytes = 256 * 1024;
-  static const _userAuth = AuthContextResolver();
-  static const _serviceAuth = AuthContextResolver(audience: 'users-service');
+  final AuthContextResolver _userAuth;
+  final AuthContextResolver _serviceAuth;
 
   Future<Map<String, dynamic>> execute(Session session, Request request);
 
@@ -20,11 +27,15 @@ abstract class UserHttpJsonRoute extends Route {
       NexusObservability.observeHttp(
         session,
         request,
-        () => _handleCall(session, request),
+        () => handleJsonCall(session, request),
         service: 'users',
       );
 
-  Future<Result> _handleCall(Session session, Request request) async {
+  /// Executes the JSON transport mapping without starting observability.
+  ///
+  /// Kept public so authorization parity tests can exercise the exact REST
+  /// status mapping while reusing an endpoint with deterministic test auth.
+  Future<Result> handleJsonCall(Session session, Request request) async {
     try {
       _requireAuthenticatedCaller(session);
       return jsonResponse(
