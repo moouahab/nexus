@@ -202,92 +202,94 @@ void main() {
       final persisted = await AiRunJob.db.findById(session, job.id!);
       expect(persisted?.status, AiRunJobStatus.cancelled);
     });
-
-    test('same idempotency key and payload returns the original run', () async {
-      final session = sessionBuilder.build();
-      addTearDown(session.close);
-      final tenantId = const Uuid().v7obj();
-      const scope = 'identity:idempotency-repeat';
-      const key = 'repeat-request';
-
-      final first = await _enqueueRun(
-        session,
-        tenantId: tenantId,
-        requesterScope: scope,
-        idempotencyKey: key,
-        requestFingerprint: 'fingerprint-a',
-      );
-      final repeated = await _enqueueRun(
-        session,
-        tenantId: tenantId,
-        requesterScope: scope,
-        idempotencyKey: key,
-        requestFingerprint: 'fingerprint-a',
-      );
-
-      expect(repeated.id, first.id);
-      expect(await _jobCount(session, tenantId, scope, key), 1);
-      expect(await _futureCallCount(session, first.id!), 1);
-    });
-
-    test('same idempotency key with a different payload conflicts', () async {
-      final session = sessionBuilder.build();
-      addTearDown(session.close);
-      final tenantId = const Uuid().v7obj();
-      const scope = 'identity:idempotency-conflict';
-      const key = 'conflicting-request';
-
-      final first = await _enqueueRun(
-        session,
-        tenantId: tenantId,
-        requesterScope: scope,
-        idempotencyKey: key,
-        requestFingerprint: 'fingerprint-a',
-      );
-
-      await expectLater(
-        _enqueueRun(
-          session,
-          tenantId: tenantId,
-          requesterScope: scope,
-          idempotencyKey: key,
-          requestFingerprint: 'fingerprint-b',
-        ),
-        throwsA(isA<AiRunIdempotencyConflict>()),
-      );
-      expect(await _jobCount(session, tenantId, scope, key), 1);
-      expect(await _futureCallCount(session, first.id!), 1);
-    });
-
-    test('concurrent identical requests create one run and one job', () async {
-      final session = sessionBuilder.build();
-      addTearDown(session.close);
-      final tenantId = const Uuid().v7obj();
-      const scope = 'identity:idempotency-race';
-      const key = 'concurrent-request';
-
-      final results = await Future.wait([
-        _enqueueRun(
-          session,
-          tenantId: tenantId,
-          requesterScope: scope,
-          idempotencyKey: key,
-          requestFingerprint: 'fingerprint-a',
-        ),
-        _enqueueRun(
-          session,
-          tenantId: tenantId,
-          requesterScope: scope,
-          idempotencyKey: key,
-          requestFingerprint: 'fingerprint-a',
-        ),
-      ]);
-
-      expect(results[1].id, results[0].id);
-      expect(await _jobCount(session, tenantId, scope, key), 1);
-      expect(await _futureCallCount(session, results[0].id!), 1);
-    });
   });
+
+  withServerpod(
+    'AI run database idempotency',
+    (sessionBuilder, _) {
+      test('same key and payload returns the original run', () async {
+        final session = sessionBuilder.build();
+        addTearDown(session.close);
+        final tenantId = const Uuid().v7obj();
+        const scope = 'identity:idempotency-repeat';
+        const key = 'repeat-request';
+        final first = await _enqueueRun(
+          session,
+          tenantId: tenantId,
+          requesterScope: scope,
+          idempotencyKey: key,
+          requestFingerprint: 'fingerprint-a',
+        );
+        final repeated = await _enqueueRun(
+          session,
+          tenantId: tenantId,
+          requesterScope: scope,
+          idempotencyKey: key,
+          requestFingerprint: 'fingerprint-a',
+        );
+        expect(repeated.id, first.id);
+        expect(await _jobCount(session, tenantId, scope, key), 1);
+        expect(await _futureCallCount(session, first.id!), 1);
+      });
+
+      test('same key with a different payload conflicts', () async {
+        final session = sessionBuilder.build();
+        addTearDown(session.close);
+        final tenantId = const Uuid().v7obj();
+        const scope = 'identity:idempotency-conflict';
+        const key = 'conflicting-request';
+        final first = await _enqueueRun(
+          session,
+          tenantId: tenantId,
+          requesterScope: scope,
+          idempotencyKey: key,
+          requestFingerprint: 'fingerprint-a',
+        );
+        await expectLater(
+          _enqueueRun(
+            session,
+            tenantId: tenantId,
+            requesterScope: scope,
+            idempotencyKey: key,
+            requestFingerprint: 'fingerprint-b',
+          ),
+          throwsA(isA<AiRunIdempotencyConflict>()),
+        );
+        expect(await _jobCount(session, tenantId, scope, key), 1);
+        expect(await _futureCallCount(session, first.id!), 1);
+      });
+
+      test('concurrent identical requests create one run and job', () async {
+        final session = sessionBuilder.build();
+        addTearDown(session.close);
+        final tenantId = const Uuid().v7obj();
+        const scope = 'identity:idempotency-race';
+        const key = 'concurrent-request';
+        final results = await Future.wait([
+          _enqueueRun(
+            session,
+            tenantId: tenantId,
+            requesterScope: scope,
+            idempotencyKey: key,
+            requestFingerprint: 'fingerprint-a',
+          ),
+          _enqueueRun(
+            session,
+            tenantId: tenantId,
+            requesterScope: scope,
+            idempotencyKey: key,
+            requestFingerprint: 'fingerprint-a',
+          ),
+        ]);
+        expect(results[1].id, results[0].id);
+        expect(await _jobCount(session, tenantId, scope, key), 1);
+        expect(await _futureCallCount(session, results[0].id!), 1);
+      });
+    },
+    rollbackDatabase: RollbackDatabase.disabled,
+    configOverride: (config) =>
+        config.copyWith(futureCallExecutionEnabled: false),
+  );
 }
 
 Future<AiRun> _enqueueRun(
@@ -305,6 +307,7 @@ Future<AiRun> _enqueueRun(
     capability: 'project.summary',
   ),
   input: const {'prompt': 'Summarize the project.'},
+  projectAuthorizationGrant: 'test-project-authorization-grant',
   requesterScope: requesterScope,
   bearerToken: null,
   idempotencyKey: idempotencyKey,

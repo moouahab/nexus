@@ -10,6 +10,7 @@ abstract interface class AiRunQueue {
     Session session, {
     required AiRun run,
     required Map<String, dynamic> input,
+    required String projectAuthorizationGrant,
     required String requesterScope,
     required String? bearerToken,
     required String? idempotencyKey,
@@ -27,6 +28,7 @@ final class ServerpodAiRunQueue implements AiRunQueue {
     Session session, {
     required AiRun run,
     required Map<String, dynamic> input,
+    required String projectAuthorizationGrant,
     required String requesterScope,
     required String? bearerToken,
     required String? idempotencyKey,
@@ -58,6 +60,7 @@ final class ServerpodAiRunQueue implements AiRunQueue {
           AiRunJob(
             runId: inserted.id!,
             inputJson: jsonEncode(input),
+            projectAuthorizationGrant: projectAuthorizationGrant,
             bearerToken: bearerToken,
             idempotencyKey: idempotencyKey,
             requestFingerprint: requestFingerprint,
@@ -120,6 +123,7 @@ final class ServerpodAiRunQueue implements AiRunQueue {
       columnValues: (t) => [
         t.status(AiRunJobStatus.cancelled),
         t.inputJson('{}'),
+        t.projectAuthorizationGrant(null),
         t.bearerToken(null),
         t.completedAt(now),
         t.updatedAt(now),
@@ -290,6 +294,7 @@ final class AiRunClaimStore {
         session,
         current.copyWith(
           inputJson: '{}',
+          projectAuthorizationGrant: null,
           bearerToken: null,
           status: status,
           completedAt: now,

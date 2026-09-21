@@ -14,11 +14,7 @@ import 'package:serverpod/serverpod.dart' as _i1;
 
 abstract class AiCapability
     implements _i1.SerializableModel, _i1.ProtocolSerialization {
-  AiCapability._({
-    required this.name,
-    required this.status,
-    this.reason,
-  });
+  AiCapability._({required this.name, required this.status, this.reason});
 
   factory AiCapability({
     required String name,
@@ -43,11 +39,7 @@ abstract class AiCapability
   /// Returns a shallow copy of this [AiCapability]
   /// with some or all fields replaced by the given arguments.
   @_i1.useResult
-  AiCapability copyWith({
-    String? name,
-    String? status,
-    String? reason,
-  });
+  AiCapability copyWith({String? name, String? status, String? reason});
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -81,11 +73,7 @@ class _AiCapabilityImpl extends AiCapability {
     required String name,
     required String status,
     String? reason,
-  }) : super._(
-         name: name,
-         status: status,
-         reason: reason,
-       );
+  }) : super._(name: name, status: status, reason: reason);
 
   /// Returns a shallow copy of this [AiCapability]
   /// with some or all fields replaced by the given arguments.

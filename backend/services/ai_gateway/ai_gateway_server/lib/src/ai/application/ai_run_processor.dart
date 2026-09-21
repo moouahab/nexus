@@ -51,7 +51,6 @@ final class AiRunProcessor {
     try {
       final input = jsonDecode(job.inputJson) as Map<String, dynamic>;
       final prompt = input['prompt'] as String;
-      final authorizationGrant = input['_projectAuthorizationGrant'];
       final reasoning = orchestrator;
       final projectsToken = reasoning == null
           ? ''
@@ -59,9 +58,7 @@ final class AiRunProcessor {
               session,
               tenantPartyId: run.tenantPartyId,
               projectId: run.projectId,
-              authorizationGrant: authorizationGrant is String
-                  ? authorizationGrant
-                  : '',
+              authorizationGrant: job.projectAuthorizationGrant ?? '',
               delegatedIdentityId: run.requesterIdentityId,
             );
       final request = ReasoningRequest(

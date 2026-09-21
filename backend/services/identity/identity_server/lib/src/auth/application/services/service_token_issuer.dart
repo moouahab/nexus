@@ -20,6 +20,8 @@ class ServiceTokenIssueResult {
     this.projectId,
     this.resourceId,
     this.delegatedIdentityId,
+    this.consumedGrantJwtId,
+    this.consumedGrantExpiresAt,
   });
 
   final String accessToken;
@@ -32,6 +34,8 @@ class ServiceTokenIssueResult {
   final String? projectId;
   final String? resourceId;
   final String? delegatedIdentityId;
+  final String? consumedGrantJwtId;
+  final DateTime? consumedGrantExpiresAt;
 }
 
 class ServiceTokenIssuer {
@@ -98,18 +102,18 @@ class ServiceTokenIssuer {
       );
     }
 
+    ProjectAuthorizationGrant? projectGrant;
     if (projectId != null) {
-      ProjectAuthorizationGrant grant;
       try {
-        grant = _projectGrantCodec.verify(authorizationGrant ?? '');
+        projectGrant = _projectGrantCodec.verify(authorizationGrant ?? '');
       } on FormatException {
         throw const AuthUseCaseException(
           AuthUseCaseExceptionCode.invalidCredentials,
         );
       }
-      if (grant.projectId != projectId ||
-          grant.tenantPartyId != authorizationTenantPartyId ||
-          grant.identityId != delegatedIdentityId ||
+      if (projectGrant.projectId != projectId ||
+          projectGrant.tenantPartyId != authorizationTenantPartyId ||
+          projectGrant.identityId != delegatedIdentityId ||
           audience != 'projects-service' ||
           !scopes.every((scope) => scope == 'projects.read')) {
         throw const AuthUseCaseException(
@@ -141,6 +145,8 @@ class ServiceTokenIssuer {
       projectId: claims.projectId,
       resourceId: claims.resourceId,
       delegatedIdentityId: claims.delegatedIdentityId,
+      consumedGrantJwtId: projectGrant?.jwtId,
+      consumedGrantExpiresAt: projectGrant?.expiresAt,
     );
   }
 

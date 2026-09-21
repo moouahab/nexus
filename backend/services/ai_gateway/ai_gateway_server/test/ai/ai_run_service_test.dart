@@ -161,6 +161,8 @@ void main() {
     expect(provider.generateCount, 0);
     expect(queue.requesterScope, 'identity:$ownerId');
     expect(queue.bearerToken, isNull);
+    expect(queue.input!.containsKey('_projectAuthorizationGrant'), isFalse);
+    expect(queue.projectAuthorizationGrant, 'signed-project-grant');
     expect(queue.idempotencyKey, 'stable-request');
   });
 
@@ -312,18 +314,23 @@ final class _MemoryQueue implements AiRunQueue {
   String? bearerToken;
   String? idempotencyKey;
   String? requestFingerprint;
+  Map<String, dynamic>? input;
+  String? projectAuthorizationGrant;
 
   @override
   Future<AiRun> enqueue(
     Session session, {
     required AiRun run,
     required Map<String, dynamic> input,
+    required String projectAuthorizationGrant,
     required String requesterScope,
     required String? bearerToken,
     required String? idempotencyKey,
     required String? requestFingerprint,
   }) async {
     enqueueCount++;
+    this.input = input;
+    this.projectAuthorizationGrant = projectAuthorizationGrant;
     this.requesterScope = requesterScope;
     this.bearerToken = bearerToken;
     this.idempotencyKey = idempotencyKey;

@@ -148,10 +148,7 @@ class _InternalTestEndpoints extends TestEndpoints
     _i2.SerializationManager serializationManager,
     _i2.EndpointDispatch endpoints,
   ) {
-    aiGateway = _AiGatewayEndpoint(
-      endpoints,
-      serializationManager,
-    );
+    aiGateway = _AiGatewayEndpoint(endpoints, serializationManager);
   }
 }
 
@@ -160,10 +157,7 @@ class _FutureCalls {
 }
 
 class _AiGatewayEndpoint {
-  _AiGatewayEndpoint(
-    this._endpointDispatch,
-    this._serializationManager,
-  );
+  _AiGatewayEndpoint(this._endpointDispatch, this._serializationManager);
 
   final _i2.EndpointDispatch _endpointDispatch;
 
@@ -343,10 +337,7 @@ class _AiRunFutureCall {
     var _localUniqueSession = (sessionBuilder as _i1.InternalTestSessionBuilder)
         .internalBuild();
     try {
-      await _i8.AiRunExecuteFutureCall().invoke(
-        _localUniqueSession,
-        work,
-      );
+      await _i8.AiRunExecuteFutureCall().invoke(_localUniqueSession, work);
     } finally {
       await _localUniqueSession.close();
     }

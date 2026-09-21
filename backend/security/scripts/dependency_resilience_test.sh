@@ -21,7 +21,8 @@ esac
 [[ "$container" =~ ^[a-z0-9_-]+-${expected_service}-[0-9]+$ ]] || {
   echo "refusing container that is not a ${expected_service} Compose container" >&2; exit 64;
 }
-python3 "$root/security/scripts/target_guard.py" "$probe_url" "$scope" >/dev/null
+readonly curl_resolve="$(python3 "$root/security/scripts/target_guard.py" --curl-resolve "$probe_url" "$scope")"
+readonly curl_args=(--fail --silent --show-error --max-redirs 0 --resolve "$curl_resolve")
 
 write_report() {
   local status="$1" phase="$2" outage_observed="$3" timestamp
@@ -53,7 +54,7 @@ readonly actual_service="$(docker inspect --format '{{ index .Config.Labels "com
   echo "refusing: container service is '$actual_service', not '$expected_service'" >&2; exit 64;
 }
 
-curl --fail --silent --show-error --max-time 3 --max-redirs 0 "$probe_url" >/dev/null || {
+curl "${curl_args[@]}" --max-time 3 "$probe_url" >/dev/null || {
   write_report "FAIL" "baseline" "false"; echo "refusing: baseline probe is not healthy" >&2; exit 1;
 }
 
@@ -67,7 +68,7 @@ docker pause "$container" >/dev/null
 paused=true
 outage_observed=false
 for _ in {1..10}; do
-  if ! curl --fail --silent --show-error --max-time 2 --max-redirs 0 "$probe_url" >/dev/null 2>&1; then
+  if ! curl "${curl_args[@]}" --max-time 2 "$probe_url" >/dev/null 2>&1; then
     outage_observed=true
     break
   fi
@@ -81,7 +82,7 @@ if [[ "$outage_observed" != "true" ]]; then
 fi
 
 for _ in {1..30}; do
-  if curl --fail --silent --show-error --max-time 2 --max-redirs 0 "$probe_url" >/dev/null; then
+  if curl "${curl_args[@]}" --max-time 2 "$probe_url" >/dev/null; then
     write_report "PASS" "recovered" "true"
     echo "$dependency temporary-loss resilience PASS: $container"
     exit 0

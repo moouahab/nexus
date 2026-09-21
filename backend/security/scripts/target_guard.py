@@ -129,6 +129,37 @@ def validate_target(
     return value.rstrip("/")
 
 
+def curl_resolve_entry(
+    value: str,
+    policy: ScopePolicy | None = None,
+    *,
+    resolver: Callable[[str, int], frozenset[ipaddress.IPv4Address | ipaddress.IPv6Address]] = _resolve,
+) -> str:
+    """Return a curl --resolve value pinned to the addresses checked in-scope.
+
+    Pinning closes the DNS validation/use gap: curl never performs a second DNS
+    lookup that could return a rebound address after validation.
+    """
+    policy = policy or load_scope_manifest()
+    validated = validate_target(value, policy, resolver=resolver)
+    parsed = urllib.parse.urlparse(validated)
+    assert parsed.hostname is not None
+    host = _normalize_host(parsed.hostname)
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    addresses = resolver(host, port)
+    if not _addresses_in_scope(addresses, policy):
+        raise ValueError("target resolution changed or moved outside the allowed CIDRs")
+    rendered = []
+    for address in sorted(addresses, key=lambda item: (item.version, int(item))):
+        rendered.append(f"[{address}]" if address.version == 6 else str(address))
+    try:
+        host_address = ipaddress.ip_address(host)
+    except ValueError:
+        host_address = None
+    curl_host = f"[{host}]" if host_address is not None and host_address.version == 6 else host
+    return f"{curl_host}:{port}:{','.join(rendered)}"
+
+
 class ScopeRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Validate every redirect and refuse redirects beyond the policy limit."""
 
@@ -152,10 +183,13 @@ def scoped_opener(policy: ScopePolicy) -> urllib.request.OpenerDirector:
 
 
 def main() -> int:
-    target = sys.argv[1] if len(sys.argv) > 1 else ""
-    manifest = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_SCOPE
+    resolve_mode = len(sys.argv) > 1 and sys.argv[1] == "--curl-resolve"
+    offset = 1 if resolve_mode else 0
+    target = sys.argv[1 + offset] if len(sys.argv) > 1 + offset else ""
+    manifest = sys.argv[2 + offset] if len(sys.argv) > 2 + offset else DEFAULT_SCOPE
     try:
-        print(validate_target(target, load_scope_manifest(manifest)))
+        policy = load_scope_manifest(manifest)
+        print(curl_resolve_entry(target, policy) if resolve_mode else validate_target(target, policy))
     except (OSError, ValueError) as error:
         print(f"target rejected: {error}", file=sys.stderr)
         return 2

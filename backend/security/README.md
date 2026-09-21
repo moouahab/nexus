@@ -82,7 +82,9 @@ security/scripts/resilience_test.sh projects_server-api_test-1 \
 
 Temporary PostgreSQL and Redis loss uses a separate guard. It accepts only
 Compose services named `postgres_test` or `redis_test`, is a dry run by
-default, refuses redirects and out-of-scope probes, and writes JSON evidence:
+default, refuses redirects and out-of-scope probes, pins curl to the DNS
+addresses validated by the scope guard (preventing rebinding/TOCTOU), and
+writes JSON evidence:
 
 ```bash
 security/scripts/dependency_resilience_test.sh postgres \

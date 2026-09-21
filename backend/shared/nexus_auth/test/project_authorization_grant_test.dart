@@ -29,4 +29,25 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('issues a unique replay identifier for every grant', () {
+    final first = codec.verify(
+      codec.issue(
+        projectId: 'project-1',
+        tenantPartyId: 'tenant-1',
+        identityId: 'identity-1',
+      ),
+    );
+    final second = codec.verify(
+      codec.issue(
+        projectId: 'project-1',
+        tenantPartyId: 'tenant-1',
+        identityId: 'identity-1',
+      ),
+    );
+
+    expect(first.jwtId, isNotEmpty);
+    expect(second.jwtId, isNot(first.jwtId));
+    expect(first.expiresAt.isAfter(DateTime.now().toUtc()), isTrue);
+  });
 }

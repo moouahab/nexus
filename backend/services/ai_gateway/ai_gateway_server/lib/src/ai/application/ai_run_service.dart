@@ -93,13 +93,7 @@ final class AiRunService {
       ),
     );
     final policy = OrchestrationPolicy.forLevel(level);
-    final normalizedInput = {
-      ...input,
-      'prompt': prompt.trim(),
-      '_projectAuthorizationGrant': authorizationGrant,
-    };
-    final fingerprintInput = {...normalizedInput}
-      ..remove('_projectAuthorizationGrant');
+    final normalizedInput = {...input, 'prompt': prompt.trim()};
     final requestFingerprint = normalizedIdempotencyKey == null
         ? null
         : _requestFingerprint(
@@ -107,7 +101,7 @@ final class AiRunService {
             tenantPartyId: tenantPartyId,
             missionId: missionId,
             capability: normalizedCapability,
-            input: fingerprintInput,
+            input: normalizedInput,
           );
     final queued = await queue.enqueue(
       session,
@@ -129,6 +123,7 @@ final class AiRunService {
         createdAt: DateTime.now().toUtc(),
       ),
       input: normalizedInput,
+      projectAuthorizationGrant: authorizationGrant,
       requesterScope: requesterScope,
       // Authorization is evaluated synchronously above. Background workers
       // obtain a fresh project-bound service token, so persisting the inbound

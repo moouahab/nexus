@@ -1,0 +1,15 @@
+### One-time Projects grant marker. Only a SHA-256 digest of the jti is stored.
+class: ConsumedProjectAuthorizationGrant
+serverOnly: true
+table: consumed_project_authorization_grant
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  jwtIdHash: String
+  expiresAt: DateTime
+  consumedAt: DateTime, default=now
+indexes:
+  consumed_project_authorization_grant_jti_idx:
+    fields: jwtIdHash
+    unique: true
+  consumed_project_authorization_grant_expiry_idx:
+    fields: expiresAt

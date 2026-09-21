@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 final class ProjectAuthorizationGrant {
@@ -5,11 +8,15 @@ final class ProjectAuthorizationGrant {
     required this.projectId,
     required this.tenantPartyId,
     required this.identityId,
+    required this.jwtId,
+    required this.expiresAt,
   });
 
   final String projectId;
   final String tenantPartyId;
   final String identityId;
+  final String jwtId;
+  final DateTime expiresAt;
 }
 
 final class ProjectAuthorizationGrantCodec {
@@ -27,6 +34,10 @@ final class ProjectAuthorizationGrantCodec {
     required String identityId,
   }) {
     if (secret.trim().isEmpty) throw StateError('Grant signing unavailable.');
+    final random = Random.secure();
+    final jwtId = base64Url.encode(
+      List<int>.generate(32, (_) => random.nextInt(256)),
+    );
     return JWT(
       {
         'projectId': projectId,
@@ -37,6 +48,7 @@ final class ProjectAuthorizationGrantCodec {
       },
       issuer: 'projects-service',
       audience: Audience.one('identity-service'),
+      jwtId: jwtId,
     ).sign(SecretKey(secret), expiresIn: lifetime);
   }
 
@@ -66,6 +78,11 @@ final class ProjectAuthorizationGrantCodec {
         projectId: field('projectId'),
         tenantPartyId: field('tenantPartyId'),
         identityId: field('identityId'),
+        jwtId: field('jti'),
+        expiresAt: DateTime.fromMillisecondsSinceEpoch(
+          ((payload['exp'] as num) * 1000).toInt(),
+          isUtc: true,
+        ),
       );
     } on FormatException {
       rethrow;

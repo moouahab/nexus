@@ -20,6 +20,7 @@ abstract class AiRunJob
     this.id,
     required this.runId,
     required this.inputJson,
+    this.projectAuthorizationGrant,
     this.bearerToken,
     this.idempotencyKey,
     this.requestFingerprint,
@@ -40,6 +41,7 @@ abstract class AiRunJob
     _i1.UuidValue? id,
     required _i1.UuidValue runId,
     required String inputJson,
+    String? projectAuthorizationGrant,
     String? bearerToken,
     String? idempotencyKey,
     String? requestFingerprint,
@@ -61,6 +63,8 @@ abstract class AiRunJob
           : _i1.UuidValueJsonExtension.fromJson(jsonSerialization['id']),
       runId: _i1.UuidValueJsonExtension.fromJson(jsonSerialization['runId']),
       inputJson: jsonSerialization['inputJson'] as String,
+      projectAuthorizationGrant:
+          jsonSerialization['projectAuthorizationGrant'] as String?,
       bearerToken: jsonSerialization['bearerToken'] as String?,
       idempotencyKey: jsonSerialization['idempotencyKey'] as String?,
       requestFingerprint: jsonSerialization['requestFingerprint'] as String?,
@@ -103,6 +107,9 @@ abstract class AiRunJob
 
   String inputJson;
 
+  /// Dedicated short-lived Projects token-exchange grant; cleared on finish.
+  String? projectAuthorizationGrant;
+
   String? bearerToken;
 
   String? idempotencyKey;
@@ -137,6 +144,7 @@ abstract class AiRunJob
     _i1.UuidValue? id,
     _i1.UuidValue? runId,
     String? inputJson,
+    String? projectAuthorizationGrant,
     String? bearerToken,
     String? idempotencyKey,
     String? requestFingerprint,
@@ -157,6 +165,8 @@ abstract class AiRunJob
       if (id != null) 'id': id?.toJson(),
       'runId': runId.toJson(),
       'inputJson': inputJson,
+      if (projectAuthorizationGrant != null)
+        'projectAuthorizationGrant': projectAuthorizationGrant,
       if (bearerToken != null) 'bearerToken': bearerToken,
       if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
       if (requestFingerprint != null) 'requestFingerprint': requestFingerprint,
@@ -214,6 +224,7 @@ class _AiRunJobImpl extends AiRunJob {
     _i1.UuidValue? id,
     required _i1.UuidValue runId,
     required String inputJson,
+    String? projectAuthorizationGrant,
     String? bearerToken,
     String? idempotencyKey,
     String? requestFingerprint,
@@ -230,6 +241,7 @@ class _AiRunJobImpl extends AiRunJob {
          id: id,
          runId: runId,
          inputJson: inputJson,
+         projectAuthorizationGrant: projectAuthorizationGrant,
          bearerToken: bearerToken,
          idempotencyKey: idempotencyKey,
          requestFingerprint: requestFingerprint,
@@ -252,6 +264,7 @@ class _AiRunJobImpl extends AiRunJob {
     Object? id = _Undefined,
     _i1.UuidValue? runId,
     String? inputJson,
+    Object? projectAuthorizationGrant = _Undefined,
     Object? bearerToken = _Undefined,
     Object? idempotencyKey = _Undefined,
     Object? requestFingerprint = _Undefined,
@@ -269,6 +282,9 @@ class _AiRunJobImpl extends AiRunJob {
       id: id is _i1.UuidValue? ? id : this.id,
       runId: runId ?? this.runId,
       inputJson: inputJson ?? this.inputJson,
+      projectAuthorizationGrant: projectAuthorizationGrant is String?
+          ? projectAuthorizationGrant
+          : this.projectAuthorizationGrant,
       bearerToken: bearerToken is String? ? bearerToken : this.bearerToken,
       idempotencyKey: idempotencyKey is String?
           ? idempotencyKey
@@ -295,152 +311,79 @@ class AiRunJobUpdateTable extends _i1.UpdateTable<AiRunJobTable> {
   AiRunJobUpdateTable(super.table);
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> runId(_i1.UuidValue value) =>
-      _i1.ColumnValue(
-        table.runId,
-        value,
-      );
+      _i1.ColumnValue(table.runId, value);
 
-  _i1.ColumnValue<String, String> inputJson(String value) => _i1.ColumnValue(
-    table.inputJson,
-    value,
-  );
+  _i1.ColumnValue<String, String> inputJson(String value) =>
+      _i1.ColumnValue(table.inputJson, value);
 
-  _i1.ColumnValue<String, String> bearerToken(String? value) => _i1.ColumnValue(
-    table.bearerToken,
-    value,
-  );
+  _i1.ColumnValue<String, String> projectAuthorizationGrant(String? value) =>
+      _i1.ColumnValue(table.projectAuthorizationGrant, value);
+
+  _i1.ColumnValue<String, String> bearerToken(String? value) =>
+      _i1.ColumnValue(table.bearerToken, value);
 
   _i1.ColumnValue<String, String> idempotencyKey(String? value) =>
-      _i1.ColumnValue(
-        table.idempotencyKey,
-        value,
-      );
+      _i1.ColumnValue(table.idempotencyKey, value);
 
   _i1.ColumnValue<String, String> requestFingerprint(String? value) =>
-      _i1.ColumnValue(
-        table.requestFingerprint,
-        value,
-      );
+      _i1.ColumnValue(table.requestFingerprint, value);
 
   _i1.ColumnValue<String, String> requesterScope(String value) =>
-      _i1.ColumnValue(
-        table.requesterScope,
-        value,
-      );
+      _i1.ColumnValue(table.requesterScope, value);
 
   _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> tenantPartyId(
     _i1.UuidValue value,
-  ) => _i1.ColumnValue(
-    table.tenantPartyId,
-    value,
-  );
+  ) => _i1.ColumnValue(table.tenantPartyId, value);
 
   _i1.ColumnValue<_i2.AiRunJobStatus, _i2.AiRunJobStatus> status(
     _i2.AiRunJobStatus value,
-  ) => _i1.ColumnValue(
-    table.status,
-    value,
-  );
+  ) => _i1.ColumnValue(table.status, value);
 
-  _i1.ColumnValue<int, int> attemptCount(int value) => _i1.ColumnValue(
-    table.attemptCount,
-    value,
-  );
+  _i1.ColumnValue<int, int> attemptCount(int value) =>
+      _i1.ColumnValue(table.attemptCount, value);
 
   _i1.ColumnValue<DateTime, DateTime> claimedAt(DateTime? value) =>
-      _i1.ColumnValue(
-        table.claimedAt,
-        value,
-      );
+      _i1.ColumnValue(table.claimedAt, value);
 
   _i1.ColumnValue<DateTime, DateTime> completedAt(DateTime? value) =>
-      _i1.ColumnValue(
-        table.completedAt,
-        value,
-      );
+      _i1.ColumnValue(table.completedAt, value);
 
   _i1.ColumnValue<String, String> lastErrorCode(String? value) =>
-      _i1.ColumnValue(
-        table.lastErrorCode,
-        value,
-      );
+      _i1.ColumnValue(table.lastErrorCode, value);
 
   _i1.ColumnValue<DateTime, DateTime> createdAt(DateTime value) =>
-      _i1.ColumnValue(
-        table.createdAt,
-        value,
-      );
+      _i1.ColumnValue(table.createdAt, value);
 
   _i1.ColumnValue<DateTime, DateTime> updatedAt(DateTime? value) =>
-      _i1.ColumnValue(
-        table.updatedAt,
-        value,
-      );
+      _i1.ColumnValue(table.updatedAt, value);
 }
 
 class AiRunJobTable extends _i1.Table<_i1.UuidValue?> {
   AiRunJobTable({super.tableRelation}) : super(tableName: 'ai_run_job') {
     updateTable = AiRunJobUpdateTable(this);
-    runId = _i1.ColumnUuid(
-      'runId',
+    runId = _i1.ColumnUuid('runId', this);
+    inputJson = _i1.ColumnString('inputJson', this);
+    projectAuthorizationGrant = _i1.ColumnString(
+      'projectAuthorizationGrant',
       this,
     );
-    inputJson = _i1.ColumnString(
-      'inputJson',
-      this,
-    );
-    bearerToken = _i1.ColumnString(
-      'bearerToken',
-      this,
-    );
-    idempotencyKey = _i1.ColumnString(
-      'idempotencyKey',
-      this,
-    );
-    requestFingerprint = _i1.ColumnString(
-      'requestFingerprint',
-      this,
-    );
-    requesterScope = _i1.ColumnString(
-      'requesterScope',
-      this,
-    );
-    tenantPartyId = _i1.ColumnUuid(
-      'tenantPartyId',
-      this,
-    );
+    bearerToken = _i1.ColumnString('bearerToken', this);
+    idempotencyKey = _i1.ColumnString('idempotencyKey', this);
+    requestFingerprint = _i1.ColumnString('requestFingerprint', this);
+    requesterScope = _i1.ColumnString('requesterScope', this);
+    tenantPartyId = _i1.ColumnUuid('tenantPartyId', this);
     status = _i1.ColumnEnum(
       'status',
       this,
       _i1.EnumSerialization.byName,
       hasDefault: true,
     );
-    attemptCount = _i1.ColumnInt(
-      'attemptCount',
-      this,
-      hasDefault: true,
-    );
-    claimedAt = _i1.ColumnDateTime(
-      'claimedAt',
-      this,
-    );
-    completedAt = _i1.ColumnDateTime(
-      'completedAt',
-      this,
-    );
-    lastErrorCode = _i1.ColumnString(
-      'lastErrorCode',
-      this,
-    );
-    createdAt = _i1.ColumnDateTime(
-      'createdAt',
-      this,
-      hasDefault: true,
-    );
-    updatedAt = _i1.ColumnDateTime(
-      'updatedAt',
-      this,
-    );
+    attemptCount = _i1.ColumnInt('attemptCount', this, hasDefault: true);
+    claimedAt = _i1.ColumnDateTime('claimedAt', this);
+    completedAt = _i1.ColumnDateTime('completedAt', this);
+    lastErrorCode = _i1.ColumnString('lastErrorCode', this);
+    createdAt = _i1.ColumnDateTime('createdAt', this, hasDefault: true);
+    updatedAt = _i1.ColumnDateTime('updatedAt', this);
   }
 
   late final AiRunJobUpdateTable updateTable;
@@ -448,6 +391,9 @@ class AiRunJobTable extends _i1.Table<_i1.UuidValue?> {
   late final _i1.ColumnUuid runId;
 
   late final _i1.ColumnString inputJson;
+
+  /// Dedicated short-lived Projects token-exchange grant; cleared on finish.
+  late final _i1.ColumnString projectAuthorizationGrant;
 
   late final _i1.ColumnString bearerToken;
 
@@ -478,6 +424,7 @@ class AiRunJobTable extends _i1.Table<_i1.UuidValue?> {
     id,
     runId,
     inputJson,
+    projectAuthorizationGrant,
     bearerToken,
     idempotencyKey,
     requestFingerprint,
@@ -660,10 +607,7 @@ class AiRunJobRepository {
     AiRunJob row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.insertRow<AiRunJob>(
-      row,
-      transaction: transaction,
-    );
+    return session.db.insertRow<AiRunJob>(row, transaction: transaction);
   }
 
   /// Updates all [AiRunJob]s in the list and returns the updated rows. If
@@ -748,10 +692,7 @@ class AiRunJobRepository {
     List<AiRunJob> rows, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.delete<AiRunJob>(
-      rows,
-      transaction: transaction,
-    );
+    return session.db.delete<AiRunJob>(rows, transaction: transaction);
   }
 
   /// Deletes a single [AiRunJob].
@@ -760,10 +701,7 @@ class AiRunJobRepository {
     AiRunJob row, {
     _i1.Transaction? transaction,
   }) async {
-    return session.db.deleteRow<AiRunJob>(
-      row,
-      transaction: transaction,
-    );
+    return session.db.deleteRow<AiRunJob>(row, transaction: transaction);
   }
 
   /// Deletes all rows matching the [where] expression.

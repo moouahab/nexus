@@ -6,6 +6,8 @@ fields:
   id: UuidValue?, defaultPersist=random_v7
   runId: UuidValue
   inputJson: String
+  ### Dedicated short-lived Projects token-exchange grant; cleared on finish.
+  projectAuthorizationGrant: String?
   bearerToken: String?
   idempotencyKey: String?
   requestFingerprint: String?

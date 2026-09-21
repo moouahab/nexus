@@ -1,0 +1,53 @@
+services:
+  postgres_test:
+    image: compose-postgres_test:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: resilience_test
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    configs:
+      - source: postgres_config
+        target: /run/config/postgres.conf
+    secrets:
+      - postgres_password
+
+  redis_test:
+    image: compose-redis_test:latest
+    environment:
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+    secrets:
+      - redis_password
+
+  postgres_probe:
+    image: alpine:3.22
+    environment:
+      DEPENDENCY_HOST: postgres_test
+      DEPENDENCY_PORT: "5432"
+      DEPENDENCY_PROTOCOL: postgres
+    command: ["sh", "/probe/dependency_probe.sh"]
+    volumes:
+      - ./dependency_probe.sh:/probe/dependency_probe.sh:ro
+    ports:
+      - "127.0.0.1:18081:8080"
+
+  redis_probe:
+    image: alpine:3.22
+    environment:
+      DEPENDENCY_HOST: redis_test
+      DEPENDENCY_PORT: "6379"
+      DEPENDENCY_PROTOCOL: redis
+    command: ["sh", "/probe/dependency_probe.sh"]
+    volumes:
+      - ./dependency_probe.sh:/probe/dependency_probe.sh:ro
+    ports:
+      - "127.0.0.1:18082:8080"
+
+configs:
+  postgres_config:
+    file: ../../services/projects/projects_server/docker/config/postgres-test.conf
+
+secrets:
+  postgres_password:
+    file: ../../services/projects/projects_server/secrets/postgres_test_password
+  redis_password:
+    file: ../../services/projects/projects_server/secrets/redis_test_password

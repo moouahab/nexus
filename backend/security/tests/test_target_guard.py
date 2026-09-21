@@ -3,7 +3,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from security.scripts.target_guard import ScopeRedirectHandler, load_scope_manifest, validate_target
+from security.scripts.target_guard import (
+    ScopeRedirectHandler,
+    curl_resolve_entry,
+    load_scope_manifest,
+    validate_target,
+)
 
 
 class TargetGuardTest(unittest.TestCase):
@@ -33,6 +38,24 @@ class TargetGuardTest(unittest.TestCase):
         })
         with self.assertRaisesRegex(ValueError, "outside"):
             validate_target("http://localhost:8000", self.policy, resolver=resolver)
+
+    def test_curl_resolution_is_pinned_to_validated_address(self):
+        resolver = lambda _host, _port: frozenset({ipaddress.ip_address("127.0.0.2")})
+        self.assertEqual(
+            "localhost:8000:127.0.0.2",
+            curl_resolve_entry("http://localhost:8000", self.policy, resolver=resolver),
+        )
+
+    def test_curl_resolution_rejects_rebind_between_checks(self):
+        answers = iter((
+            frozenset({ipaddress.ip_address("127.0.0.1")}),
+            frozenset({ipaddress.ip_address("203.0.113.8")}),
+        ))
+        with self.assertRaisesRegex(ValueError, "changed or moved outside"):
+            curl_resolve_entry(
+                "http://localhost:8000", self.policy,
+                resolver=lambda _host, _port: next(answers),
+            )
 
     def test_redirects_are_denied_by_default(self):
         handler = ScopeRedirectHandler(self.policy)
