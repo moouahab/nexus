@@ -1,14 +1,16 @@
-import 'dart:convert';
-
-import 'package:crypto/crypto.dart';
 import 'package:serverpod/serverpod.dart';
 
-import '../../generated/protocol.dart';
+import '../application/services/project_grant_replay_guard.dart';
 import '../domain/auth_result.dart';
 import 'auth_dependencies.dart';
 import 'auth_json_route.dart';
 
 class AuthServiceTokenRoute extends AuthJsonRoute {
+  AuthServiceTokenRoute({ProjectGrantReplayGuard? replayGuard})
+    : _replayGuard = replayGuard ?? const ProjectGrantReplayGuard();
+
+  final ProjectGrantReplayGuard _replayGuard;
+
   @override
   Future<AuthResult> execute(
     Session session,
@@ -38,7 +40,11 @@ class AuthServiceTokenRoute extends AuthJsonRoute {
     final grantJwtId = result.consumedGrantJwtId;
     final grantExpiresAt = result.consumedGrantExpiresAt;
     if (grantJwtId != null && grantExpiresAt != null) {
-      await _consumeProjectGrant(session, grantJwtId, grantExpiresAt);
+      await _replayGuard.consume(
+        session,
+        jwtId: grantJwtId,
+        expiresAt: grantExpiresAt,
+      );
     }
 
     return AuthResult(
@@ -58,34 +64,6 @@ class AuthServiceTokenRoute extends AuthJsonRoute {
           'delegatedIdentityId': result.delegatedIdentityId,
       },
     );
-  }
-
-  Future<void> _consumeProjectGrant(
-    Session session,
-    String jwtId,
-    DateTime expiresAt,
-  ) async {
-    final jwtIdHash = sha256.convert(utf8.encode(jwtId)).toString();
-    try {
-      await ConsumedProjectAuthorizationGrant.db.deleteWhere(
-        session,
-        where: (t) => t.expiresAt < DateTime.now().toUtc(),
-      );
-      await ConsumedProjectAuthorizationGrant.db.insertRow(
-        session,
-        ConsumedProjectAuthorizationGrant(
-          jwtIdHash: jwtIdHash,
-          expiresAt: expiresAt,
-        ),
-      );
-    } on DatabaseQueryException catch (error) {
-      if (error.code != '23505' ||
-          error.constraintName !=
-              'consumed_project_authorization_grant_jti_idx') {
-        rethrow;
-      }
-      throw const FormatException('Project authorization grant already used.');
-    }
   }
 
   String? _optionalString(Map<String, dynamic> body, String name) {

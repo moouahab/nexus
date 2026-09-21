@@ -8,8 +8,17 @@ fi
 
 POSTGRES_TEST_PORT="${POSTGRES_TEST_PORT:-9290}"
 REDIS_TEST_PORT="${REDIS_TEST_PORT:-9291}"
+TEST_COMPOSE_PROJECT="${NEXUS_TEST_COMPOSE_PROJECT:-$(basename "$SERVER_ROOT")_test}"
 
 cd "$SERVER_ROOT"
+
+cleanup_test_stack() {
+  POSTGRES_TEST_PORT="$POSTGRES_TEST_PORT" \
+  REDIS_TEST_PORT="$REDIS_TEST_PORT" \
+  docker compose -p "$TEST_COMPOSE_PROJECT" --profile test \
+    down --volumes --remove-orphans >/dev/null 2>&1 || true
+}
+trap cleanup_test_stack EXIT INT TERM
 
 if [[ ! -s secrets/postgres_test_password ]]; then
   echo "Missing secrets/postgres_test_password" >&2
@@ -33,7 +42,7 @@ compose_up+=(postgres_test redis_test)
 
 POSTGRES_TEST_PORT="$POSTGRES_TEST_PORT" \
 REDIS_TEST_PORT="$REDIS_TEST_PORT" \
-docker compose "${compose_up[@]}"
+docker compose -p "$TEST_COMPOSE_PROJECT" "${compose_up[@]}"
 
 export SERVERPOD_DATABASE_PORT="$POSTGRES_TEST_PORT"
 export SERVERPOD_REDIS_ENABLED=true
