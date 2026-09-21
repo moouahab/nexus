@@ -79,8 +79,25 @@ security/scripts/resilience_test.sh projects_server-api_test-1 \
   http://127.0.0.1:8000/v1/projects/health
 ```
 
-Database/Redis loss and destructive chaos require a dedicated disposable
-orchestration profile and are intentionally excluded from this first check.
+Temporary PostgreSQL and Redis loss uses a separate guard. It accepts only
+Compose services named `postgres_test` or `redis_test`, is a dry run by
+default, refuses redirects and out-of-scope probes, and writes JSON evidence:
+
+```bash
+security/scripts/dependency_resilience_test.sh postgres \
+  nexus-security-postgres_test-1 http://127.0.0.1:8000/probe/projects
+
+NEXUS_RESILIENCE_EXECUTE=true \
+NEXUS_DISPOSABLE_STACK=I_UNDERSTAND_THIS_IS_DISPOSABLE \
+NEXUS_DISPOSABLE_PROJECT=nexus-security \
+security/scripts/dependency_resilience_test.sh redis \
+  nexus-security-redis_test-1 http://127.0.0.1:8000/probe/session
+```
+
+Execution verifies the exact Docker Compose project and service labels before
+pausing anything. A trap restores the dependency on interruption. The URL must
+be a dependency-backed probe, not a shallow process health endpoint.
+Destructive chaos remains excluded.
 The backup proof compares schema table inventory and exact row counts; it does
 not yet compute a canonical content checksum for every PostgreSQL data type.
 

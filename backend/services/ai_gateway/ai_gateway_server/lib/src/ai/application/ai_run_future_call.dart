@@ -3,6 +3,7 @@ import 'package:serverpod/serverpod.dart';
 import '../../generated/protocol.dart';
 import '../infrastructure/ai_provider_factory.dart';
 import '../infrastructure/reasoning_orchestrator_factory.dart';
+import '../infrastructure/identity/project_service_token_issuer_factory.dart';
 import 'ai_run_processor.dart';
 
 /// Persistent, restart-safe worker entry point managed by Serverpod.
@@ -14,6 +15,7 @@ final class AiRunFutureCall extends FutureCall {
       orchestrator: provider.isConfigured
           ? ReasoningOrchestratorFactory.fromEnvironment(provider)
           : null,
+      projectTokens: ProjectServiceTokenIssuerFactory.fromEnvironment(),
     );
     await processor.process(session, work.runId);
   }

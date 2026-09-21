@@ -63,10 +63,11 @@ class PartyEndpoint extends Endpoint {
     String? title,
     Map<String, String>? metadata,
   }) {
-    _requireServiceContext(
+    final context = _requireServiceContext(
       session,
       const [PartyAuthorization.membershipWriteScope],
     );
+    _requireServiceBoundary(context, resources: [userProfileId]);
     return _parties.createPartyWithOwner(
       session,
       userProfileId: userProfileId,
@@ -135,9 +136,14 @@ class PartyEndpoint extends Endpoint {
     UuidValue? invitedByIdentityId,
     Map<String, String>? metadata,
   }) {
-    _requireServiceContext(
+    final context = _requireServiceContext(
       session,
       const [PartyAuthorization.membershipWriteScope],
+    );
+    _requireServiceBoundary(
+      context,
+      resources: [partyId],
+      tenants: [partyId],
     );
     return _parties.joinParty(
       session,
@@ -157,10 +163,11 @@ class PartyEndpoint extends Endpoint {
     required UuidValue userProfileId,
     PartyMembershipStatus? status,
   }) {
-    _requireServiceContext(
+    final context = _requireServiceContext(
       session,
       const [PartyAuthorization.membershipReadScope],
     );
+    _requireServiceBoundary(context, resources: [userProfileId]);
     return _parties.listMemberships(
       session,
       userProfileId: userProfileId,
@@ -187,6 +194,25 @@ class PartyEndpoint extends Endpoint {
       return _serviceAuth.requireServiceContext(
         session,
         requiredScopes: requiredScopes,
+      );
+    } on NexusAuthException catch (error) {
+      throw NotAuthorizedException(
+        reason: _authFailureReason(error),
+        message: 'Authentication failed.',
+      );
+    }
+  }
+
+  void _requireServiceBoundary(
+    ServiceAuthContext context, {
+    required Iterable<UuidValue> resources,
+    Iterable<UuidValue> tenants = const [],
+  }) {
+    try {
+      const PartyAuthorization().requireExactBoundary(
+        context,
+        resources: resources,
+        tenants: tenants,
       );
     } on NexusAuthException catch (error) {
       throw NotAuthorizedException(

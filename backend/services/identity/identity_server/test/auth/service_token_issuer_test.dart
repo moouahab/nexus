@@ -104,6 +104,22 @@ void main() {
         throwsA(isA<AuthUseCaseException>()),
       );
     });
+
+    test('rejects ambiguous multiple resource boundaries', () {
+      final issuer = _issuer();
+
+      expect(
+        () => issuer.issue(
+          serviceName: 'projects',
+          serviceSecret: 'projects-secret',
+          audience: 'ai-gateway',
+          scopes: ['ai.run.create'],
+          tenantPartyId: 'tenant-a',
+          projectId: 'project-a',
+        ),
+        throwsA(isA<AuthUseCaseException>()),
+      );
+    });
   });
 }
 

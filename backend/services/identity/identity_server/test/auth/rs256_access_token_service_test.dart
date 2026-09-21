@@ -66,6 +66,7 @@ void main() {
           serviceName: 'projects',
           audience: 'ai-gateway',
           scopes: ['ai.context.preview', 'ai.run.create'],
+          projectId: 'project-a',
         ),
       );
 
@@ -91,6 +92,7 @@ void main() {
           serviceName: 'projects',
           audience: 'nexus-api',
           scopes: ['projects.read'],
+          projectId: 'project-a',
         ),
       );
 

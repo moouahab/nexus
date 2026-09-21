@@ -1,6 +1,7 @@
 import 'package:nexus_auth/nexus_auth.dart';
 import 'package:parties_server/src/generated/protocol.dart';
 import 'package:parties_server/src/parties/application/party_access.dart';
+import 'package:parties_server/src/parties/application/party_authorization.dart';
 import 'package:parties_server/src/parties/application/party_service.dart';
 import 'package:parties_server/src/parties/http/party_http_dto.dart';
 import 'package:parties_server/src/parties/http/party_http_json_route.dart';
@@ -103,6 +104,62 @@ void main() {
         );
       },
     );
+
+    test('service token cannot cross its exact party boundary', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final partyA = await service.createParty(
+        session,
+        kind: PartyKind.company,
+        name: 'Tenant A',
+      );
+      final partyB = await service.createParty(
+        session,
+        kind: PartyKind.company,
+        name: 'Tenant B',
+      );
+      final endpoint = PartyEndpoint(
+        serviceAuth: _ServiceAuth(
+          scopes: const {PartyAuthorization.membershipWriteScope},
+          tenantPartyId: partyA.id.toString(),
+        ),
+      );
+
+      await endpoint.joinParty(
+        session,
+        userProfileId: profileA,
+        partyId: partyA.id!,
+      );
+      expect(
+        () => endpoint.joinParty(
+          session,
+          userProfileId: profileA,
+          partyId: partyB.id!,
+        ),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+    });
+
+    test('membership reads require the exact profile resource', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final profileB = const Uuid().v7obj();
+      final endpoint = PartyEndpoint(
+        serviceAuth: _ServiceAuth(
+          scopes: const {PartyAuthorization.membershipReadScope},
+          resourceId: profileA.toString(),
+        ),
+      );
+
+      expect(
+        await endpoint.listMemberships(session, userProfileId: profileA),
+        isEmpty,
+      );
+      expect(
+        () => endpoint.listMemberships(session, userProfileId: profileB),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+    });
   });
 }
 
@@ -138,6 +195,38 @@ final class _UserAuth extends AuthContextResolver {
     issuedAt: DateTime.utc(2026),
     expiresAt: DateTime.utc(2099),
   );
+}
+
+final class _ServiceAuth extends AuthContextResolver {
+  const _ServiceAuth({
+    required this.scopes,
+    this.tenantPartyId,
+    this.resourceId,
+  });
+
+  final Set<String> scopes;
+  final String? tenantPartyId;
+  final String? resourceId;
+
+  @override
+  ServiceAuthContext requireServiceContext(
+    Session session, {
+    Iterable<String> requiredScopes = const [],
+  }) {
+    if (requiredScopes.any((scope) => !scopes.contains(scope))) {
+      throw const NexusAuthException.invalidAccessToken('Scope denied.');
+    }
+    return ServiceAuthContext(
+      serviceName: 'parties-test',
+      issuer: AuthTokenDefaults.issuer,
+      audiences: const ['parties-service'],
+      scopes: scopes.toList(),
+      issuedAt: DateTime.utc(2026),
+      expiresAt: DateTime.utc(2099),
+      tenantPartyId: tenantPartyId,
+      resourceId: resourceId,
+    );
+  }
 }
 
 final class _PartyParityRoute extends PartyHttpJsonRoute {

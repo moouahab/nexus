@@ -56,6 +56,11 @@ class ServiceTokenIssuer {
     String? resourceId,
     String? delegatedIdentityId,
   }) {
+    // This issuer authenticates the registered client and constrains the shape
+    // of the token, but it does not prove that the client may choose a specific
+    // dynamic UUID. Callers must be trusted for the selected boundary value.
+    // TODO(security): accept a short-lived delegation grant signed by the
+    // resource authority (for Projects, after its own user authorization).
     final client = _clientRegistry.findByServiceName(serviceName);
     if (client == null || !_constantTimeEquals(client.secret, serviceSecret)) {
       throw const AuthUseCaseException(
@@ -74,10 +79,13 @@ class ServiceTokenIssuer {
         AuthUseCaseExceptionCode.invalidCredentials,
       );
     }
-    if (!globalAccess &&
-        tenantPartyId == null &&
-        projectId == null &&
-        resourceId == null) {
+    final boundaryCount = [
+      tenantPartyId,
+      projectId,
+      resourceId,
+    ].where((value) => value != null).length;
+    if ((globalAccess && boundaryCount != 0) ||
+        (!globalAccess && boundaryCount != 1)) {
       throw const AuthUseCaseException(
         AuthUseCaseExceptionCode.invalidCredentials,
       );

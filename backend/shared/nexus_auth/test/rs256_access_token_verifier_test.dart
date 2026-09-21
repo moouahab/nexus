@@ -217,6 +217,7 @@ String _serviceToken({
               .millisecondsSinceEpoch ~/
           1000,
       AuthClaimNames.scopes: scopes,
+      AuthClaimNames.projectId: 'project-a',
     },
     header: {'kid': 'identity-access-token-current'},
   ).sign(

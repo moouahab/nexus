@@ -12,6 +12,7 @@ import 'orchestration/orchestration_policy.dart';
 import 'orchestration/reasoning_level_selector.dart';
 import 'orchestration/reasoning_orchestrator.dart';
 import 'reasoning_artifact_repository.dart';
+import 'project_service_token.dart';
 
 final class AiRunProcessor {
   const AiRunProcessor({
@@ -20,6 +21,7 @@ final class AiRunProcessor {
     this.jobs = const AiRunClaimStore(),
     this.runs = const ServerpodAiRunStore(),
     this.artifacts = const ServerpodReasoningArtifactStore(),
+    this.projectTokens = const UnavailableProjectServiceTokenIssuer(),
   });
 
   final AiProvider provider;
@@ -27,6 +29,7 @@ final class AiRunProcessor {
   final AiRunClaimStore jobs;
   final AiRunStore runs;
   final ReasoningArtifactStore artifacts;
+  final ProjectServiceTokenIssuer projectTokens;
 
   Future<void> process(Session session, UuidValue runId) async {
     final claimed = await jobs.claim(session, runId);
@@ -48,16 +51,26 @@ final class AiRunProcessor {
     try {
       final input = jsonDecode(job.inputJson) as Map<String, dynamic>;
       final prompt = input['prompt'] as String;
+      final reasoning = orchestrator;
+      final projectsToken = reasoning == null
+          ? ''
+          : await projectTokens.issueReadToken(
+              session,
+              tenantPartyId: run.tenantPartyId,
+              projectId: run.projectId,
+              delegatedIdentityId: run.requesterIdentityId,
+            );
       final request = ReasoningRequest(
         question: prompt,
         projectId: run.projectId,
         tenantPartyId: run.tenantPartyId,
-        bearerToken: job.bearerToken ?? '',
+        // Never propagate the inbound ai-gateway bearer to Projects. This
+        // token has the projects-service audience and an exact project bound.
+        bearerToken: projectsToken,
         requestedLevel: _requestedLevel(input['reasoningLevel']),
       );
       final level = const ReasoningLevelSelector().select(request);
       final policy = OrchestrationPolicy.forLevel(level);
-      final reasoning = orchestrator;
       if (reasoning != null) {
         final outcome = await reasoning.execute(
           request,

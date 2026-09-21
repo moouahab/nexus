@@ -227,6 +227,73 @@ void main() {
         throwsStateError,
       );
     });
+
+    test('service token cannot read a foreign profile resource', () async {
+      final testSession = session();
+      final identityA = const Uuid().v7obj();
+      final identityB = const Uuid().v7obj();
+      final profileA = await profiles.completeProfile(
+        testSession,
+        identityId: identityA,
+        displayName: 'Profile A',
+      );
+      final profileB = await profiles.completeProfile(
+        testSession,
+        identityId: identityB,
+        displayName: 'Profile B',
+      );
+      final endpoint = UserEndpoint(
+        userAuth: const _RejectUserAuth(),
+        serviceAuth: _ServiceAuth(
+          scopes: const {'users.profile.read'},
+          resourceId: profileA.id.toString(),
+        ),
+      );
+
+      expect(
+        (await endpoint.getProfile(testSession, profileA.id!)).id,
+        profileA.id,
+      );
+      await expectLater(
+        endpoint.getProfile(testSession, profileB.id!),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+    });
+
+    test('delegated service token matches only its exact identity', () async {
+      final testSession = session();
+      final identityA = const Uuid().v7obj();
+      final identityB = const Uuid().v7obj();
+      await profiles.completeProfile(
+        testSession,
+        identityId: identityA,
+        displayName: 'Profile A',
+      );
+      await profiles.completeProfile(
+        testSession,
+        identityId: identityB,
+        displayName: 'Profile B',
+      );
+      final endpoint = UserEndpoint(
+        userAuth: const _RejectUserAuth(),
+        serviceAuth: _ServiceAuth(
+          scopes: const {'users.profile.read'},
+          delegatedIdentityId: identityA.toString(),
+        ),
+      );
+
+      expect(
+        (await endpoint.getProfileByIdentity(
+          testSession,
+          identityA,
+        )).identityId,
+        identityA,
+      );
+      expect(
+        () => endpoint.getProfileByIdentity(testSession, identityB),
+        throwsA(isA<NotAuthorizedException>()),
+      );
+    });
   });
 }
 
@@ -256,4 +323,45 @@ final class _UserAuth extends AuthContextResolver {
     issuedAt: DateTime.utc(2026),
     expiresAt: DateTime.utc(2099),
   );
+}
+
+final class _RejectUserAuth extends AuthContextResolver {
+  const _RejectUserAuth();
+
+  @override
+  AuthContext requireContext(Session session) {
+    throw const NexusAuthException.invalidAccessToken('Not a user token.');
+  }
+}
+
+final class _ServiceAuth extends AuthContextResolver {
+  const _ServiceAuth({
+    required this.scopes,
+    this.resourceId,
+    this.delegatedIdentityId,
+  });
+
+  final Set<String> scopes;
+  final String? resourceId;
+  final String? delegatedIdentityId;
+
+  @override
+  ServiceAuthContext requireServiceContext(
+    Session session, {
+    Iterable<String> requiredScopes = const [],
+  }) {
+    if (requiredScopes.any((scope) => !scopes.contains(scope))) {
+      throw const NexusAuthException.invalidAccessToken('Scope denied.');
+    }
+    return ServiceAuthContext(
+      serviceName: 'users-test',
+      issuer: AuthTokenDefaults.issuer,
+      audiences: const ['users-service'],
+      scopes: scopes.toList(),
+      issuedAt: DateTime.utc(2026),
+      expiresAt: DateTime.utc(2099),
+      resourceId: resourceId,
+      delegatedIdentityId: delegatedIdentityId,
+    );
+  }
 }

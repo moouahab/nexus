@@ -37,6 +37,12 @@ class ServiceAuthClaims {
     final normalizedAudience = _requiredTokenValue(audience, 'audience');
     final normalizedScopes = _normalizeScopes(scopes);
     final now = issuedAt ?? DateTime.now().toUtc();
+    _validateBoundary(
+      globalAccess: globalAccess,
+      tenantPartyId: tenantPartyId,
+      projectId: projectId,
+      resourceId: resourceId,
+    );
     return ServiceAuthClaims(
       serviceName: normalizedServiceName,
       issuer: issuer,
@@ -63,6 +69,16 @@ class ServiceAuthClaims {
       throw const FormatException('Invalid service token subject.');
     }
 
+    final globalAccess = json[AuthClaimNames.globalAccess] == true;
+    final tenantPartyId = json[AuthClaimNames.tenantPartyId] as String?;
+    final projectId = json[AuthClaimNames.projectId] as String?;
+    final resourceId = json[AuthClaimNames.resourceId] as String?;
+    _validateBoundary(
+      globalAccess: globalAccess,
+      tenantPartyId: tenantPartyId,
+      projectId: projectId,
+      resourceId: resourceId,
+    );
     return ServiceAuthClaims(
       serviceName: subject.substring(servicePrefix.length),
       issuer: json[AuthClaimNames.issuer] as String,
@@ -70,17 +86,17 @@ class ServiceAuthClaims {
       scopes: _scopesFromJson(json[AuthClaimNames.scopes]),
       issuedAt: _dateTimeFromEpochSeconds(json[AuthClaimNames.issuedAt]),
       expiresAt: _dateTimeFromEpochSeconds(json[AuthClaimNames.expiresAt]),
-      globalAccess: json[AuthClaimNames.globalAccess] == true,
+      globalAccess: globalAccess,
       tenantPartyId: _optionalTokenValue(
-        json[AuthClaimNames.tenantPartyId] as String?,
+        tenantPartyId,
         'tenantPartyId',
       ),
       projectId: _optionalTokenValue(
-        json[AuthClaimNames.projectId] as String?,
+        projectId,
         'projectId',
       ),
       resourceId: _optionalTokenValue(
-        json[AuthClaimNames.resourceId] as String?,
+        resourceId,
         'resourceId',
       ),
       delegatedIdentityId: _optionalTokenValue(
@@ -144,6 +160,25 @@ class ServiceAuthClaims {
       );
     }
     return normalized;
+  }
+
+  static void _validateBoundary({
+    required bool globalAccess,
+    required String? tenantPartyId,
+    required String? projectId,
+    required String? resourceId,
+  }) {
+    final boundaryCount = [
+      tenantPartyId,
+      projectId,
+      resourceId,
+    ].where((value) => value != null).length;
+    if ((globalAccess && boundaryCount != 0) ||
+        (!globalAccess && boundaryCount != 1)) {
+      throw const FormatException(
+        'A service token must have exactly one resource boundary or explicit global access.',
+      );
+    }
   }
 
   static String? _optionalTokenValue(String? value, String name) {

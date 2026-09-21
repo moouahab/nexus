@@ -19,6 +19,23 @@ class ServiceAuthContext {
 
   factory ServiceAuthContext.fromClaims(Map<String, dynamic> claims) {
     try {
+      final globalAccess = claims[AuthClaimNames.globalAccess] == true;
+      final tenantPartyId = _optionalString(
+        claims[AuthClaimNames.tenantPartyId],
+      );
+      final projectId = _optionalString(claims[AuthClaimNames.projectId]);
+      final resourceId = _optionalString(claims[AuthClaimNames.resourceId]);
+      final boundaryCount = [
+        tenantPartyId,
+        projectId,
+        resourceId,
+      ].where((value) => value != null).length;
+      if ((globalAccess && boundaryCount != 0) ||
+          (!globalAccess && boundaryCount != 1)) {
+        throw const NexusAuthException.invalidAccessToken(
+          'Service token must have exactly one resource boundary.',
+        );
+      }
       return ServiceAuthContext(
         serviceName: _serviceNameFromSubject(
           claims[AuthClaimNames.subject] as String,
@@ -28,10 +45,10 @@ class ServiceAuthContext {
         scopes: stringListClaim(claims, AuthClaimNames.scopes),
         issuedAt: dateTimeFromEpochSeconds(claims[AuthClaimNames.issuedAt]),
         expiresAt: dateTimeFromEpochSeconds(claims[AuthClaimNames.expiresAt]),
-        globalAccess: claims[AuthClaimNames.globalAccess] == true,
-        tenantPartyId: _optionalString(claims[AuthClaimNames.tenantPartyId]),
-        projectId: _optionalString(claims[AuthClaimNames.projectId]),
-        resourceId: _optionalString(claims[AuthClaimNames.resourceId]),
+        globalAccess: globalAccess,
+        tenantPartyId: tenantPartyId,
+        projectId: projectId,
+        resourceId: resourceId,
         delegatedIdentityId: _optionalString(
           claims[AuthClaimNames.delegatedIdentityId],
         ),

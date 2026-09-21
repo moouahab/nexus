@@ -17,8 +17,9 @@ final class ProjectEvidenceException implements Exception {
 /// Collects evidence from the Projects REST facade.
 ///
 /// Every collection is scoped to the project and tenant carried by the
-/// [ReasoningRequest]. The bearer token is forwarded to Projects, which remains
-/// the authority for project-level access control.
+/// [ReasoningRequest]. The bearer token is a short-lived `projects-service`
+/// token created by Identity for this exact tenant/project boundary. The
+/// original inbound `ai-gateway` bearer is never forwarded.
 final class ProjectEvidenceTool implements NexusTool {
   ProjectEvidenceTool({
     required Uri baseUri,

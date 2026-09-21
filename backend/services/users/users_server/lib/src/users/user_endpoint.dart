@@ -73,6 +73,9 @@ class UserEndpoint extends Endpoint {
     Map<String, String>? metadata,
   }) async {
     final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (caller.serviceContext case final context?) {
+      _requireServiceIdentityBoundary(context, identityId);
+    }
     if (primaryPartyId != null) {
       if (caller.identityId == null) {
         throw NotAuthorizedException(
@@ -102,10 +105,8 @@ class UserEndpoint extends Endpoint {
     UuidValue userProfileId,
   ) async {
     final profile = await _profiles.getProfile(session, userProfileId);
-    _ensureOwnProfile(
-      _requireCaller(session, serviceScopes: const [_readScope]),
-      profile,
-    );
+    final caller = _requireCaller(session, serviceScopes: const [_readScope]);
+    _ensureProfileAccess(caller, profile);
     return profile;
   }
 
@@ -120,6 +121,9 @@ class UserEndpoint extends Endpoint {
         message: 'User profile access is not allowed.',
       );
     }
+    if (caller.serviceContext case final context?) {
+      _requireServiceIdentityBoundary(context, identityId);
+    }
     return _profiles.getProfileByIdentity(session, identityId);
   }
 
@@ -129,10 +133,8 @@ class UserEndpoint extends Endpoint {
     required UuidValue? primaryPartyId,
   }) async {
     final profile = await _profiles.getProfile(session, userProfileId);
-    _ensureOwnProfile(
-      _requireCaller(session, serviceScopes: const [_writeScope]),
-      profile,
-    );
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    _ensureProfileAccess(caller, profile);
     await _requirePartyAccess(session, primaryPartyId);
     return _profiles.setPrimaryParty(
       session,
@@ -167,13 +169,38 @@ class UserEndpoint extends Endpoint {
     });
   }
 
-  void _ensureOwnProfile(_UserCaller caller, UserProfile profile) {
+  void _ensureProfileAccess(_UserCaller caller, UserProfile profile) {
     if (caller.identityId != null && profile.identityId != caller.identityId) {
       throw NotAuthorizedException(
         reason: AuthenticationFailureReason.insufficientAccess,
         message: 'User profile access is not allowed.',
       );
     }
+    final context = caller.serviceContext;
+    if (context != null &&
+        !context.globalAccess &&
+        context.resourceId != profile.id.toString() &&
+        context.delegatedIdentityId != profile.identityId.toString()) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'User profile access is not allowed.',
+      );
+    }
+  }
+
+  void _requireServiceIdentityBoundary(
+    ServiceAuthContext context,
+    UuidValue identityId,
+  ) {
+    if (context.globalAccess ||
+        context.delegatedIdentityId == identityId.toString() ||
+        context.resourceId == identityId.toString()) {
+      return;
+    }
+    throw NotAuthorizedException(
+      reason: AuthenticationFailureReason.insufficientAccess,
+      message: 'User profile access is not allowed.',
+    );
   }
 
   AuthContext _requireAuthContext(Session session) {
@@ -230,9 +257,12 @@ class UserEndpoint extends Endpoint {
 }
 
 class _UserCaller {
-  _UserCaller.user(AuthContext context) : identityId = context.identityId;
+  _UserCaller.user(AuthContext context)
+    : identityId = context.identityId,
+      serviceContext = null;
 
-  _UserCaller.service(ServiceAuthContext _) : identityId = null;
+  _UserCaller.service(this.serviceContext) : identityId = null;
 
   final UuidValue? identityId;
+  final ServiceAuthContext? serviceContext;
 }

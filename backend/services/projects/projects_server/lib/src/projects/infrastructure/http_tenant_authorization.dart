@@ -27,6 +27,9 @@ final class HttpTenantAuthorization implements TenantAuthorization {
     final uri = baseUri.resolve('parties/$tenantPartyId/my-access');
     try {
       final request = await _client.getUrl(uri).timeout(timeout);
+      // Never forward a caller bearer token across an HTTP redirect. The
+      // configured Parties origin is the only authorized destination.
+      request.followRedirects = false;
       request.headers.set(
         HttpHeaders.authorizationHeader,
         'Bearer $bearerToken',

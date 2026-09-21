@@ -149,6 +149,7 @@ void main() {
       capability: 'project.summary',
       input: const {'prompt': 'Summarize the authorized project.'},
       requesterIdentityId: ownerId,
+      bearerToken: 'inbound-user-token-must-not-be-persisted',
       idempotencyKey: ' stable-request ',
     );
 
@@ -159,6 +160,7 @@ void main() {
     expect(repository.updateCount, 0);
     expect(provider.generateCount, 0);
     expect(queue.requesterScope, 'identity:$ownerId');
+    expect(queue.bearerToken, isNull);
     expect(queue.idempotencyKey, 'stable-request');
   });
 
@@ -271,6 +273,7 @@ final class _FakeProvider implements AiProvider {
 final class _MemoryQueue implements AiRunQueue {
   int enqueueCount = 0;
   String? requesterScope;
+  String? bearerToken;
   String? idempotencyKey;
   String? requestFingerprint;
 
@@ -286,6 +289,7 @@ final class _MemoryQueue implements AiRunQueue {
   }) async {
     enqueueCount++;
     this.requesterScope = requesterScope;
+    this.bearerToken = bearerToken;
     this.idempotencyKey = idempotencyKey;
     this.requestFingerprint = requestFingerprint;
     return run.copyWith(id: _uuid('018f0000-0000-7000-8000-000000000009'));

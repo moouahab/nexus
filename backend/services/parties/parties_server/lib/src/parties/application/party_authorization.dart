@@ -21,4 +21,23 @@ final class PartyAuthorization {
     session,
     requiredScopes: scopes,
   );
+
+  void requireExactBoundary(
+    ServiceAuthContext context, {
+    required Iterable<UuidValue> resources,
+    Iterable<UuidValue> tenants = const [],
+  }) {
+    if (context.globalAccess) return;
+    final resourceIds = resources.map((value) => value.toString()).toSet();
+    final tenantIds = tenants.map((value) => value.toString()).toSet();
+    if ((context.resourceId != null &&
+            resourceIds.contains(context.resourceId)) ||
+        (context.tenantPartyId != null &&
+            tenantIds.contains(context.tenantPartyId))) {
+      return;
+    }
+    throw const NexusAuthException.invalidAccessToken(
+      'Service token resource boundary denied.',
+    );
+  }
 }

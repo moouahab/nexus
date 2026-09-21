@@ -21,9 +21,19 @@ if [[ ! -s secrets/redis_test_password ]]; then
   exit 1
 fi
 
+compose_up=(--profile test up --wait)
+if [[ "${NEXUS_TEST_NO_BUILD:-false}" == "true" ]]; then
+  # Useful for deterministic/offline reruns once the disposable test images
+  # have already been built. Compose must never contact a registry here.
+  compose_up+=(--no-build)
+else
+  compose_up+=(--build)
+fi
+compose_up+=(postgres_test redis_test)
+
 POSTGRES_TEST_PORT="$POSTGRES_TEST_PORT" \
 REDIS_TEST_PORT="$REDIS_TEST_PORT" \
-docker compose --profile test up --build --wait postgres_test redis_test
+docker compose "${compose_up[@]}"
 
 export SERVERPOD_DATABASE_PORT="$POSTGRES_TEST_PORT"
 export SERVERPOD_REDIS_ENABLED=true

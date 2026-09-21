@@ -79,5 +79,6 @@ jobs:
       - name: Validate scripts
         run: |
           bash -n security/scripts/run_static.sh security/scripts/run_dast.sh \
-            security/scripts/backup_restore_test.sh security/scripts/resilience_test.sh
+            security/scripts/backup_restore_test.sh security/scripts/resilience_test.sh \
+            security/scripts/dependency_resilience_test.sh
           python3 -m unittest discover -s security/tests -v

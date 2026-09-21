@@ -123,7 +123,10 @@ final class AiRunService {
       ),
       input: normalizedInput,
       requesterScope: requesterScope,
-      bearerToken: bearerToken,
+      // Authorization is evaluated synchronously above. Background workers
+      // obtain a fresh project-bound service token, so persisting the inbound
+      // user/service bearer would only create a durable secret exposure.
+      bearerToken: null,
       idempotencyKey: normalizedIdempotencyKey,
       requestFingerprint: requestFingerprint,
     );

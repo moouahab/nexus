@@ -101,14 +101,16 @@ final class _CreatePartyWithOwnerRoute extends PartyHttpJsonRoute {
 
   @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
-    authorization.requireService(
+    final context = authorization.requireService(
       session,
       scopes: const [PartyAuthorization.membershipWriteScope],
     );
     final json = await readJsonObject(request);
+    final userProfileId = requiredUuid(json, 'userProfileId');
+    authorization.requireExactBoundary(context, resources: [userProfileId]);
     final membership = await parties.createPartyWithOwner(
       session,
-      userProfileId: requiredUuid(json, 'userProfileId'),
+      userProfileId: userProfileId,
       kind: parseEnum(requiredString(json, 'kind'), PartyKind.values, 'kind'),
       name: requiredString(json, 'name'),
       legalName: optionalString(json, 'legalName'),
@@ -130,19 +132,25 @@ final class _JoinPartyRoute extends PartyHttpJsonRoute {
 
   @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
-    authorization.requireService(
+    final context = authorization.requireService(
       session,
       scopes: const [PartyAuthorization.membershipWriteScope],
     );
     final partyId = request.pathParameters.raw[#partyId];
     if (partyId == null) throw const FormatException('Missing partyId.');
+    final parsedPartyId = parseUuid(partyId, 'partyId');
+    authorization.requireExactBoundary(
+      context,
+      resources: [parsedPartyId],
+      tenants: [parsedPartyId],
+    );
     final json = await readJsonObject(request);
     final role = optionalString(json, 'role');
     final status = optionalString(json, 'status');
     final membership = await parties.joinParty(
       session,
       userProfileId: requiredUuid(json, 'userProfileId'),
-      partyId: parseUuid(partyId, 'partyId'),
+      partyId: parsedPartyId,
       role: role == null
           ? PartyMembershipRole.member
           : parseEnum(role, PartyMembershipRole.values, 'role'),
@@ -166,7 +174,7 @@ final class _MembershipsRoute extends PartyHttpJsonRoute {
 
   @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
-    authorization.requireService(
+    final context = authorization.requireService(
       session,
       scopes: const [PartyAuthorization.membershipReadScope],
     );
@@ -175,10 +183,15 @@ final class _MembershipsRoute extends PartyHttpJsonRoute {
     if (userProfileId == null) {
       throw const FormatException('Query "userProfileId" is required.');
     }
+    final parsedUserProfileId = parseUuid(userProfileId, 'userProfileId');
+    authorization.requireExactBoundary(
+      context,
+      resources: [parsedUserProfileId],
+    );
     final status = query['status'];
     final results = await parties.listMemberships(
       session,
-      userProfileId: parseUuid(userProfileId, 'userProfileId'),
+      userProfileId: parsedUserProfileId,
       status: status == null
           ? null
           : parseEnum(status, PartyMembershipStatus.values, 'status'),
