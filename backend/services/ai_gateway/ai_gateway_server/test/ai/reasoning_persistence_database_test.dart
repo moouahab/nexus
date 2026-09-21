@@ -5,6 +5,7 @@ import 'package:ai_gateway_server/src/ai/application/ai_run_queue.dart';
 import 'package:ai_gateway_server/src/ai/domain/reasoning_models.dart';
 import 'package:ai_gateway_server/src/generated/protocol.dart';
 import 'package:serverpod/serverpod.dart';
+import 'package:serverpod/protocol.dart';
 import 'package:test/test.dart';
 
 import '../integration/test_tools/serverpod_test_tools.dart';
@@ -201,8 +202,133 @@ void main() {
       final persisted = await AiRunJob.db.findById(session, job.id!);
       expect(persisted?.status, AiRunJobStatus.cancelled);
     });
+
+    test('same idempotency key and payload returns the original run', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final tenantId = const Uuid().v7obj();
+      const scope = 'identity:idempotency-repeat';
+      const key = 'repeat-request';
+
+      final first = await _enqueueRun(
+        session,
+        tenantId: tenantId,
+        requesterScope: scope,
+        idempotencyKey: key,
+        requestFingerprint: 'fingerprint-a',
+      );
+      final repeated = await _enqueueRun(
+        session,
+        tenantId: tenantId,
+        requesterScope: scope,
+        idempotencyKey: key,
+        requestFingerprint: 'fingerprint-a',
+      );
+
+      expect(repeated.id, first.id);
+      expect(await _jobCount(session, tenantId, scope, key), 1);
+      expect(await _futureCallCount(session, first.id!), 1);
+    });
+
+    test('same idempotency key with a different payload conflicts', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final tenantId = const Uuid().v7obj();
+      const scope = 'identity:idempotency-conflict';
+      const key = 'conflicting-request';
+
+      final first = await _enqueueRun(
+        session,
+        tenantId: tenantId,
+        requesterScope: scope,
+        idempotencyKey: key,
+        requestFingerprint: 'fingerprint-a',
+      );
+
+      await expectLater(
+        _enqueueRun(
+          session,
+          tenantId: tenantId,
+          requesterScope: scope,
+          idempotencyKey: key,
+          requestFingerprint: 'fingerprint-b',
+        ),
+        throwsA(isA<AiRunIdempotencyConflict>()),
+      );
+      expect(await _jobCount(session, tenantId, scope, key), 1);
+      expect(await _futureCallCount(session, first.id!), 1);
+    });
+
+    test('concurrent identical requests create one run and one job', () async {
+      final session = sessionBuilder.build();
+      addTearDown(session.close);
+      final tenantId = const Uuid().v7obj();
+      const scope = 'identity:idempotency-race';
+      const key = 'concurrent-request';
+
+      final results = await Future.wait([
+        _enqueueRun(
+          session,
+          tenantId: tenantId,
+          requesterScope: scope,
+          idempotencyKey: key,
+          requestFingerprint: 'fingerprint-a',
+        ),
+        _enqueueRun(
+          session,
+          tenantId: tenantId,
+          requesterScope: scope,
+          idempotencyKey: key,
+          requestFingerprint: 'fingerprint-a',
+        ),
+      ]);
+
+      expect(results[1].id, results[0].id);
+      expect(await _jobCount(session, tenantId, scope, key), 1);
+      expect(await _futureCallCount(session, results[0].id!), 1);
+    });
   });
 }
+
+Future<AiRun> _enqueueRun(
+  Session session, {
+  required UuidValue tenantId,
+  required String requesterScope,
+  required String idempotencyKey,
+  required String requestFingerprint,
+}) => const ServerpodAiRunQueue().enqueue(
+  session,
+  run: AiRun(
+    requestId: const Uuid().v7obj(),
+    projectId: const Uuid().v7obj(),
+    tenantPartyId: tenantId,
+    capability: 'project.summary',
+  ),
+  input: const {'prompt': 'Summarize the project.'},
+  requesterScope: requesterScope,
+  bearerToken: null,
+  idempotencyKey: idempotencyKey,
+  requestFingerprint: requestFingerprint,
+);
+
+Future<int> _jobCount(
+  Session session,
+  UuidValue tenantId,
+  String requesterScope,
+  String idempotencyKey,
+) => AiRunJob.db.count(
+  session,
+  where: (table) =>
+      table.tenantPartyId.equals(tenantId) &
+      table.requesterScope.equals(requesterScope) &
+      table.idempotencyKey.equals(idempotencyKey),
+);
+
+Future<int> _futureCallCount(Session session, UuidValue runId) =>
+    FutureCallEntry.db.count(
+      session,
+      where: (table) => table.identifier.equals('ai-run:$runId'),
+    );
 
 Future<AiRun> _insertRun(Session session) => AiRun.db.insertRow(
   session,

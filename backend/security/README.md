@@ -42,7 +42,8 @@ retained with the findings as coverage evidence.
 Runtime `secrets/` directories are deliberately excluded from filesystem/SAST
 reports: those files are already forbidden by service `.gitignore` rules and
 must never be copied into a report. Gitleaks still detects any secret that was
-actually committed when the CI history scan runs.
+actually committed when the CI history scan runs. CI sets
+`NEXUS_GITLEAKS_HISTORY=true`; local scans default to the working tree.
 
 ### Unified findings and CI gate
 
@@ -132,7 +133,7 @@ for every OpenAPI contract. These requests can create, update or delete test
 data. Run it only against a disposable local stack and database.
 
 ```bash
-make security-full
+NEXUS_DISPOSABLE_STACK=I_UNDERSTAND_THIS_IS_DISPOSABLE make security-full
 ```
 
 The scanner refuses targets outside its scope manifest. Authorized staging
@@ -164,3 +165,19 @@ Prioritize:
 Record the affected route, minimal reproduction, impact, fix and regression
 test. Rotate any exposed credential immediately, even if it was later removed
 from Git history.
+
+## CI execution levels
+
+The security workflow has one level per trigger: pull requests run
+`security-static`, pushes to `main` or `staging` run `security-probe`, and the
+weekly schedule or a manual dispatch runs `security-full`. Evidence is uploaded
+from `security/reports/` with a level-specific artifact name.
+
+Dynamic jobs require a self-hosted runner labelled
+`nexus-disposable-security`. Before accepting jobs, that runner must start a
+disposable NEXUS stack whose Kong gateway listens only on
+`http://127.0.0.1:8000`, reset its test data between runs, and stop it after the
+job. The workflow deliberately does not fall back to a remote host: both probe
+and full scans use `local.scope.yaml` and fail closed when the local gateway is
+absent. The full level additionally requires the explicit disposable-stack
+acknowledgement.

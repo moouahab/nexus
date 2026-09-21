@@ -13,6 +13,20 @@ readonly MODE="${1:-probe}"
 readonly ZAP_IMAGE="${ZAP_IMAGE:-ghcr.io/zaproxy/zaproxy:2.17.0}"
 readonly SCHEMATHESIS_IMAGE="${SCHEMATHESIS_IMAGE:-schemathesis/schemathesis:4.24.3}"
 
+case "$MODE" in
+  probe) ;;
+  full)
+    if [[ "${NEXUS_DISPOSABLE_STACK:-}" != "I_UNDERSTAND_THIS_IS_DISPOSABLE" ]]; then
+      echo "refusing full scan: explicit disposable-stack acknowledgement required" >&2
+      exit 64
+    fi
+    ;;
+  *)
+    echo "usage: $0 {probe|full}" >&2
+    exit 64
+    ;;
+esac
+
 # Vérifie que la cible appartient bien au scope autorisé.
 python3 "$ROOT/security/scripts/target_guard.py" \
   "$TARGET" \

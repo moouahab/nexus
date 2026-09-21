@@ -12,10 +12,14 @@ mkdir -p "$REPORTS"
 
 status=0
 
+gitleaks_mode=dir
+if [[ "${NEXUS_GITLEAKS_HISTORY:-false}" == "true" ]]; then
+  gitleaks_mode=git
+fi
 docker run --rm \
   -v "$ROOT:/repo:ro" -v "$REPORTS:/reports:rw" \
-  "$GITLEAKS_IMAGE" dir /repo --config /repo/security/gitleaks.toml \
-  --redact --report-format sarif \
+  "$GITLEAKS_IMAGE" "$gitleaks_mode" /repo \
+  --config /repo/security/gitleaks.toml --redact --report-format sarif \
   --report-path /reports/gitleaks.sarif || status=1
 
 docker run --rm \

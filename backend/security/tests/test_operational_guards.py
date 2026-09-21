@@ -6,6 +6,15 @@ import unittest
 
 
 class OperationalGuardsTest(unittest.TestCase):
+    def test_full_scan_requires_disposable_acknowledgement(self):
+        result = subprocess.run(
+            ["bash", "security/scripts/run_dast.sh", "full"],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(result.returncode, 64)
+        self.assertIn("disposable-stack acknowledgement required", result.stderr)
+
     def test_backup_refuses_production_like_target(self):
         result = subprocess.run(
             ["bash", "security/scripts/backup_restore_test.sh", "projects-postgres-1", "projects", "/tmp/never.json"],

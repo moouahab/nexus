@@ -3,7 +3,7 @@ name: Backend Security
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, staging]
   schedule:
     - cron: '37 3 * * 2'
   workflow_dispatch:
@@ -16,69 +16,80 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  secret-history:
-    name: Secret history
+  security-static:
+    name: Security / static
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
-      - name: Scan complete Git history
-        run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro" \
-            ghcr.io/gitleaks/gitleaks:v8.30.1 \
-            git /repo --config /repo/security/gitleaks.toml --redact --verbose
-
-  filesystem:
-    name: Dependencies, secrets and IaC
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Trivy filesystem scan
-        run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro" \
-            ghcr.io/aquasecurity/trivy:0.74.0 \
-            fs --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
-            --ignore-unfixed --exit-code 1 /repo
-
-  sast:
-    name: Semgrep SAST
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    container:
-      image: semgrep/semgrep:1.136.0
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Security rules
-        run: |
-          mkdir -p security/reports
-          semgrep scan --config p/security-audit --config p/secrets \
-            --config security/semgrep/nexus.yml --metrics=off \
-            --json --json-output=security/reports/semgrep.json .
-      - name: Normalize and gate confirmed findings
+      - name: Run static security gate
+        env:
+          NEXUS_GITLEAKS_HISTORY: 'true'
+        run: make security-static
+      - name: Gate normalized findings
         if: always()
         run: python3 security/scripts/normalize_findings.py --gate
-      - name: Upload machine-readable findings
+      - name: Upload normalized security evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: nexus-security-findings
-          path: |
-            security/reports/semgrep.json
-            security/reports/findings.json
+          name: nexus-security-static-${{ github.run_id }}
+          path: security/reports/
           if-no-files-found: error
+          retention-days: 14
 
-  pentest-tooling:
-    name: Pentest guardrails
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  security-probe:
+    name: Security / probe
+    if: github.event_name == 'push'
+    runs-on: [self-hosted, nexus-disposable-security]
+    timeout-minutes: 15
+    env:
+      NEXUS_PENTEST_TARGET: http://127.0.0.1:8000
+      NEXUS_PENTEST_SCOPE: security/policy/local.scope.yaml
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Validate scripts
-        run: |
-          bash -n security/scripts/run_static.sh security/scripts/run_dast.sh \
-            security/scripts/backup_restore_test.sh security/scripts/resilience_test.sh \
-            security/scripts/dependency_resilience_test.sh
-          python3 -m unittest discover -s security/tests -v
+      - name: Verify disposable local gateway
+        run: python3 security/scripts/target_guard.py "$NEXUS_PENTEST_TARGET" "$NEXUS_PENTEST_SCOPE"
+      - name: Run safe security probe
+        run: make security-probe
+      - name: Normalize and gate findings
+        if: always()
+        run: python3 security/scripts/normalize_findings.py --gate
+      - name: Upload normalized security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-security-probe-${{ github.run_id }}
+          path: security/reports/
+          if-no-files-found: error
+          retention-days: 14
+
+  security-full:
+    name: Security / full
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, nexus-disposable-security]
+    timeout-minutes: 45
+    env:
+      NEXUS_PENTEST_TARGET: http://127.0.0.1:8000
+      NEXUS_PENTEST_SCOPE: security/policy/local.scope.yaml
+      NEXUS_DISPOSABLE_STACK: I_UNDERSTAND_THIS_IS_DISPOSABLE
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Verify disposable local gateway
+        run: python3 security/scripts/target_guard.py "$NEXUS_PENTEST_TARGET" "$NEXUS_PENTEST_SCOPE"
+      - name: Run bounded full security scan
+        run: make security-full
+      - name: Normalize and gate findings
+        if: always()
+        run: python3 security/scripts/normalize_findings.py --gate
+      - name: Upload normalized security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-security-full-${{ github.run_id }}
+          path: security/reports/
+          if-no-files-found: error
+          retention-days: 30
