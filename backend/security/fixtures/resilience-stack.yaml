@@ -1,9 +1,12 @@
 services:
   postgres_test:
-    image: compose-postgres_test:latest
+    build:
+      context: ../../infrastructure/service-runtime/docker/postgres
+    user: "0:0"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_DB: resilience_test
+      # The mounted test config is authoritative and initializes projects_test.
+      POSTGRES_DB: projects_test
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     configs:
       - source: postgres_config
@@ -12,7 +15,9 @@ services:
       - postgres_password
 
   redis_test:
-    image: compose-redis_test:latest
+    build:
+      context: ../../infrastructure/service-runtime/docker/redis
+    user: "0:0"
     environment:
       REDIS_PASSWORD_FILE: /run/secrets/redis_password
     secrets:

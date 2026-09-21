@@ -219,7 +219,7 @@ test-projects:
 test-ai-gateway:
 	cd $(AI_GATEWAY_DIR) && dart test
 
-.PHONY: security-static security-probe security-full security-tooling security-authorization
+.PHONY: security-static security-probe security-full security-tooling security-authorization security-operational
 security-static:
 	./security/scripts/run_static.sh
 
@@ -235,3 +235,6 @@ security-tooling:
 
 security-authorization:
 	./security/scripts/run_authorization.sh
+
+security-operational:
+	./security/scripts/run_operational_proofs.sh

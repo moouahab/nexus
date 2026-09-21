@@ -104,6 +104,15 @@ Destructive chaos remains excluded.
 The backup proof compares schema table inventory and exact row counts; it does
 not yet compute a canonical content checksum for every PostgreSQL data type.
 
+The weekly/manual workflow runs backup/restore and temporary PostgreSQL/Redis
+loss against an isolated Compose project. The same proof can be run locally
+only with an explicit disposable-stack acknowledgement:
+
+```bash
+NEXUS_DISPOSABLE_STACK=I_UNDERSTAND_THIS_IS_DISPOSABLE \
+  make security-operational
+```
+
 ### Safe probe
 
 `security-probe` never authenticates and never mutates data. It checks:

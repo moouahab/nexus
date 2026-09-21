@@ -78,6 +78,13 @@ jobs:
       NEXUS_DISPOSABLE_STACK: I_UNDERSTAND_THIS_IS_DISPOSABLE
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Create disposable dependency secrets
+        run: |
+          mkdir -p services/projects/projects_server/secrets
+          printf '%s' 'ci-v0-postgres-proof' > services/projects/projects_server/secrets/postgres_test_password
+          printf '%s' 'ci-v0-redis-proof' > services/projects/projects_server/secrets/redis_test_password
+      - name: Prove backup/restore and dependency recovery
+        run: make security-operational
       - name: Verify disposable local gateway
         run: python3 security/scripts/target_guard.py "$NEXUS_PENTEST_TARGET" "$NEXUS_PENTEST_SCOPE"
       - name: Run bounded full security scan
