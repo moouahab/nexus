@@ -55,13 +55,14 @@ final class AiGatewayApplication {
   }) async {
     final caller = requireCaller(session, 'ai.run.read');
     caller.requireProjectAccess(projectId, tenantPartyId: tenantPartyId);
-    final allowed = await runs.authorization.canUseProject(
+    final grant = await runs.authorization.authorizeProject(
       projectId: projectId,
       tenantPartyId: tenantPartyId,
       identityId: caller.identityId,
       serviceName: caller.serviceName,
       bearerToken: caller.bearerToken,
     );
+    final allowed = grant != null;
     return ContextPreview(
       requestId: const Uuid().v7obj(),
       allowed: allowed,

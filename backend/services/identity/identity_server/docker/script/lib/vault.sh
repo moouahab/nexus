@@ -61,6 +61,7 @@ write_identity_runtime_secrets() {
     jwt_access_token_key_id="$(read_secret_file_or_default "$JWT_ACCESS_TOKEN_KEY_ID_FILE" "identity-access-token-current")" \
     jwt_hmac_sha512_private_key="$(cat "$JWT_HMAC_PRIVATE_KEY_FILE")" \
     jwt_refresh_token_hash_pepper="$(cat "$JWT_REFRESH_HASH_PEPPER_FILE")" \
+    project_authorization_grant_secret="$(cat "$PROJECT_AUTHORIZATION_GRANT_SECRET_FILE")" \
     auth_allowed_origins="$(read_secret_file_or_default "$AUTH_ALLOWED_ORIGINS_FILE" "")" \
     auth_service_clients="$(read_secret_file_or_default "$AUTH_SERVICE_CLIENTS_FILE" "{}")" \
     mail_from_address="$(read_secret_file_or_default "$MAIL_FROM_ADDRESS_FILE" "no-reply@nexus.example")" \

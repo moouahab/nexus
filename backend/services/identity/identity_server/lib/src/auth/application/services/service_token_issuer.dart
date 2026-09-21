@@ -5,6 +5,8 @@ import '../interfaces/service_client_registry.dart';
 import '../interfaces/service_token_service.dart';
 import '../../constants/auth_token_defaults.dart';
 import '../../domain/service_auth_claims.dart';
+import 'package:nexus_auth/nexus_auth.dart'
+    show ProjectAuthorizationGrant, ProjectAuthorizationGrantCodec;
 
 class ServiceTokenIssueResult {
   const ServiceTokenIssueResult({
@@ -36,13 +38,16 @@ class ServiceTokenIssuer {
   const ServiceTokenIssuer({
     required ServiceClientRegistry clientRegistry,
     required ServiceTokenService tokenService,
+    required ProjectAuthorizationGrantCodec projectGrantCodec,
     Duration tokenLifetime = AuthTokenDefaults.serviceTokenLifetime,
   }) : _clientRegistry = clientRegistry,
        _tokenService = tokenService,
+       _projectGrantCodec = projectGrantCodec,
        _tokenLifetime = tokenLifetime;
 
   final ServiceClientRegistry _clientRegistry;
   final ServiceTokenService _tokenService;
+  final ProjectAuthorizationGrantCodec _projectGrantCodec;
   final Duration _tokenLifetime;
 
   ServiceTokenIssueResult issue({
@@ -55,6 +60,8 @@ class ServiceTokenIssuer {
     String? projectId,
     String? resourceId,
     String? delegatedIdentityId,
+    String? authorizationGrant,
+    String? authorizationTenantPartyId,
   }) {
     // This issuer authenticates the registered client and constrains the shape
     // of the token, but it does not prove that the client may choose a specific
@@ -89,6 +96,26 @@ class ServiceTokenIssuer {
       throw const AuthUseCaseException(
         AuthUseCaseExceptionCode.invalidCredentials,
       );
+    }
+
+    if (projectId != null) {
+      ProjectAuthorizationGrant grant;
+      try {
+        grant = _projectGrantCodec.verify(authorizationGrant ?? '');
+      } on FormatException {
+        throw const AuthUseCaseException(
+          AuthUseCaseExceptionCode.invalidCredentials,
+        );
+      }
+      if (grant.projectId != projectId ||
+          grant.tenantPartyId != authorizationTenantPartyId ||
+          grant.identityId != delegatedIdentityId ||
+          audience != 'projects-service' ||
+          !scopes.every((scope) => scope == 'projects.read')) {
+        throw const AuthUseCaseException(
+          AuthUseCaseExceptionCode.invalidCredentials,
+        );
+      }
     }
 
     final claims = ServiceAuthClaims.service(

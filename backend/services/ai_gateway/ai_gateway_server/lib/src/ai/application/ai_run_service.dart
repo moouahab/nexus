@@ -45,6 +45,11 @@ final class AiRunService {
     String? idempotencyKey,
     ServiceAuthContext? serviceContext,
   }) async {
+    if (requesterIdentityId == null) {
+      throw StateError(
+        'AI run creation requires delegated user authorization.',
+      );
+    }
     if (serviceContext != null &&
         !serviceContext.allowsProject(projectId, tenantId: tenantPartyId)) {
       throw StateError('Service token resource boundary denied.');
@@ -57,14 +62,14 @@ final class AiRunService {
         'Must contain 1 to 80 characters.',
       );
     }
-    final authorized = await authorization.canUseProject(
+    final authorizationGrant = await authorization.authorizeProject(
       projectId: projectId,
       tenantPartyId: tenantPartyId,
       identityId: requesterIdentityId,
       serviceName: requesterService,
       bearerToken: bearerToken,
     );
-    if (!authorized) {
+    if (authorizationGrant == null) {
       throw StateError('Project authorization unavailable or denied.');
     }
 
@@ -76,11 +81,7 @@ final class AiRunService {
       throw const AiProviderException('provider_not_configured');
     }
     final normalizedIdempotencyKey = _idempotencyKey(idempotencyKey);
-    final requesterScope = requesterIdentityId != null
-        ? 'identity:$requesterIdentityId'
-        : requesterService != null
-        ? 'service:$requesterService'
-        : throw StateError('Authenticated requester is required.');
+    final requesterScope = 'identity:$requesterIdentityId';
     final requestedLevel = _requestedLevel(input['reasoningLevel']);
     final level = const ReasoningLevelSelector().select(
       ReasoningRequest(
@@ -92,7 +93,13 @@ final class AiRunService {
       ),
     );
     final policy = OrchestrationPolicy.forLevel(level);
-    final normalizedInput = {...input, 'prompt': prompt.trim()};
+    final normalizedInput = {
+      ...input,
+      'prompt': prompt.trim(),
+      '_projectAuthorizationGrant': authorizationGrant,
+    };
+    final fingerprintInput = {...normalizedInput}
+      ..remove('_projectAuthorizationGrant');
     final requestFingerprint = normalizedIdempotencyKey == null
         ? null
         : _requestFingerprint(
@@ -100,7 +107,7 @@ final class AiRunService {
             tenantPartyId: tenantPartyId,
             missionId: missionId,
             capability: normalizedCapability,
-            input: normalizedInput,
+            input: fingerprintInput,
           );
     final queued = await queue.enqueue(
       session,
@@ -267,14 +274,14 @@ final class AiRunService {
     String? requesterService,
     String? bearerToken,
   }) async {
-    final authorized = await authorization.canUseProject(
+    final grant = await authorization.authorizeProject(
       projectId: run.projectId,
       tenantPartyId: run.tenantPartyId,
       identityId: requesterIdentityId,
       serviceName: requesterService,
       bearerToken: bearerToken,
     );
-    if (!authorized) {
+    if (grant == null) {
       // Do not reveal whether a run exists to callers outside its project.
       throw StateError('AI run not found.');
     }

@@ -19,14 +19,14 @@ final class HttpProjectAuthorization implements ProjectAuthorization {
   final HttpClient _client;
 
   @override
-  Future<bool> canUseProject({
+  Future<String?> authorizeProject({
     required UuidValue projectId,
     required UuidValue tenantPartyId,
     UuidValue? identityId,
     String? serviceName,
     String? bearerToken,
   }) async {
-    if (bearerToken == null || bearerToken.isEmpty) return false;
+    if (bearerToken == null || bearerToken.isEmpty) return null;
     final uri = baseUri.resolve(
       'projects/$projectId/ai-access?tenantPartyId=$tenantPartyId',
     );
@@ -40,11 +40,15 @@ final class HttpProjectAuthorization implements ProjectAuthorization {
       NexusObservability.addOutboundHeaders(request.headers);
       final response = await request.close().timeout(timeout);
       final body = await utf8.decoder.bind(response).join().timeout(timeout);
-      if (response.statusCode != HttpStatus.ok) return false;
+      if (response.statusCode != HttpStatus.ok) return null;
       final decoded = jsonDecode(body);
-      return decoded is Map<String, dynamic> && decoded['allowed'] == true;
+      if (decoded is! Map<String, dynamic> || decoded['allowed'] != true) {
+        return null;
+      }
+      final grant = decoded['authorizationGrant'];
+      return grant is String && grant.isNotEmpty ? grant : null;
     } on Object {
-      return false;
+      return null;
     }
   }
 

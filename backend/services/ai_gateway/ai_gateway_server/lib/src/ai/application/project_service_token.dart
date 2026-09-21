@@ -9,6 +9,7 @@ abstract interface class ProjectServiceTokenIssuer {
     Session session, {
     required UuidValue tenantPartyId,
     required UuidValue projectId,
+    required String authorizationGrant,
     UuidValue? delegatedIdentityId,
   });
 }
@@ -22,6 +23,7 @@ final class UnavailableProjectServiceTokenIssuer
     Session session, {
     required UuidValue tenantPartyId,
     required UuidValue projectId,
+    required String authorizationGrant,
     UuidValue? delegatedIdentityId,
   }) {
     throw StateError('Projects service-token exchange is unavailable.');

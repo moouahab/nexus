@@ -164,6 +164,42 @@ void main() {
     expect(queue.idempotencyKey, 'stable-request');
   });
 
+  test(
+    'service token run creation fails closed without user delegation',
+    () async {
+      final queue = _MemoryQueue();
+      final service = AiRunService(
+        authorization: _RecordingAuthorization(allowedIdentityId: ownerId),
+        repository: _MemoryRunStore(run()),
+        provider: _FakeProvider(),
+        queue: queue,
+      );
+      final context = ServiceAuthContext(
+        serviceName: 'automation',
+        issuer: AuthTokenDefaults.issuer,
+        audiences: const ['ai-gateway'],
+        scopes: const ['ai.run.create'],
+        issuedAt: DateTime.utc(2026),
+        expiresAt: DateTime.utc(2099),
+        projectId: projectId.toString(),
+      );
+
+      await expectLater(
+        service.create(
+          _UnusedSession(),
+          projectId: projectId,
+          tenantPartyId: tenantId,
+          capability: 'project.summary',
+          input: const {'prompt': 'Summarize.'},
+          requesterService: 'automation',
+          serviceContext: context,
+        ),
+        throwsA(isA<StateError>()),
+      );
+      expect(queue.enqueueCount, 0);
+    },
+  );
+
   test('idempotency key is bounded before enqueue', () async {
     final queue = _MemoryQueue();
     final service = AiRunService(
@@ -205,7 +241,7 @@ final class _RecordingAuthorization implements ProjectAuthorization {
   UuidValue? identityId;
 
   @override
-  Future<bool> canUseProject({
+  Future<String?> authorizeProject({
     required UuidValue projectId,
     required UuidValue tenantPartyId,
     UuidValue? identityId,
@@ -215,7 +251,7 @@ final class _RecordingAuthorization implements ProjectAuthorization {
     this.projectId = projectId;
     this.tenantPartyId = tenantPartyId;
     this.identityId = identityId;
-    return identityId == allowedIdentityId;
+    return identityId == allowedIdentityId ? 'signed-project-grant' : null;
   }
 }
 

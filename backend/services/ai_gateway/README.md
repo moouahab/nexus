@@ -6,18 +6,21 @@ orchestration boundary. Ollama is the first local provider integration.
 ## Current behavior
 
 - `health` is public and reports the process contract.
-- `capabilities`, `createRun`, `getRun`, and `cancelRun` require a Nexus user
-  access token or a service token for audience `ai-gateway` with the matching
-  `ai.run.*` scope.
+- protected operations require a Nexus user access token or a service token
+  for audience `ai-gateway` with the matching `ai.run.*` scope. Run creation is
+  temporarily user-only: service creation fails closed until a delegated
+  service grant flow is implemented.
 - `POST /runs` authorizes and validates the request, persists a `queued` run,
   and returns immediately. Serverpod FutureCalls execute it asynchronously.
 - the internal `ai_run_job` table temporarily persists the bounded input and
-  caller token needed by a restart-safe worker. It is server-only, is never
+  a short-lived Projects authorization grant needed by a restart-safe worker;
+  the inbound caller bearer is never persisted. The job is server-only, is never
   returned by an API, and its sensitive fields are overwritten after success,
   failure, or cancellation. Database volume encryption and restricted DB roles
   are required because this transient payload is not application-encrypted.
-- project authorization is delegated to the Projects REST API using the
-  caller's bearer token; failures deny access before Ollama is called.
+- project authorization is delegated to Projects using the caller bearer only
+  for the synchronous authorization check. Projects returns a signed grant;
+  Identity verifies it before issuing an exact project-bound worker token.
 - authorized runs execute a bounded Planner → Evidence → Draft → Verify →
   Critic → Finalizer cycle. Intermediate stages are exposed in `AiRun`.
 - verification scoring is deterministic and evidence-backed; the LLM cannot

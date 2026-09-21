@@ -9,3 +9,4 @@ export 'src/rs256_access_token_verifier.dart';
 export 'src/service_auth_context.dart';
 export 'src/nexus_auth_exception.dart';
 export 'src/nexus_observability.dart';
+export 'src/project_authorization_grant.dart';

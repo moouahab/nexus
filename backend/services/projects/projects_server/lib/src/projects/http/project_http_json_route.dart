@@ -83,6 +83,9 @@ abstract class ProjectHttpJsonRoute extends Route {
     }
   }
 
+  AuthContext requireUserContext(Session session) =>
+      _userAuth.requireContext(session);
+
   Future<Map<String, dynamic>> readJsonObject(Request request) async {
     final raw = await request.readAsString();
     if (utf8.encode(raw).length > maxBodyBytes) {

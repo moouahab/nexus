@@ -9,6 +9,7 @@ write_projects_runtime_secrets() {
     redis_password="$(cat "$REDIS_PASSWORD_FILE")" \
     service_secret="$(cat "$SERVICE_SECRET_FILE")" \
     identity_access_token_public_key_pem="$(read_secret_file_escaped_newlines "$IDENTITY_ACCESS_TOKEN_PUBLIC_KEY_FILE")" \
+    project_authorization_grant_secret="$(cat "$PROJECT_AUTHORIZATION_GRANT_SECRET_FILE")" \
     >/dev/null
   success "Runtime secrets written to Vault."
 }

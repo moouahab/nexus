@@ -24,6 +24,11 @@ class AuthServiceTokenRoute extends AuthJsonRoute {
       projectId: _optionalString(body, 'projectId'),
       resourceId: _optionalString(body, 'resourceId'),
       delegatedIdentityId: _optionalString(body, 'delegatedIdentityId'),
+      authorizationGrant: _optionalRawString(body, 'authorizationGrant'),
+      authorizationTenantPartyId: _optionalString(
+        body,
+        'authorizationTenantPartyId',
+      ),
     );
 
     return AuthResult(
@@ -56,6 +61,15 @@ class AuthServiceTokenRoute extends AuthJsonRoute {
     } on Object {
       throw FormatException('Expected "$name" to be a UUID.');
     }
+  }
+
+  String? _optionalRawString(Map<String, dynamic> body, String name) {
+    final value = body[name];
+    if (value == null) return null;
+    if (value is! String || value.trim().isEmpty) {
+      throw FormatException('Expected optional "$name" string.');
+    }
+    return value.trim();
   }
 
   List<String> _readScopes(Map<String, dynamic> body) {

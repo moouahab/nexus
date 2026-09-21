@@ -1,4 +1,5 @@
 import 'package:serverpod/serverpod.dart';
+import 'package:nexus_auth/nexus_auth.dart' show ProjectAuthorizationGrantCodec;
 
 import '../../generated/protocol.dart' as protocol;
 import '../application/services/auth_token_issuer.dart';
@@ -212,6 +213,11 @@ class AuthDependencies {
       serviceTokenIssuer: ServiceTokenIssuer(
         clientRegistry: _serviceClientRegistry(session),
         tokenService: serviceTokenService,
+        projectGrantCodec: ProjectAuthorizationGrantCodec(
+          secret:
+              _optionalPassword(session, 'projectAuthorizationGrantSecret') ??
+              '',
+        ),
       ),
     );
   }

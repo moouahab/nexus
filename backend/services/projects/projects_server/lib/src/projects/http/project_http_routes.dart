@@ -1,4 +1,5 @@
 import 'package:serverpod/serverpod.dart';
+import 'package:nexus_auth/nexus_auth.dart';
 
 import '../../generated/protocol.dart';
 import 'project_http_dto.dart';
@@ -32,6 +33,7 @@ final class _ProjectAiAccessRoute extends ProjectHttpJsonRoute {
 
   @override
   Future<Map<String, dynamic>> execute(Session session, Request request) async {
+    final user = requireUserContext(session);
     final tenant = request.url.queryParameters['tenantPartyId'];
     if (tenant == null) {
       throw const FormatException('Query "tenantPartyId" is required.');
@@ -41,7 +43,22 @@ final class _ProjectAiAccessRoute extends ProjectHttpJsonRoute {
       projectId: pathUuid(request, #projectId),
       tenantPartyId: parseUuid(tenant, 'tenantPartyId'),
     );
-    return {'allowed': allowed};
+    if (!allowed) return {'allowed': false};
+    final tenantId = parseUuid(tenant, 'tenantPartyId');
+    final projectId = pathUuid(request, #projectId);
+    final secret = session.passwords['projectAuthorizationGrantSecret']?.trim();
+    if (secret == null || secret.isEmpty) {
+      throw StateError('Project authorization grant signing unavailable.');
+    }
+    return {
+      'allowed': true,
+      'authorizationGrant': ProjectAuthorizationGrantCodec(secret: secret)
+          .issue(
+            projectId: projectId.toString(),
+            tenantPartyId: tenantId.toString(),
+            identityId: user.identityId.toString(),
+          ),
+    };
   }
 }
 

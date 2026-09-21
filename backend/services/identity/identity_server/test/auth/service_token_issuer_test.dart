@@ -7,6 +7,60 @@ import 'package:test/test.dart';
 
 void main() {
   group('ServiceTokenIssuer', () {
+    test('requires a matching Projects grant for project-bound tokens', () {
+      final issuer = _issuer();
+      const projectId = '018f0000-0000-7000-8000-000000000001';
+      const identityId = '018f0000-0000-7000-8000-000000000002';
+      const tenantId = '018f0000-0000-7000-8000-000000000003';
+      final grant =
+          const nexus_auth.ProjectAuthorizationGrantCodec(
+            secret: 'project-grant-secret',
+          ).issue(
+            projectId: projectId,
+            tenantPartyId: tenantId,
+            identityId: identityId,
+          );
+
+      final result = issuer.issue(
+        serviceName: 'ai-gateway',
+        serviceSecret: 'ai-secret',
+        audience: 'projects-service',
+        scopes: ['projects.read'],
+        projectId: projectId,
+        delegatedIdentityId: identityId,
+        authorizationGrant: grant,
+        authorizationTenantPartyId: tenantId,
+      );
+      expect(result.projectId, projectId);
+
+      expect(
+        () => issuer.issue(
+          serviceName: 'ai-gateway',
+          serviceSecret: 'ai-secret',
+          audience: 'projects-service',
+          scopes: ['projects.read'],
+          projectId: '018f0000-0000-7000-8000-000000000099',
+          delegatedIdentityId: identityId,
+          authorizationGrant: grant,
+          authorizationTenantPartyId: tenantId,
+        ),
+        throwsA(anyOf(isA<AuthUseCaseException>(), isA<FormatException>())),
+      );
+      expect(
+        () => issuer.issue(
+          serviceName: 'ai-gateway',
+          serviceSecret: 'ai-secret',
+          audience: 'projects-service',
+          scopes: ['projects.read'],
+          projectId: projectId,
+          delegatedIdentityId: identityId,
+          authorizationGrant: grant,
+          authorizationTenantPartyId: '018f0000-0000-7000-8000-000000000099',
+        ),
+        throwsA(isA<AuthUseCaseException>()),
+      );
+    });
+
     test('issues scoped service tokens for registered clients', () {
       final issuer = _issuer();
 
@@ -131,11 +185,19 @@ ServiceTokenIssuer _issuer() {
     "secret": "projects-secret",
     "audiences": ["ai-gateway"],
     "scopes": ["ai.context.preview", "ai.run.create"]
+  },
+  "ai-gateway": {
+    "secret": "ai-secret",
+    "audiences": ["projects-service"],
+    "scopes": ["projects.read"]
   }
 }
 '''),
     tokenService: HmacSha256AccessTokenService(
       secret: 'token-signing-secret',
+    ),
+    projectGrantCodec: const nexus_auth.ProjectAuthorizationGrantCodec(
+      secret: 'project-grant-secret',
     ),
   );
 }

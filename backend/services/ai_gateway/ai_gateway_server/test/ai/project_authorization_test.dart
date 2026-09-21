@@ -8,7 +8,7 @@ void main() {
     () async {
       const authorization = UnavailableProjectAuthorization();
 
-      final allowed = await authorization.canUseProject(
+      final grant = await authorization.authorizeProject(
         projectId: UuidValue.withValidation(
           '018f0000-0000-7000-8000-000000000001',
         ),
@@ -20,7 +20,7 @@ void main() {
         ),
       );
 
-      expect(allowed, isFalse);
+      expect(grant, isNull);
     },
   );
 }

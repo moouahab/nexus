@@ -59,7 +59,7 @@ paths:
   /projects/{projectId}/ai-access:
     get:
       operationId: canUseAiForProject
-      description: Checks whether the authenticated caller may use this project through AI Gateway.
+      description: Checks whether the authenticated user may use this project through AI Gateway and returns a short-lived token-exchange grant when allowed.
       parameters:
         - {$ref: '#/components/parameters/ProjectId'}
         - name: tenantPartyId
@@ -76,6 +76,9 @@ paths:
                 required: [allowed]
                 properties:
                   allowed: {type: boolean}
+                  authorizationGrant:
+                    type: string
+                    description: Short-lived signed grant, present only when allowed is true.
         '401': {$ref: '#/components/responses/Error'}
         '403': {$ref: '#/components/responses/Error'}
   /projects/{projectId}/archive:

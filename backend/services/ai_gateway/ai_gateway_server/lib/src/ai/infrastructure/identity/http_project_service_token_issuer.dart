@@ -37,6 +37,7 @@ final class HttpProjectServiceTokenIssuer implements ProjectServiceTokenIssuer {
     Session session, {
     required UuidValue tenantPartyId,
     required UuidValue projectId,
+    required String authorizationGrant,
     UuidValue? delegatedIdentityId,
   }) async {
     final clientId = _requiredPassword(session, 'identityServiceClientId');
@@ -66,6 +67,8 @@ final class HttpProjectServiceTokenIssuer implements ProjectServiceTokenIssuer {
           'scopes': const ['projects.read'],
           'globalAccess': false,
           'projectId': expectedProject,
+          'authorizationGrant': authorizationGrant,
+          'authorizationTenantPartyId': tenantPartyId.toString(),
           ...?(expectedIdentity == null
               ? null
               : {'delegatedIdentityId': expectedIdentity}),

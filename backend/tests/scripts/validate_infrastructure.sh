@@ -74,4 +74,5 @@ printf '%s\n' "$kong_rendered" | jq -e '
 }
 
 infrastructure/kong/script/assemble-config.sh --check
+tests/scripts/validate_project_authorization_grant_wiring.sh
 echo "Infrastructure configuration is valid."
