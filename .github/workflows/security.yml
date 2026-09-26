@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: backend
+
 concurrency:
   group: backend-security-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -37,7 +41,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-security-static-${{ github.run_id }}
-          path: security/reports/
+          path: backend/security/reports/
           if-no-files-found: error
           retention-days: 14
 
@@ -63,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-security-probe-${{ github.run_id }}
-          path: security/reports/
+          path: backend/security/reports/
           if-no-files-found: error
           retention-days: 14
 
@@ -118,6 +122,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: nexus-security-full-${{ github.run_id }}
-          path: security/reports/
+          path: backend/security/reports/
           if-no-files-found: error
           retention-days: 30

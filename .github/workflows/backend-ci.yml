@@ -13,6 +13,10 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: backend
+
 env:
   FLUTTER_VERSION: '3.32.8'
 
@@ -25,12 +29,12 @@ jobs:
       fail-fast: false
       matrix:
         workspace:
-          - shared/nexus_auth
-          - services/identity
-          - services/users
-          - services/parties
-          - services/projects
-          - services/ai_gateway
+          - backend/shared/nexus_auth
+          - backend/services/identity
+          - backend/services/users
+          - backend/services/parties
+          - backend/services/projects
+          - backend/services/ai_gateway
 
     steps:
       - name: Check out repository
@@ -63,11 +67,11 @@ jobs:
       matrix:
         include:
           - component: shared-auth
-            workspace: shared/nexus_auth
-            test_directory: shared/nexus_auth
+            workspace: backend/shared/nexus_auth
+            test_directory: backend/shared/nexus_auth
           - component: ai-gateway
-            workspace: services/ai_gateway
-            test_directory: services/ai_gateway/ai_gateway_server
+            workspace: backend/services/ai_gateway
+            test_directory: backend/services/ai_gateway/ai_gateway_server
 
     steps:
       - name: Check out repository
@@ -96,17 +100,17 @@ jobs:
       matrix:
         include:
           - service: identity
-            workspace: services/identity
-            server: services/identity/identity_server
+            workspace: backend/services/identity
+            server: backend/services/identity/identity_server
           - service: users
-            workspace: services/users
-            server: services/users/users_server
+            workspace: backend/services/users
+            server: backend/services/users/users_server
           - service: parties
-            workspace: services/parties
-            server: services/parties/parties_server
+            workspace: backend/services/parties
+            server: backend/services/parties/parties_server
           - service: projects
-            workspace: services/projects
-            server: services/projects/projects_server
+            workspace: backend/services/projects
+            server: backend/services/projects/projects_server
 
     steps:
       - name: Check out repository
@@ -157,23 +161,23 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        working-directory: services/ai_gateway
+        working-directory: backend/services/ai_gateway
         run: dart pub get
 
       - name: Create disposable test secret
-        working-directory: services/ai_gateway/ai_gateway_server
+        working-directory: backend/services/ai_gateway/ai_gateway_server
         run: |
           mkdir -p secrets
           printf '%s' 'ci-postgres-test-password' > secrets/postgres_test_password
 
       - name: Start disposable PostgreSQL
-        working-directory: services/ai_gateway/ai_gateway_server
+        working-directory: backend/services/ai_gateway/ai_gateway_server
         run: >-
           docker compose -p nexus-ai-persistence-ci --profile test
           up --build --wait postgres_test
 
       - name: Run mandatory AI persistence tests
-        working-directory: services/ai_gateway/ai_gateway_server
+        working-directory: backend/services/ai_gateway/ai_gateway_server
         env:
           AI_GATEWAY_RUN_DATABASE_TESTS: 'true'
           SERVERPOD_PASSWORD_database: ci-postgres-test-password
@@ -181,7 +185,7 @@ jobs:
 
       - name: Stop test containers
         if: always()
-        working-directory: services/ai_gateway/ai_gateway_server
+        working-directory: backend/services/ai_gateway/ai_gateway_server
         run: >-
           docker compose -p nexus-ai-persistence-ci --profile test
           down --volumes --remove-orphans
