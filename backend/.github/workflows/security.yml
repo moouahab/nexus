@@ -92,6 +92,9 @@ jobs:
       - name: Normalize and gate findings
         if: always()
         run: python3 security/scripts/normalize_findings.py --gate
+      - name: Generate fail-closed V0 readiness report
+        if: always()
+        run: python3 security/scripts/v0_readiness.py
       - name: Upload normalized security evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

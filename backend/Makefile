@@ -219,7 +219,7 @@ test-projects:
 test-ai-gateway:
 	cd $(AI_GATEWAY_DIR) && dart test
 
-.PHONY: security-static security-probe security-full security-tooling security-authorization security-operational
+.PHONY: security-static security-probe security-full security-tooling security-authorization security-operational security-v0-readiness
 security-static:
 	./security/scripts/run_static.sh
 
@@ -238,3 +238,6 @@ security-authorization:
 
 security-operational:
 	./security/scripts/run_operational_proofs.sh
+
+security-v0-readiness:
+	python3 security/scripts/v0_readiness.py --gate
