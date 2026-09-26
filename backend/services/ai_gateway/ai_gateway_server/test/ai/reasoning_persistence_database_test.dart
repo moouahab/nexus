@@ -285,6 +285,38 @@ void main() {
         expect(await _jobCount(session, tenantId, scope, key), 1);
         expect(await _futureCallCount(session, results[0].id!), 1);
       });
+
+      test('startup recovery recreates one missing durable call', () async {
+        final session = sessionBuilder.build();
+        addTearDown(session.close);
+        final run = await AiRun.db.insertRow(
+          session,
+          AiRun(
+            requestId: const Uuid().v7obj(),
+            projectId: const Uuid().v7obj(),
+            tenantPartyId: const Uuid().v7obj(),
+            capability: 'project.summary',
+            status: AiRunStatus.queued,
+          ),
+        );
+        await AiRunJob.db.insertRow(
+          session,
+          AiRunJob(
+            runId: run.id!,
+            inputJson: '{"prompt":"restart-proof"}',
+            projectAuthorizationGrant: 'restart-proof-grant',
+            requesterScope: 'identity:restart-proof',
+            tenantPartyId: run.tenantPartyId,
+            status: AiRunJobStatus.queued,
+          ),
+        );
+
+        expect(await _futureCallCount(session, run.id!), 0);
+        expect(await const AiRunClaimStore().recover(session), 1);
+        expect(await _futureCallCount(session, run.id!), 1);
+        expect(await const AiRunClaimStore().recover(session), 0);
+        expect(await _futureCallCount(session, run.id!), 1);
+      });
     },
     rollbackDatabase: RollbackDatabase.disabled,
     configOverride: (config) =>

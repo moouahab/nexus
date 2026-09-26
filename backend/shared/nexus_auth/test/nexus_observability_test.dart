@@ -17,4 +17,21 @@ void main() {
     expect(generated, isNot(contains('secret-token-value')));
     expect(generated, isNot(contains('user@example.test')));
   });
+
+  test('redacts sensitive fields recursively before logging', () {
+    final fields = NexusObservability.sanitizeLogFields({
+      'outcome': 'failed',
+      'prompt': 'PROMPT_CANARY',
+      'nested': {'authorization': 'TOKEN_CANARY', 'duration_ms': 12},
+    });
+
+    expect(fields['outcome'], 'failed');
+    expect(fields['prompt'], '[REDACTED]');
+    expect(fields['nested'], {
+      'authorization': '[REDACTED]',
+      'duration_ms': 12,
+    });
+    expect(fields.toString(), isNot(contains('PROMPT_CANARY')));
+    expect(fields.toString(), isNot(contains('TOKEN_CANARY')));
+  });
 }

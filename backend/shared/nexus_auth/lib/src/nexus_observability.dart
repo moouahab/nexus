@@ -109,9 +109,10 @@ abstract final class NexusObservability {
                 },
               );
               return result;
-            } catch (error, stackTrace) {
+            } catch (_) {
               watch.stop();
-              span.recordException(error, stackTrace: stackTrace);
+              // Never export raw exception messages or stack traces. Provider
+              // and validation errors may contain prompts or credentials.
               span.setStatus(SpanStatusCode.Error, 'Unhandled HTTP error');
               log(
                 session,
@@ -170,11 +171,34 @@ abstract final class NexusObservability {
         'trace_id': context.traceId.toString(),
         'span_id': context.spanId.toString(),
       },
-      ...fields,
+      ...sanitizeLogFields(fields),
     }..removeWhere((_, value) => value == null);
     // Do not attach exceptions or stack traces here: exception messages may
     // contain request payloads, credentials or user identifiers.
     session.log(jsonEncode(data), level: level);
+  }
+
+  static Map<String, Object?> sanitizeLogFields(Map<String, Object?> fields) =>
+      fields.map(
+        (key, value) => MapEntry(
+          key,
+          _sensitiveField.hasMatch(key) ? '[REDACTED]' : _sanitizeValue(value),
+        ),
+      );
+
+  static final _sensitiveField = RegExp(
+    r'(token|authorization|cookie|password|secret|prompt|question|content)',
+    caseSensitive: false,
+  );
+
+  static Object? _sanitizeValue(Object? value) {
+    if (value is Map) {
+      return sanitizeLogFields({
+        for (final entry in value.entries) entry.key.toString(): entry.value,
+      });
+    }
+    if (value is Iterable) return value.map(_sanitizeValue).toList();
+    return value;
   }
 }
 

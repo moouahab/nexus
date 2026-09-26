@@ -118,8 +118,9 @@ NEXUS_DISPOSABLE_STACK=I_UNDERSTAND_THIS_IS_DISPOSABLE \
 `make security-v0-readiness` is fail-closed. It emits
 `security/reports/v0-readiness.json` and refuses release until every required
 artifact is present and green. In particular, scanner success cannot replace
-the two remaining business proofs: AI job recovery after restart and absence
-of prompt/token canaries from logs and traces.
+the business proofs for AI job recovery after restart and absence of
+prompt/token canaries from logs and traces. Both proofs run in the weekly and
+manual full-security workflow; a missing or failed artifact blocks the job.
 
 ### Safe probe
 
