@@ -82,11 +82,10 @@ jobs:
       NEXUS_DISPOSABLE_STACK: I_UNDERSTAND_THIS_IS_DISPOSABLE
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Set up Flutter and Dart
-        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
-        with:
-          flutter-version: '3.32.8'
-          cache: true
+      - name: Verify preinstalled Dart SDK
+        run: |
+          command -v dart
+          dart --version
       - name: Install proof dependencies
         run: |
           (cd shared/nexus_auth && dart pub get)
