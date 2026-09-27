@@ -64,6 +64,7 @@ command -v docker >/dev/null 2>&1 || {
 # On utilise une route publique qui retourne HTTP 200 plutôt que "/",
 # car Kong n'expose volontairement aucune page à la racine.
 #
+set +e
 docker run --rm --network host \
   -v "$REPORTS:/zap/wrk:rw" \
   "$ZAP_IMAGE" \
@@ -74,6 +75,18 @@ docker run --rm --network host \
   -s \
   -J zap-baseline.json \
   -r zap-baseline.html
+zap_status=$?
+set -e
+
+# zap-baseline.py returns 2 when it produced warnings. Preserve those findings
+# for normalization, but only fail immediately for confirmed failures (1) or
+# an incomplete/invalid scan (3+).
+if (( zap_status == 2 )); then
+  echo "ZAP completed with warnings; findings retained for the normalized gate."
+elif (( zap_status != 0 )); then
+  echo "ZAP failed with exit code $zap_status" >&2
+  exit "$zap_status"
+fi
 
 #
 # Schemathesis
