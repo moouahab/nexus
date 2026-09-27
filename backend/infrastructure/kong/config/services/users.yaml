@@ -1,0 +1,25 @@
+  - name: users-rest
+    url: http://users-api:8082
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-users-rest
+        paths: [/v1/users]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]
+
+  - name: users-serverpod-rpc
+    url: http://users-api:8080/user
+    connect_timeout: 5000
+    write_timeout: 15000
+    read_timeout: 15000
+    retries: 2
+    routes:
+      - name: v1-users-rpc-compat
+        paths: ["~/v1/users/user$", /v1/users/user/]
+        strip_path: true
+        preserve_host: false
+        protocols: [http, https]

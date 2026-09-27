@@ -1,0 +1,126 @@
+name: Backend Security
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+  schedule:
+    - cron: '37 3 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: backend
+
+concurrency:
+  group: backend-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-static:
+    name: Security / static
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Run static security gate
+        env:
+          NEXUS_GITLEAKS_HISTORY: 'true'
+        run: make security-static
+      - name: Gate normalized findings
+        if: always()
+        run: python3 security/scripts/normalize_findings.py --gate
+      - name: Upload normalized security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-security-static-${{ github.run_id }}
+          path: backend/security/reports/
+          if-no-files-found: error
+          retention-days: 14
+
+  security-probe:
+    name: Security / probe
+    if: github.event_name == 'push'
+    runs-on: [self-hosted, nexus-disposable-security]
+    timeout-minutes: 15
+    env:
+      NEXUS_PENTEST_TARGET: http://127.0.0.1:8000
+      NEXUS_PENTEST_SCOPE: security/policy/local.scope.yaml
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Verify disposable local gateway
+        run: python3 security/scripts/target_guard.py "$NEXUS_PENTEST_TARGET" "$NEXUS_PENTEST_SCOPE"
+      - name: Run safe security probe
+        run: make security-probe
+      - name: Normalize and gate findings
+        if: always()
+        run: python3 security/scripts/normalize_findings.py --gate
+      - name: Upload normalized security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-security-probe-${{ github.run_id }}
+          path: backend/security/reports/
+          if-no-files-found: error
+          retention-days: 14
+
+  security-full:
+    name: Security / full
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: [self-hosted, nexus-disposable-security]
+    timeout-minutes: 45
+    env:
+      NEXUS_PENTEST_TARGET: http://127.0.0.1:8000
+      NEXUS_PENTEST_SCOPE: security/policy/local.scope.yaml
+      NEXUS_DISPOSABLE_STACK: I_UNDERSTAND_THIS_IS_DISPOSABLE
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Verify preinstalled Dart SDK
+        run: |
+          command -v dart
+          dart --version
+      - name: Install proof dependencies
+        run: |
+          (cd shared/nexus_auth && dart pub get)
+          (cd services/ai_gateway && dart pub get)
+      - name: Create disposable dependency secrets
+        run: |
+          mkdir -p services/projects/projects_server/secrets
+          printf '%s' 'ci-v0-postgres-proof' > services/projects/projects_server/secrets/postgres_test_password
+          printf '%s' 'ci-v0-redis-proof' > services/projects/projects_server/secrets/redis_test_password
+          mkdir -p services/ai_gateway/ai_gateway_server/secrets
+          printf '%s' 'ci-v0-ai-postgres-proof' > services/ai_gateway/ai_gateway_server/secrets/postgres_test_password
+          printf '%s' 'ci-v0-ai-redis-proof' > services/ai_gateway/ai_gateway_server/secrets/redis_test_password
+      - name: Prove backup/restore and dependency recovery
+        run: make security-operational
+      - name: Prove durable AI startup recovery
+        run: security/scripts/prove_ai_recovery.sh
+      - name: Prove prompt and token observability redaction
+        run: |
+          (cd shared/nexus_auth && dart test test/nexus_observability_test.dart)
+          python3 security/scripts/prove_sensitive_observability.py
+      - name: Verify disposable local gateway
+        run: python3 security/scripts/target_guard.py "$NEXUS_PENTEST_TARGET" "$NEXUS_PENTEST_SCOPE"
+      - name: Run bounded full security scan
+        run: make security-full
+      - name: Normalize and gate findings
+        if: always()
+        run: python3 security/scripts/normalize_findings.py --gate
+      - name: Generate fail-closed V0 readiness report
+        if: always()
+        run: python3 security/scripts/v0_readiness.py --gate
+      - name: Upload normalized security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nexus-security-full-${{ github.run_id }}
+          path: backend/security/reports/
+          if-no-files-found: error
+          retention-days: 30

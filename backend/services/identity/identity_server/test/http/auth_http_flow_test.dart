@@ -44,6 +44,16 @@ void main() {
           'error': 'missingAccessToken',
         });
 
+        final unauthenticatedLogout = await client.postJson(
+          '/auth/logout',
+          {},
+        );
+
+        expect(unauthenticatedLogout.statusCode, 401);
+        expect(unauthenticatedLogout.jsonBody, {
+          'error': 'missingAccessToken',
+        });
+
         final registered = await client.postJson('/auth/register', {
           'username': username,
           'password': password,

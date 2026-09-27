@@ -1,60 +1,5 @@
 #!/usr/bin/env bash
 
-copy_examples_if_needed() {
-  if [[ -d "$SECRETS_DIR" ]]; then
-    info "secrets/ already exists: it will not be overwritten."
-    return 0
-  fi
-
-  if [[ -d "$SECRETS_EXAMPLE_DIR" ]]; then
-    info "Creating secrets/ from secrets_example/..."
-    cp -R "$SECRETS_EXAMPLE_DIR" "$SECRETS_DIR"
-    success "secrets/ created."
-    return 0
-  fi
-
-  info "Creating empty secrets/ directory..."
-  mkdir -p "$SECRETS_DIR"
-  success "secrets/ created."
-}
-
-ensure_secret_file() {
-  local path="$1"
-  local label="$2"
-  local value="${3:-}"
-
-  if [[ -s "$path" ]]; then
-    info "$label already exists."
-    chmod 600 "$path"
-    return 0
-  fi
-
-  if [[ -n "$value" ]]; then
-    printf '%s' "$value" > "$path"
-  else
-    random_secret > "$path"
-  fi
-
-  chmod 600 "$path"
-  success "$label created."
-}
-
-ensure_config_file() {
-  local path="$1"
-  local label="$2"
-  local value="${3:-}"
-
-  if [[ -e "$path" ]]; then
-    info "$label already exists."
-    chmod 600 "$path"
-    return 0
-  fi
-
-  printf '%s' "$value" > "$path"
-  chmod 600 "$path"
-  success "$label created."
-}
-
 prepare_local_secrets() {
   copy_examples_if_needed
   mkdir -p "$SECRETS_DIR"
@@ -72,6 +17,7 @@ prepare_local_secrets() {
   require_file "$REDIS_PASSWORD_FILE"
   require_file "$SERVICE_SECRET_FILE"
   require_file "$IDENTITY_ACCESS_TOKEN_PUBLIC_KEY_FILE"
+  require_file "$PROJECT_AUTHORIZATION_GRANT_SECRET_FILE"
 }
 
 print_success_summary() {
@@ -88,11 +34,12 @@ Runtime secret source files:
   - secrets/redis_password
   - secrets/service_secret
   - secrets/identity_access_token_public_key_pem
+  - Identity secrets/project_authorization_grant_secret (shared, never generated here)
 
 Files rendered by Vault Agent:
-  - /vault/secrets/postgres_password
-  - /vault/secrets/redis_password
-  - /vault/secrets/serverpod-passwords.yaml
+  - /vault/secrets/postgres/postgres_password
+  - /vault/secrets/redis/redis_password
+  - /vault/secrets/api/serverpod-passwords.yaml
 
 Important:
   - never commit the real secrets/ directory;

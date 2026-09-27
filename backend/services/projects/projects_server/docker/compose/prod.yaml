@@ -12,15 +12,34 @@ services:
         RUNTIME_USER: projects
         ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["production", "default", "normal", "monolith", "false"]
-    ports:
-      - "127.0.0.1:${API_PORT:-8280}:8080"
-      - "127.0.0.1:${INSIGHTS_PORT:-8281}:8081"
-      - "127.0.0.1:${WEB_PORT:-8282}:8082"
+    environment:
+      PARTIES_BASE_URL: ${PARTIES_BASE_URL:?PARTIES_BASE_URL is required}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production
+    expose:
+      - "8080"
+      - "8082"
+    networks:
+      projects_gateway:
+        aliases:
+          - projects-api
+      telemetry:
     depends_on:
       vault_agent:
         condition: service_healthy
     volumes:
-      - projects_vault_secrets:/run/vault/secrets:ro
+      - projects_api_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /app/config:size=4m,noexec,nosuid,nodev,mode=0700
+      - /tmp:size=32m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -33,6 +52,7 @@ services:
   vault_agent:
     build:
       context: ../../../../../infrastructure/service-runtime/docker/vault-agent
+    user: "0:0"
     configs:
       - source: vault_agent_production_config
         target: /vault/config/agent.hcl.template
@@ -53,13 +73,28 @@ services:
         target: secret_id
     volumes:
       - projects_vault_agent:/vault/token
-      - projects_vault_secrets:/vault/secrets
+      - projects_api_secrets:/vault/secrets/api
+      - projects_postgres_secrets:/vault/secrets/postgres
+      - projects_redis_secrets:/vault/secrets/redis
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /vault/runtime:size=4m,noexec,nosuid,nodev,mode=0700
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
     security_opt:
       - no-new-privileges:true
     healthcheck:
       test:
         - CMD-SHELL
-        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres_password && test -s /vault/secrets/redis_password && test -s /vault/secrets/serverpod-passwords.yaml
+        - test -s /vault/token/agent-token && test -s /vault/secrets/postgres/postgres_password && test -s /vault/secrets/redis/redis_password && test -s /vault/secrets/api/serverpod-passwords.yaml
       interval: 5s
       timeout: 3s
       retries: 12
@@ -93,4 +128,14 @@ secrets:
 
 volumes:
   projects_vault_agent:
-  projects_vault_secrets:
+  projects_api_secrets:
+  projects_postgres_secrets:
+  projects_redis_secrets:
+
+networks:
+  projects_gateway:
+    name: nexus_projects_gateway
+    external: true
+  telemetry:
+    name: nexus_telemetry
+    external: true

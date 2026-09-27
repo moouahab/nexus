@@ -1,5 +1,20 @@
 # NEXUS Backend
 
+## V0 status
+
+The secured backend foundation is **V0 READY**. The fail-closed release verdict
+passed all 7 required gates on commit `4c309b5` in the complete manual security
+workflow:
+
+- GitHub Actions run: <https://github.com/moouahab/nexus/actions/runs/36305955442>
+- release evidence and remaining production limits: [V0-READINESS.md](V0-READINESS.md)
+- defensive test-chain operations: [security/README.md](security/README.md)
+
+`V0 READY` means that the repository's V0 security and recovery evidence is
+green. It does not mean that the local configuration is ready for direct
+Internet exposure; the production requirements are recorded in the readiness
+document.
+
 The backend is organized as separated services with explicit shared and
 infrastructure boundaries.
 
@@ -7,6 +22,7 @@ infrastructure boundaries.
 backend/
 ├── services/
 │   ├── identity/
+│   ├── ai_gateway/
 │   ├── parties/
 │   ├── projects/
 │   └── users/
@@ -50,3 +66,22 @@ backend/infrastructure/service-runtime/
 It provides shared Docker images, entrypoints, shell helpers, and Vault Agent
 connection config. Each service still keeps its own Compose files, secrets,
 Vault templates, database name, ports, and business logic.
+
+## Public API Compatibility
+
+Kong exposes versioned HTTPS/JSON contracts for platform-neutral clients.
+Generated Serverpod clients remain an optional optimized transport for Dart and
+Flutter applications. Identity, Users, Parties, Projects, and AI capabilities
+also expose platform-neutral JSON routes through Kong.
+
+Current gateway prefixes are `/v1/auth`, `/v1/users`, `/v1/parties`,
+`/v1/projects`, and `/v1/ai`. Each public REST contract must reuse the same
+application layer as its Serverpod RPC endpoint.
+
+OpenAPI contracts currently live at:
+
+- `services/identity/openapi/openapi.yaml`;
+- `services/users/openapi/openapi.yaml`;
+- `services/parties/openapi/openapi.yaml`;
+- `services/projects/projects_server/openapi.yaml`;
+- `ia/ai-gateway/openapi.yaml`.

@@ -179,6 +179,7 @@ class _ProjectEndpoint {
     _i1.TestSessionBuilder sessionBuilder, {
     required String slug,
     required String name,
+    required _i2.UuidValue tenantPartyId,
     String? summary,
     required _i5.ProjectVisibility visibility,
     String? workspacePath,
@@ -199,6 +200,7 @@ class _ProjectEndpoint {
           parameters: _i1.testObjectToJson({
             'slug': slug,
             'name': name,
+            'tenantPartyId': tenantPartyId,
             'summary': summary,
             'visibility': visibility,
             'workspacePath': workspacePath,
@@ -224,6 +226,7 @@ class _ProjectEndpoint {
     _i1.TestSessionBuilder sessionBuilder, {
     required String slug,
     required String name,
+    required _i2.UuidValue tenantPartyId,
     String? summary,
     required _i5.ProjectVisibility visibility,
     _i2.UuidValue? ownerIdentityId,
@@ -245,6 +248,7 @@ class _ProjectEndpoint {
           parameters: _i1.testObjectToJson({
             'slug': slug,
             'name': name,
+            'tenantPartyId': tenantPartyId,
             'summary': summary,
             'visibility': visibility,
             'ownerIdentityId': ownerIdentityId,
@@ -269,6 +273,7 @@ class _ProjectEndpoint {
 
   _i3.Future<List<_i4.Project>> listProjects(
     _i1.TestSessionBuilder sessionBuilder, {
+    required _i2.UuidValue tenantPartyId,
     _i6.ProjectStatus? status,
     required int limit,
     required int offset,
@@ -285,6 +290,7 @@ class _ProjectEndpoint {
           endpointPath: 'project',
           methodName: 'listProjects',
           parameters: _i1.testObjectToJson({
+            'tenantPartyId': tenantPartyId,
             'status': status,
             'limit': limit,
             'offset': offset,
@@ -328,6 +334,41 @@ class _ProjectEndpoint {
                   _localCallContext.arguments,
                 )
                 as _i3.Future<_i4.Project>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<bool> canUseAiForProject(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required _i2.UuidValue projectId,
+    required _i2.UuidValue tenantPartyId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'project',
+            method: 'canUseAiForProject',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'project',
+          methodName: 'canUseAiForProject',
+          parameters: _i1.testObjectToJson({
+            'projectId': projectId,
+            'tenantPartyId': tenantPartyId,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<bool>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

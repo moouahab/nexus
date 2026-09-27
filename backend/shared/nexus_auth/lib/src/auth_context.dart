@@ -1,6 +1,8 @@
 import 'package:serverpod/serverpod.dart';
 
 import 'auth_claim_names.dart';
+import 'auth_claim_parser.dart';
+import 'auth_token_types.dart';
 import 'nexus_auth_exception.dart';
 
 class AuthContext {
@@ -17,6 +19,11 @@ class AuthContext {
 
   factory AuthContext.fromClaims(Map<String, dynamic> claims) {
     try {
+      if (claims[AuthClaimNames.tokenType] != AuthTokenTypes.access) {
+        throw const NexusAuthException.invalidAccessToken(
+          'Expected user access token.',
+        );
+      }
       return AuthContext(
         identityId: UuidValue.withValidation(
           claims[AuthClaimNames.subject] as String,
@@ -25,14 +32,16 @@ class AuthContext {
           claims[AuthClaimNames.sessionId] as String,
         ),
         issuer: claims[AuthClaimNames.issuer] as String,
-        audience: claims[AuthClaimNames.audience] as String,
+        audience: singleAudienceClaim(claims),
         emailVerified: claims[AuthClaimNames.emailVerified] as bool,
         authenticationMethods:
             (claims[AuthClaimNames.authenticationMethods] as List<dynamic>)
                 .cast<String>(),
-        issuedAt: _dateTimeFromEpochSeconds(claims[AuthClaimNames.issuedAt]),
-        expiresAt: _dateTimeFromEpochSeconds(claims[AuthClaimNames.expiresAt]),
+        issuedAt: dateTimeFromEpochSeconds(claims[AuthClaimNames.issuedAt]),
+        expiresAt: dateTimeFromEpochSeconds(claims[AuthClaimNames.expiresAt]),
       );
+    } on NexusAuthException {
+      rethrow;
     } on Object catch (error) {
       throw NexusAuthException.invalidAccessToken(
         'Invalid token claims: $error',
@@ -50,11 +59,4 @@ class AuthContext {
   final DateTime expiresAt;
 
   bool get isExpired => !expiresAt.isAfter(DateTime.now().toUtc());
-
-  static DateTime _dateTimeFromEpochSeconds(dynamic value) {
-    return DateTime.fromMillisecondsSinceEpoch(
-      (value as int) * 1000,
-      isUtc: true,
-    );
-  }
 }

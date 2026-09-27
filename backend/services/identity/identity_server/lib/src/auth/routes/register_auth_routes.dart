@@ -3,6 +3,7 @@ import 'package:serverpod/serverpod.dart';
 import 'auth_change_email_route.dart';
 import 'auth_change_password_route.dart';
 import 'auth_finish_password_reset_route.dart';
+import 'auth_health_route.dart';
 import 'auth_login_route.dart';
 import 'auth_logout_route.dart';
 import 'auth_jwks_route.dart';
@@ -11,6 +12,7 @@ import 'auth_oauth_login_route.dart';
 import 'auth_resend_email_verification_route.dart';
 import 'auth_refresh_route.dart';
 import 'auth_register_route.dart';
+import 'auth_service_token_route.dart';
 import 'auth_start_password_reset_route.dart';
 import 'auth_verify_email_route.dart';
 
@@ -49,6 +51,14 @@ void registerAuthRoutes(Serverpod pod) {
     AuthRouteDefinition(
       path: '/auth/me',
       route: AuthMeRoute(),
+    ),
+    AuthRouteDefinition(
+      path: '/auth/service-token',
+      route: AuthServiceTokenRoute(),
+    ),
+    AuthRouteDefinition(
+      path: '/auth/health',
+      route: AuthHealthRoute(),
     ),
     AuthRouteDefinition(
       path: '/.well-known/jwks.json',

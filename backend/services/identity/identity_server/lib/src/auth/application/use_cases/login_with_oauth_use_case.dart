@@ -31,7 +31,7 @@ class LoginWithOAuthUseCase {
     Session session, {
     required protocol.AuthProvider provider,
     required String code,
-    required String redirectUri,
+    String? redirectUri,
     String? codeVerifier,
     AuthTokenTransport tokenTransport = AuthTokenTransport.cookie,
   }) async {

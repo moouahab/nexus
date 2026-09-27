@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: NEXUS Users API
+  version: 1.0.0
+  description: Cross-platform JSON API for user profiles.
+servers:
+  - url: /v1/users
+security:
+  - bearerAuth: []
+paths:
+  /me:
+    $ref: paths/profiles.yaml#/~1me
+  /profiles:
+    $ref: paths/profiles.yaml#/~1profiles
+  /profiles/{profileId}:
+    $ref: paths/profiles.yaml#/~1profiles~1{profileId}
+  /profiles/by-identity/{identityId}:
+    $ref: paths/profiles.yaml#/~1profiles~1by-identity~1{identityId}
+  /profiles/{profileId}/primary-party:
+    $ref: paths/profiles.yaml#/~1profiles~1{profileId}~1primary-party
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserProfile:
+      $ref: components/schemas.yaml#/$defs/UserProfile
+    CompleteProfile:
+      $ref: components/schemas.yaml#/$defs/CompleteProfile
+    PrimaryPartyUpdate:
+      $ref: components/schemas.yaml#/$defs/PrimaryPartyUpdate
+    Error:
+      $ref: components/schemas.yaml#/$defs/Error

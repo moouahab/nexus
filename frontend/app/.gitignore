@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+.env
+jsonOAuth/*.json
 
 # Symbolication related
 app.*.symbols

@@ -1,0 +1,26 @@
+services:
+  postgres_debug:
+    image: busybox:1.37.0
+    profiles: [debug]
+    command: ["nc", "-ll", "-p", "5432", "-e", "nc", "postgres", "5432"]
+    ports: ["127.0.0.1:8390:5432"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 50
+    mem_limit: 32m
+
+  redis_debug:
+    image: busybox:1.37.0
+    profiles: [debug]
+    command: ["nc", "-ll", "-p", "6379", "-e", "nc", "redis", "6379"]
+    ports: ["127.0.0.1:8391:6379"]
+    depends_on:
+      redis: {condition: service_healthy}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 50
+    mem_limit: 32m

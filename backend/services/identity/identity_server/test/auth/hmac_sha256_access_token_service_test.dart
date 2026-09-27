@@ -4,6 +4,7 @@ import 'package:identity_server/src/auth/constants/auth_claim_names.dart';
 import 'package:identity_server/src/auth/constants/auth_token_defaults.dart';
 import 'package:identity_server/src/auth/constants/auth_token_types.dart';
 import 'package:identity_server/src/auth/domain/auth_claims.dart';
+import 'package:identity_server/src/auth/domain/service_auth_claims.dart';
 import 'package:identity_server/src/auth/infrastructure/security/hmac_sha256_access_token_service.dart';
 import 'package:identity_server/src/generated/protocol.dart' as protocol;
 import 'package:nexus_auth/nexus_auth.dart' as nexus_auth;
@@ -61,6 +62,67 @@ void main() {
       expect(context.authSessionId, sessionId);
       expect(context.emailVerified, isTrue);
       expect(context.authenticationMethods, ['username']);
+    });
+
+    test(
+      'creates service tokens compatible with shared NEXUS auth verifier',
+      () {
+        final token =
+            HmacSha256AccessTokenService(
+              secret: 'test-secret',
+              audience: 'ai-gateway',
+            ).createServiceToken(
+              ServiceAuthClaims.service(
+                serviceName: 'projects',
+                audience: 'ai-gateway',
+                scopes: ['ai.run.create', 'ai.context.preview'],
+                projectId: 'project-a',
+              ),
+            );
+
+        final context = nexus_auth.HmacSha256AccessTokenVerifier(
+          secret: 'test-secret',
+          audience: 'ai-gateway',
+        ).verifyServiceToken(token, requiredScopes: ['ai.run.create']);
+
+        expect(context.serviceName, 'projects');
+        expect(context.audiences, ['ai-gateway']);
+        expect(context.scopes, ['ai.context.preview', 'ai.run.create']);
+      },
+    );
+
+    test('rejects service tokens with wrong audience or missing scopes', () {
+      final token =
+          HmacSha256AccessTokenService(
+            secret: 'test-secret',
+            audience: 'ai-gateway',
+          ).createServiceToken(
+            ServiceAuthClaims.service(
+              serviceName: 'projects',
+              audience: 'ai-gateway',
+              scopes: ['ai.context.preview'],
+              projectId: 'project-a',
+            ),
+          );
+
+      expect(
+        () => HmacSha256AccessTokenService(
+          secret: 'test-secret',
+          audience: 'projects-service',
+        ).verifyServiceToken(token),
+        throwsA(isA<InvalidAccessTokenException>()),
+      );
+      expect(
+        () => HmacSha256AccessTokenService(
+          secret: 'test-secret',
+          audience: 'ai-gateway',
+        ).verifyServiceToken(token, requiredScopes: ['ai.run.create']),
+        throwsA(isA<InvalidAccessTokenException>()),
+      );
+      expect(
+        () => service.verifyAccessToken(token),
+        throwsA(isA<InvalidAccessTokenException>()),
+      );
     });
 
     test('rejects malformed tokens', () {

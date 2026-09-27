@@ -1,0 +1,5 @@
+class: AiCapability
+fields:
+  name: String
+  status: String
+  reason: String?

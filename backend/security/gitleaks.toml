@@ -1,0 +1,20 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Runtime secrets and generated security reports are never source inputs"
+paths = [
+  '''(^|/)secrets(/|$)''',
+  '''(^|/)\.dart_tool(/|$)''',
+  '''^security/reports(/|$)''',
+]
+
+[[allowlists]]
+description = "Public, non-production credentials used only by deterministic auth tests and documentation"
+paths = [
+  '''(^|/)infrastructure/service-runtime/script/serverpod/run_tests\.sh$''',
+  '''(^|/)services/identity/identity_server/lib/src/auth/ARCHITECTURE\.md$''',
+  '''(^|/)services/identity/identity_server/test/auth/apple_id_token_verifier_test\.dart$''',
+  '''(^|/)services/identity/identity_server/test/auth/rs256_access_token_service_test\.dart$''',
+  '''(^|/)shared/nexus_auth/test/rs256_access_token_verifier_test\.dart$''',
+]

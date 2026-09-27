@@ -44,6 +44,7 @@ class EndpointProject extends _i1.EndpointRef {
   _i2.Future<_i3.Project> createMyProject({
     required String slug,
     required String name,
+    required _i1.UuidValue tenantPartyId,
     String? summary,
     required _i4.ProjectVisibility visibility,
     String? workspacePath,
@@ -55,6 +56,7 @@ class EndpointProject extends _i1.EndpointRef {
     {
       'slug': slug,
       'name': name,
+      'tenantPartyId': tenantPartyId,
       'summary': summary,
       'visibility': visibility,
       'workspacePath': workspacePath,
@@ -66,6 +68,7 @@ class EndpointProject extends _i1.EndpointRef {
   _i2.Future<_i3.Project> createProject({
     required String slug,
     required String name,
+    required _i1.UuidValue tenantPartyId,
     String? summary,
     required _i4.ProjectVisibility visibility,
     _i1.UuidValue? ownerIdentityId,
@@ -78,6 +81,7 @@ class EndpointProject extends _i1.EndpointRef {
     {
       'slug': slug,
       'name': name,
+      'tenantPartyId': tenantPartyId,
       'summary': summary,
       'visibility': visibility,
       'ownerIdentityId': ownerIdentityId,
@@ -88,6 +92,7 @@ class EndpointProject extends _i1.EndpointRef {
   );
 
   _i2.Future<List<_i3.Project>> listProjects({
+    required _i1.UuidValue tenantPartyId,
     _i5.ProjectStatus? status,
     required int limit,
     required int offset,
@@ -95,6 +100,7 @@ class EndpointProject extends _i1.EndpointRef {
     'project',
     'listProjects',
     {
+      'tenantPartyId': tenantPartyId,
       'status': status,
       'limit': limit,
       'offset': offset,
@@ -107,6 +113,18 @@ class EndpointProject extends _i1.EndpointRef {
         'getProject',
         {'projectId': projectId},
       );
+
+  _i2.Future<bool> canUseAiForProject({
+    required _i1.UuidValue projectId,
+    required _i1.UuidValue tenantPartyId,
+  }) => caller.callServerEndpoint<bool>(
+    'project',
+    'canUseAiForProject',
+    {
+      'projectId': projectId,
+      'tenantPartyId': tenantPartyId,
+    },
+  );
 
   _i2.Future<_i3.Project> getProjectBySlug(String slug) =>
       caller.callServerEndpoint<_i3.Project>(

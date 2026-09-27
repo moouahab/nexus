@@ -1,0 +1,8 @@
+enum: AiRunJobStatus
+values:
+  - queued
+  - processing
+  - completed
+  - failed
+  - cancelled
+

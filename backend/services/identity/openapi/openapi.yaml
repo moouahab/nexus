@@ -1,0 +1,831 @@
+openapi: 3.1.0
+info:
+  title: NEXUS Identity API
+  version: 1.0.0
+  description: |
+    Public JSON API for authentication and identity lifecycle operations.
+
+    Authentication can use the `access_token` cookie or an `Authorization:
+    Bearer` header. Cookie-authenticated state-changing requests must also send
+    the value of the readable `csrf_token` cookie in `X-CSRF-Token`.
+    Native/non-browser clients may request `tokenTransport: body`; browser-like
+    requests are deliberately forbidden from using body token transport.
+servers:
+  - url: /v1/auth
+    description: Authentication routes exposed by Kong
+security: []
+tags:
+  - name: Authentication
+    description: User registration, login, refresh, and logout.
+  - name: Account
+    description: Authenticated identity and account maintenance.
+  - name: Recovery
+    description: Password reset operations.
+  - name: Service authentication
+    description: Service credentials, signing keys, and health.
+paths:
+  /register:
+    post:
+      tags: [Authentication]
+      operationId: register
+      summary: Register with username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+  /login:
+    post:
+      tags: [Authentication]
+      operationId: login
+      summary: Log in with username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+  /oauth/login:
+    post:
+      tags: [Authentication]
+      operationId: oauthLogin
+      summary: Log in with an OAuth authorization code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthLoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /refresh:
+    post:
+      tags: [Authentication]
+      operationId: refreshSession
+      summary: Rotate a refresh token and issue a new token pair
+      description: |
+        With cookie transport, omit `refreshToken` and send `X-CSRF-Token`.
+        With body transport, supply the refresh token in the body. Body token
+        transport is rejected when browser request headers are present.
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthSuccess'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+  /logout:
+    post:
+      tags: [Authentication]
+      operationId: logout
+      summary: Revoke the current session and clear authentication cookies
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Session revoked (or no session was active).
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionReference'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /me:
+    get:
+      tags: [Account]
+      operationId: getCurrentIdentity
+      summary: Return the authenticated identity and session
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Authenticated identity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentIdentity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Account]
+      operationId: postCurrentIdentity
+      summary: Return the authenticated identity and session
+      description: Compatibility form of `GET /me`.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Authenticated identity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentIdentity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /email/verify:
+    post:
+      tags: [Account]
+      operationId: verifyEmail
+      summary: Verify an identity email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [identityId, verificationCode]
+              properties:
+                identityId:
+                  $ref: '#/components/schemas/Uuid'
+                verificationCode:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Email verified.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /email/resend-verification:
+    post:
+      tags: [Account]
+      operationId: resendEmailVerification
+      summary: Send a new email verification code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [identityId]
+              properties:
+                identityId:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /password/reset/start:
+    post:
+      tags: [Recovery]
+      operationId: startPasswordReset
+      summary: Request a password reset code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+      responses:
+        '200':
+          description: Request accepted, including for an unknown email.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+  /password/reset/finish:
+    post:
+      tags: [Recovery]
+      operationId: finishPasswordReset
+      summary: Reset a password using a reset code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, resetCode, newPassword]
+              properties:
+                email:
+                  type: string
+                  format: email
+                resetCode:
+                  type: string
+                  minLength: 1
+                newPassword:
+                  type: string
+                  minLength: 12
+                  maxLength: 128
+      responses:
+        '200':
+          description: Password reset and existing sessions revoked.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookie'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reset]
+                properties:
+                  reset:
+                    const: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+  /password/change:
+    post:
+      tags: [Account]
+      operationId: changePassword
+      summary: Change the authenticated identity password
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                  minLength: 1
+                newPassword:
+                  type: string
+                  minLength: 12
+                  maxLength: 128
+      responses:
+        '200':
+          description: Password changed, sessions revoked, and cookies cleared.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookie'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [changed]
+                properties:
+                  changed:
+                    const: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyAttempts'
+  /email/change:
+    post:
+      tags: [Account]
+      operationId: changeEmail
+      summary: Change the authenticated identity email
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+      responses:
+        '200':
+          description: Email changed, sessions revoked, and cookies cleared.
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/SetCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /service-token:
+    post:
+      tags: [Service authentication]
+      operationId: createServiceToken
+      summary: Issue a short-lived service-to-service access token
+      description: This endpoint rejects requests containing browser headers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTokenRequest'
+      responses:
+        '200':
+          description: Service access token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /health:
+    get:
+      tags: [Service authentication]
+      operationId: getIdentityHealth
+      summary: Check token issuance and public-key readiness
+      responses:
+        '200':
+          description: Identity authentication is operational.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Identity authentication is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /.well-known/jwks.json:
+    servers:
+      - url: /
+        description: Gateway root; this route is not under `/v1/auth`
+    get:
+      tags: [Service authentication]
+      operationId: getJsonWebKeySet
+      summary: Return the public JSON Web Key Set
+      responses:
+        '200':
+          description: Public signing keys.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+        '503':
+          description: JWKS unavailable for the configured token service.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+  parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: false
+      description: Required when an authentication or refresh cookie is sent.
+      schema:
+        type: string
+        minLength: 1
+  headers:
+    SetCookie:
+      description: Authentication cookies created, rotated, or cleared.
+      schema:
+        type: string
+  responses:
+    AuthSuccess:
+      description: Authentication succeeded. Cookies are returned by default; body tokens are returned when explicitly requested by a non-browser client.
+      headers:
+        Set-Cookie:
+          $ref: '#/components/headers/SetCookie'
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/SessionReference'
+              - $ref: '#/components/schemas/BodyTokenResponse'
+    BadRequest:
+      description: Invalid JSON, field, origin, token transport, policy value, OAuth provider, or browser use of a non-browser endpoint.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid credentials, access token, refresh token, verification code, or reset code.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Identity inactive or CSRF token missing/invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Identity, username, or email already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyAttempts:
+      description: Rate limit for the operation was exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The referenced identity does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Referenced identity was not found or generated persistence identifiers were unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    TokenTransport:
+      type: string
+      enum: [cookie, body, bearer]
+      description: '`bearer` is accepted as an alias for `body`.'
+      default: cookie
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password, confirmPassword]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: '^[a-z0-9](?:[a-z0-9_.-]*[a-z0-9])?$'
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+        confirmPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        tokenTransport:
+          $ref: '#/components/schemas/TokenTransport'
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+        tokenTransport:
+          $ref: '#/components/schemas/TokenTransport'
+    OAuthLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, code]
+      properties:
+        provider:
+          type: string
+          enum: [google, github, apple]
+        code:
+          type: string
+          minLength: 1
+        redirectUri:
+          type: string
+          format: uri
+        codeVerifier:
+          type: string
+          minLength: 1
+        tokenTransport:
+          $ref: '#/components/schemas/TokenTransport'
+    RefreshRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+        tokenTransport:
+          $ref: '#/components/schemas/TokenTransport'
+    SessionReference:
+      type: object
+      required: [identityId, authSessionId]
+      properties:
+        identityId:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        authSessionId:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+    BodyTokenResponse:
+      allOf:
+        - $ref: '#/components/schemas/SessionReference'
+        - type: object
+          required: [tokenType, accessToken, refreshToken, expiresIn, refreshExpiresIn]
+          properties:
+            tokenType:
+              const: Bearer
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            expiresIn:
+              type: integer
+              const: 900
+            refreshExpiresIn:
+              type: integer
+              const: 2592000
+    CurrentIdentity:
+      type: object
+      required: [sub, sid, identityId, authSessionId, username, email, emailVerified, amr]
+      properties:
+        sub:
+          $ref: '#/components/schemas/Uuid'
+        sid:
+          $ref: '#/components/schemas/Uuid'
+        identityId:
+          $ref: '#/components/schemas/Uuid'
+        authSessionId:
+          $ref: '#/components/schemas/Uuid'
+        username:
+          type: string
+        email:
+          oneOf:
+            - type: string
+              format: email
+            - type: 'null'
+        emailVerified:
+          type: boolean
+        amr:
+          type: array
+          items:
+            type: string
+            enum: [username, google, github, apple]
+    EmailState:
+      type: object
+      required: [identityId, email, emailVerified]
+      properties:
+        identityId:
+          $ref: '#/components/schemas/Uuid'
+        email:
+          type: string
+          format: email
+        emailVerified:
+          type: boolean
+    SentResult:
+      type: object
+      required: [sent]
+      properties:
+        sent:
+          const: true
+    ServiceTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [serviceName, serviceSecret, audience, scopes]
+      properties:
+        serviceName:
+          type: string
+          minLength: 1
+        serviceSecret:
+          type: string
+          minLength: 1
+        audience:
+          type: string
+          minLength: 1
+        scopes:
+          oneOf:
+            - type: string
+              minLength: 1
+            - type: array
+              minItems: 1
+              items:
+                type: string
+                minLength: 1
+        globalAccess:
+          type: boolean
+          default: false
+          description: Requires allowGlobalAccess on the service registration.
+        tenantPartyId:
+          $ref: '#/components/schemas/Uuid'
+        projectId:
+          $ref: '#/components/schemas/Uuid'
+        resourceId:
+          $ref: '#/components/schemas/Uuid'
+        delegatedIdentityId:
+          $ref: '#/components/schemas/Uuid'
+    ServiceTokenResponse:
+      type: object
+      required: [tokenType, accessToken, expiresIn, serviceName, audience, scopes]
+      properties:
+        tokenType:
+          const: Bearer
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          const: 300
+        serviceName:
+          type: string
+        audience:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        globalAccess:
+          type: boolean
+        tenantPartyId:
+          $ref: '#/components/schemas/Uuid'
+        projectId:
+          $ref: '#/components/schemas/Uuid'
+        resourceId:
+          $ref: '#/components/schemas/Uuid'
+        delegatedIdentityId:
+          $ref: '#/components/schemas/Uuid'
+    Health:
+      type: object
+      required: [service, status, checks]
+      properties:
+        service:
+          const: identity-auth
+        status:
+          type: string
+          enum: [ok, unavailable]
+        checks:
+          type: object
+          required: [tokenIssuance, publicKeyAvailable, jwksParseable]
+          properties:
+            tokenIssuance:
+              type: boolean
+            publicKeyAvailable:
+              type: boolean
+            jwksParseable:
+              type: boolean
+    Jwks:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+    Jwk:
+      type: object
+      required: [kty, use, alg, kid, n, e]
+      properties:
+        kty:
+          const: RSA
+        use:
+          const: sig
+        alg:
+          const: RS256
+        kid:
+          type: string
+        n:
+          type: string
+        e:
+          type: string
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum:
+            - invalid_request
+            - invalidCredentials
+            - identityNotFound
+            - identityNotActive
+            - identityAlreadyExists
+            - usernameAlreadyExists
+            - emailAlreadyExists
+            - invalidUsername
+            - invalidEmail
+            - weakPassword
+            - passwordConfirmationMismatch
+            - missingEmail
+            - invalidEmailVerificationCode
+            - invalidPasswordResetCode
+            - tooManyAttempts
+            - missingRefreshToken
+            - invalidRefreshToken
+            - invalidCsrfToken
+            - invalidOAuthProvider
+            - invalidOAuthCredentials
+            - oauthProviderNotConfigured
+            - missingGeneratedId
+            - missingAccessToken
+            - invalidAccessToken
+            - sessionNotFound
+            - jwks_not_available

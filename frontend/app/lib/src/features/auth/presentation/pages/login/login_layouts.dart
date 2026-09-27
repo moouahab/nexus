@@ -8,10 +8,12 @@ class _DesktopLoginLayout extends StatelessWidget {
     required this.rememberMe,
     required this.obscurePassword,
     required this.isSubmitting,
+    required this.isGoogleSubmitting,
     required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onGoogleLogin,
     required this.onRegister,
   });
 
@@ -21,10 +23,12 @@ class _DesktopLoginLayout extends StatelessWidget {
   final bool rememberMe;
   final bool obscurePassword;
   final bool isSubmitting;
+  final bool isGoogleSubmitting;
   final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
   final Future<void> Function() onSubmit;
+  final Future<void> Function() onGoogleLogin;
   final VoidCallback onRegister;
 
   @override
@@ -52,10 +56,12 @@ class _DesktopLoginLayout extends StatelessWidget {
                       rememberMe: rememberMe,
                       obscurePassword: obscurePassword,
                       isSubmitting: isSubmitting,
+                      isGoogleSubmitting: isGoogleSubmitting,
                       submitError: submitError,
                       onRememberChanged: onRememberChanged,
                       onTogglePassword: onTogglePassword,
                       onSubmit: onSubmit,
+                      onGoogleLogin: onGoogleLogin,
                       onRegister: onRegister,
                       showHeading: true,
                     ),
@@ -78,10 +84,12 @@ class _CompactLoginLayout extends StatelessWidget {
     required this.rememberMe,
     required this.obscurePassword,
     required this.isSubmitting,
+    required this.isGoogleSubmitting,
     required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onGoogleLogin,
     required this.onRegister,
   });
 
@@ -91,10 +99,12 @@ class _CompactLoginLayout extends StatelessWidget {
   final bool rememberMe;
   final bool obscurePassword;
   final bool isSubmitting;
+  final bool isGoogleSubmitting;
   final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
   final Future<void> Function() onSubmit;
+  final Future<void> Function() onGoogleLogin;
   final VoidCallback onRegister;
 
   @override
@@ -121,10 +131,12 @@ class _CompactLoginLayout extends StatelessWidget {
                     rememberMe: rememberMe,
                     obscurePassword: obscurePassword,
                     isSubmitting: isSubmitting,
+                    isGoogleSubmitting: isGoogleSubmitting,
                     submitError: submitError,
                     onRememberChanged: onRememberChanged,
                     onTogglePassword: onTogglePassword,
                     onSubmit: onSubmit,
+                    onGoogleLogin: onGoogleLogin,
                     onRegister: onRegister,
                     compactSpacing: true,
                     showHeading: false,
@@ -147,10 +159,12 @@ class _TabletPortraitLoginLayout extends StatelessWidget {
     required this.rememberMe,
     required this.obscurePassword,
     required this.isSubmitting,
+    required this.isGoogleSubmitting,
     required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onGoogleLogin,
     required this.onRegister,
   });
 
@@ -160,10 +174,12 @@ class _TabletPortraitLoginLayout extends StatelessWidget {
   final bool rememberMe;
   final bool obscurePassword;
   final bool isSubmitting;
+  final bool isGoogleSubmitting;
   final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
   final Future<void> Function() onSubmit;
+  final Future<void> Function() onGoogleLogin;
   final VoidCallback onRegister;
 
   @override
@@ -190,10 +206,12 @@ class _TabletPortraitLoginLayout extends StatelessWidget {
                     rememberMe: rememberMe,
                     obscurePassword: obscurePassword,
                     isSubmitting: isSubmitting,
+                    isGoogleSubmitting: isGoogleSubmitting,
                     submitError: submitError,
                     onRememberChanged: onRememberChanged,
                     onTogglePassword: onTogglePassword,
                     onSubmit: onSubmit,
+                    onGoogleLogin: onGoogleLogin,
                     onRegister: onRegister,
                     showHeading: true,
                   ),
@@ -215,10 +233,12 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
     required this.rememberMe,
     required this.obscurePassword,
     required this.isSubmitting,
+    required this.isGoogleSubmitting,
     required this.submitError,
     required this.onRememberChanged,
     required this.onTogglePassword,
     required this.onSubmit,
+    required this.onGoogleLogin,
     required this.onRegister,
   });
 
@@ -228,10 +248,12 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
   final bool rememberMe;
   final bool obscurePassword;
   final bool isSubmitting;
+  final bool isGoogleSubmitting;
   final String? submitError;
   final ValueChanged<bool?> onRememberChanged;
   final VoidCallback onTogglePassword;
   final Future<void> Function() onSubmit;
+  final Future<void> Function() onGoogleLogin;
   final VoidCallback onRegister;
 
   @override
@@ -262,10 +284,12 @@ class _TabletLandscapeLoginLayout extends StatelessWidget {
                 rememberMe: rememberMe,
                 obscurePassword: obscurePassword,
                 isSubmitting: isSubmitting,
+                isGoogleSubmitting: isGoogleSubmitting,
                 submitError: submitError,
                 onRememberChanged: onRememberChanged,
                 onTogglePassword: onTogglePassword,
                 onSubmit: onSubmit,
+                onGoogleLogin: onGoogleLogin,
                 onRegister: onRegister,
                 showHeading: true,
               ),

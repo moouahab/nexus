@@ -1,0 +1,34 @@
+services:
+  postgres_test:
+    profiles:
+      - test
+    build:
+      context: ../../../../../infrastructure/service-runtime/docker/postgres
+    user: "0:0"
+    ports:
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-9590}:5432"
+    configs:
+      - source: postgres_test_config
+        target: /run/config/postgres.conf
+    secrets:
+      - source: postgres_test_password
+        target: postgres_password
+    volumes:
+      - ai_gateway_test_data:/var/lib/postgresql/data
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+      - /var/run/postgresql:size=16m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true

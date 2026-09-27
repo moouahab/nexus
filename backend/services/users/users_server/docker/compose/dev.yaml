@@ -12,10 +12,22 @@ services:
         RUNTIME_USER: users
         ENTRYPOINT_TARGET: /usr/local/bin/serverpod-api-entrypoint
     command: ["development", "default", "normal", "monolith", "true"]
-    ports:
-      - "127.0.0.1:8380:8080"
-      - "127.0.0.1:8381:8081"
-      - "127.0.0.1:8382:8082"
+    environment:
+      PARTIES_BASE_URL: ${PARTIES_BASE_URL:-http://kong:8000/v1/parties/}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=development
+    expose:
+      - "8080"
+      - "8081"
+      - "8082"
+    networks:
+      default:
+      users_gateway:
+        aliases:
+          - users-api
+      telemetry:
     depends_on:
       postgres:
         condition: service_healthy
@@ -25,7 +37,16 @@ services:
         condition: service_healthy
     volumes:
       - ../config/serverpod-development.yaml:/app/config/development.yaml:ro
-      - users_vault_secrets:/run/vault/secrets:ro
+      - users_api_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /app/config:size=4m,noexec,nosuid,nodev,mode=0700,uid=100
+      - /tmp:size=32m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -39,8 +60,6 @@ services:
     build:
       context: ../../../../../infrastructure/service-runtime/docker/postgres
     user: "0:0"
-    ports:
-      - "127.0.0.1:8390:5432"
     depends_on:
       vault_agent:
         condition: service_healthy
@@ -49,7 +68,24 @@ services:
         target: /run/config/postgres.conf
     volumes:
       - users_data:/var/lib/postgresql/data
-      - users_vault_secrets:/run/vault/secrets:ro
+      - users_postgres_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+      - /var/run/postgresql:size=16m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
       interval: 5s
@@ -61,13 +97,25 @@ services:
     build:
       context: ../../../../../infrastructure/service-runtime/docker/redis
     user: "0:0"
-    ports:
-      - "127.0.0.1:8391:6379"
     depends_on:
       vault_agent:
         condition: service_healthy
     volumes:
-      - users_vault_secrets:/run/vault/secrets:ro
+      - users_redis_secrets:/run/vault/secrets:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /data:size=64m,noexec,nosuid,nodev
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -76,3 +124,11 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+networks:
+  users_gateway:
+    name: nexus_users_gateway
+    external: true
+  telemetry:
+    name: nexus_telemetry
+    external: true

@@ -3,4 +3,5 @@ class AuthTokenTypes {
 
   static const access = 'access';
   static const refresh = 'refresh';
+  static const service = 'service';
 }

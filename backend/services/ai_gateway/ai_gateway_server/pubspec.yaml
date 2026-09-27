@@ -1,0 +1,17 @@
+name: ai_gateway_server
+description: Secure orchestration boundary for Nexus AI workloads.
+environment:
+  sdk: '^3.8.0'
+resolution: workspace
+dependencies:
+  crypto: ^3.0.6
+  nexus_auth:
+    path: ../../../shared/nexus_auth
+  serverpod: 3.4.11
+dev_dependencies:
+  lints: '>=3.0.0 <7.0.0'
+  serverpod_test: 3.4.11
+  test: ^1.25.5
+serverpod:
+  scripts:
+    start: dart bin/main.dart --apply-migrations

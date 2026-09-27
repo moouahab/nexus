@@ -16,6 +16,8 @@ readonly POSTGRES_PASSWORD_FILE="$SECRETS_DIR/postgres_password"
 readonly REDIS_PASSWORD_FILE="$SECRETS_DIR/redis_password"
 readonly SERVICE_SECRET_FILE="$SECRETS_DIR/service_secret"
 readonly IDENTITY_ACCESS_TOKEN_PUBLIC_KEY_FILE="$SECRETS_DIR/identity_access_token_public_key_pem"
+# Identity owns this shared local source. Projects must never generate a second value.
+readonly PROJECT_AUTHORIZATION_GRANT_SECRET_FILE="${PROJECT_AUTHORIZATION_GRANT_SECRET_FILE:-$BACKEND_ROOT/services/identity/identity_server/secrets/project_authorization_grant_secret}"
 
 setup_environment() {
   cd "$SERVER_ROOT"

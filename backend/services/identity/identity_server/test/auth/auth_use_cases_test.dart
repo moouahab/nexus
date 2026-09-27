@@ -1077,7 +1077,7 @@ class FakeOAuthProviderVerifier implements OAuthProviderVerifier {
   Future<OAuthProviderProfile> verify(
     Session session, {
     required String code,
-    required String redirectUri,
+    String? redirectUri,
     String? codeVerifier,
   }) async {
     if (code == 'invalid-code') {

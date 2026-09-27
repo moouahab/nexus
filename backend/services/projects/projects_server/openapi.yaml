@@ -1,0 +1,218 @@
+openapi: 3.1.0
+info:
+  title: Nexus Projects API
+  version: 1.0.0
+servers:
+  - url: /v1/projects
+security:
+  - bearerAuth: []
+paths:
+  /projects:
+    post:
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateProject'}
+      responses:
+        '201': {$ref: '#/components/responses/Project'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /tenants/{tenantId}/projects:
+    get:
+      operationId: listProjects
+      parameters: [{$ref: '#/components/parameters/TenantId'}]
+      responses:
+        '200': {description: Projects visible to the caller in this tenant}
+  /projects/{projectId}:
+    parameters: [{$ref: '#/components/parameters/ProjectId'}]
+    get:
+      operationId: getProject
+      responses:
+        '200': {$ref: '#/components/responses/Project'}
+        '404': {$ref: '#/components/responses/Error'}
+    patch:
+      operationId: updateProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateProject'}
+      responses:
+        '200': {$ref: '#/components/responses/Project'}
+  /projects/{projectId}/status:
+    post:
+      operationId: changeProjectStatus
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {$ref: '#/components/schemas/ProjectStatus'}
+                reason: {type: string}
+      responses: {'200': {$ref: '#/components/responses/Project'}}
+  /projects/{projectId}/ai-access:
+    get:
+      operationId: canUseAiForProject
+      description: Checks whether the authenticated user may use this project through AI Gateway and returns a short-lived token-exchange grant when allowed.
+      parameters:
+        - {$ref: '#/components/parameters/ProjectId'}
+        - name: tenantPartyId
+          in: query
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Authorization decision.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [allowed]
+                properties:
+                  allowed: {type: boolean}
+                  authorizationGrant:
+                    type: string
+                    description: Short-lived signed grant, present only when allowed is true.
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /projects/{projectId}/archive:
+    post:
+      operationId: archiveProject
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      requestBody: {$ref: '#/components/requestBodies/Reason'}
+      responses: {'200': {$ref: '#/components/responses/Project'}}
+  /projects/{projectId}/restore:
+    post:
+      operationId: restoreProject
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      requestBody: {$ref: '#/components/requestBodies/Reason'}
+      responses: {'200': {$ref: '#/components/responses/Project'}}
+  /projects/{projectId}/participants:
+    get:
+      operationId: listProjectParticipants
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      responses: {'200': {description: Project participants}}
+    post:
+      operationId: addProjectParticipant
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role, identityId]
+              properties:
+                role: {type: string}
+                identityId: {type: string, format: uuid}
+                displayName: {type: string}
+                isPrimary: {type: boolean}
+      responses: {'200': {description: Added participant}}
+  /projects/{projectId}/links:
+    get:
+      operationId: listProjectLinks
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      responses: {'200': {description: Project links}}
+    post:
+      operationId: addProjectLink
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, externalId]
+              properties:
+                kind: {type: string}
+                externalId: {type: string}
+                service: {type: string}
+                label: {type: string}
+                uri: {type: string, format: uri}
+      responses: {'200': {description: Added link}}
+  /projects/{projectId}/events:
+    get:
+      operationId: listProjectEvents
+      parameters: [{$ref: '#/components/parameters/ProjectId'}]
+      responses: {'200': {description: Project event timeline}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    ProjectId: {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+    TenantId: {name: tenantId, in: path, required: true, schema: {type: string, format: uuid}}
+  requestBodies:
+    Reason:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason: {type: string}
+  responses:
+    Project:
+      description: Project
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Project'}
+    Error:
+      description: Stable API error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    ProjectStatus: {type: string, enum: [draft, active, paused, archived, deleted]}
+    Visibility: {type: string, enum: [private, internal, shared]}
+    Project:
+      type: object
+      required: [id, slug, name, status, visibility, tags, metadata, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        slug: {type: string}
+        name: {type: string}
+        summary: {type: string}
+        status: {$ref: '#/components/schemas/ProjectStatus'}
+        visibility: {$ref: '#/components/schemas/Visibility'}
+        tenantPartyId: {type: string, format: uuid}
+        ownerIdentityId: {type: string, format: uuid}
+        tags: {type: array, items: {type: string}}
+        metadata: {type: object, additionalProperties: {type: string}}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        archivedAt: {type: string, format: date-time}
+    CreateProject:
+      type: object
+      required: [slug, name, tenantPartyId]
+      properties:
+        slug: {type: string}
+        name: {type: string}
+        tenantPartyId: {type: string, format: uuid}
+        summary: {type: string}
+        visibility: {$ref: '#/components/schemas/Visibility'}
+        tags: {type: array, items: {type: string}}
+        metadata: {type: object, additionalProperties: {type: string}}
+    UpdateProject:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string}
+        summary: {type: string}
+        visibility: {$ref: '#/components/schemas/Visibility'}
+        tags: {type: array, items: {type: string}}
+        metadata: {type: object, additionalProperties: {type: string}}
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties:
+            code: {type: string, enum: [AUTH_REQUIRED, ACCESS_DENIED, INVALID_REQUEST, VALIDATION_FAILED, RESOURCE_NOT_FOUND, CONFLICT, INTERNAL_ERROR]}
+            message: {type: string}

@@ -77,6 +77,7 @@ jwt_access_token_public_key_pem
 jwt_access_token_key_id
 jwt_hmac_sha512_private_key
 jwt_refresh_token_hash_pepper
+project_authorization_grant_secret
 ```
 
 Example:
@@ -91,8 +92,13 @@ vault kv put secret/nexus/identity/production \
   jwt_access_token_public_key_pem='<production-rs256-public-key-pem>' \
   jwt_access_token_key_id='identity-access-token-2026-09' \
   jwt_hmac_sha512_private_key='<production-jwt-hmac-sha512-private-key>' \
-  jwt_refresh_token_hash_pepper='<production-jwt-refresh-token-hash-pepper>'
+  jwt_refresh_token_hash_pepper='<production-jwt-refresh-token-hash-pepper>' \
+  project_authorization_grant_secret="$PROJECT_AUTHORIZATION_GRANT_SECRET"
 ```
+
+Generate `PROJECT_AUTHORIZATION_GRANT_SECRET` once in the deployment secret
+store, then use that exact value for both the Identity and Projects Vault KV
+payloads. Do not generate one value per service.
 
 ## 3. Create A Production Policy
 

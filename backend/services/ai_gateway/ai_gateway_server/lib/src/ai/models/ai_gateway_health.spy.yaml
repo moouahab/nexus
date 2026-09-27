@@ -1,0 +1,4 @@
+class: AiGatewayHealth
+fields:
+  service: String
+  status: String

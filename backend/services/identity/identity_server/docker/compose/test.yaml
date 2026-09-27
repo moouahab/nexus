@@ -15,6 +15,23 @@ services:
         target: postgres_password
     volumes:
       - identity_test_data:/var/lib/postgresql/data
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+      - /var/run/postgresql:size=16m,noexec,nosuid,nodev
+    pids_limit: 200
+    mem_limit: 1g
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
 
   redis_test:
     profiles:
@@ -27,6 +44,21 @@ services:
     secrets:
       - source: redis_test_password
         target: redis_password
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    tmpfs:
+      - /data:size=64m,noexec,nosuid,nodev
+      - /tmp:size=16m,noexec,nosuid,nodev
+    pids_limit: 100
+    mem_limit: 256m
+    cpus: 0.50
     security_opt:
       - no-new-privileges:true
     healthcheck:

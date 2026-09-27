@@ -29,7 +29,7 @@ class AppleOAuthProviderVerifier implements OAuthProviderVerifier {
   Future<OAuthProviderProfile> verify(
     Session session, {
     required String code,
-    required String redirectUri,
+    String? redirectUri,
     String? codeVerifier,
   }) async {
     final tokenResponse = await _httpClient.postForm(
@@ -39,7 +39,7 @@ class AppleOAuthProviderVerifier implements OAuthProviderVerifier {
         'client_secret': _clientSecret,
         'code': code,
         'grant_type': 'authorization_code',
-        'redirect_uri': redirectUri,
+        'redirect_uri': ?redirectUri,
       },
     );
     final tokenBody = tokenResponse.objectBody;

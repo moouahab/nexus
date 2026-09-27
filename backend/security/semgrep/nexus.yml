@@ -1,0 +1,95 @@
+rules:
+  - id: nexus-service-token-without-explicit-scope
+    message: Service authentication is accepted without an explicit requiredScopes boundary.
+    severity: ERROR
+    languages: [dart]
+    metadata:
+      category: service-token-scope
+      confidence: high
+      cwe: CWE-862
+      owasp-api: API5:2023
+      fix: Pass the smallest operation-specific requiredScopes set and enforce resource claims separately.
+    patterns:
+      - pattern: $AUTH.requireServiceContext($SESSION)
+      - pattern-not-inside: |
+          $AUTH.requireServiceContext($SESSION, requiredScopes: $SCOPES)
+  - id: nexus-http-client-without-timeout
+    message: Outbound HTTP request has no explicit timeout at the call site.
+    severity: WARNING
+    languages: [dart]
+    metadata:
+      category: interservice-security
+      confidence: medium
+      cwe: CWE-400
+      fix: Set a bounded connect/request timeout and fail closed for authorization calls.
+    patterns:
+      - pattern: await $CLIENT.$METHOD(...)
+      - pattern-not: await $CLIENT.$METHOD(...).timeout(...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|put|patch|delete|send)$
+  - id: nexus-sensitive-value-in-log
+    message: Potential secret, token, cookie, password or prompt written to logs.
+    severity: ERROR
+    languages: [dart]
+    metadata:
+      category: sensitive-data-logging
+      confidence: medium
+      cwe: CWE-532
+      owasp-api: API8:2023
+      fix: Log a redacted identifier or digest, never the value.
+    patterns:
+      - pattern-either:
+          - pattern: $SESSION.log($VALUE, ...)
+          - pattern: NexusObservability.log(..., $VALUE, ...)
+          - pattern: AuthAudit.log(..., $VALUE, ...)
+          - pattern: print($VALUE)
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: (?i).*(token|cookie|prompt|secret|password).*
+  - id: nexus-raw-exception-response
+    message: Raw exception may be returned to an API caller.
+    severity: ERROR
+    languages: [dart]
+    metadata:
+      category: verbose-error
+      confidence: high
+      cwe: CWE-209
+      owasp-api: API8:2023
+      fix: Return a stable public error code and log only sanitized server-side context.
+    pattern-either:
+      - pattern: |
+          Response(..., body: $EXCEPTION.toString(), ...)
+      - pattern: |
+          Response.json(..., body: $EXCEPTION.toString(), ...)
+  - id: nexus-user-controlled-http-url
+    message: A request-derived URL is used for outbound HTTP; review for SSRF and scope validation.
+    severity: ERROR
+    languages: [dart]
+    metadata:
+      category: ssrf
+      confidence: medium
+      cwe: CWE-918
+      owasp-api: API7:2023
+      fix: Resolve against an allowlisted origin, validate every resolved IP and reject redirects.
+    patterns:
+      - pattern: await $CLIENT.$METHOD(Uri.parse($REQUEST.$FIELD), ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|put|patch|delete|send)$
+  - id: nexus-bearer-not-forwarded
+    message: Interservice request should be reviewed for authorization propagation.
+    severity: WARNING
+    languages: [dart]
+    metadata:
+      category: interservice-auth
+      confidence: low
+      cwe: CWE-306
+      fix: Forward the caller authorization or use a narrowly scoped delegated service token.
+    patterns:
+      - pattern: await $CLIENT.$METHOD($URL, ...)
+      - pattern-not: |
+          await $CLIENT.$METHOD($URL, ..., headers: $HEADERS, ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(get|post|put|patch|delete|send)$

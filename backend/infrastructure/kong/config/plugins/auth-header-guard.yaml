@@ -1,0 +1,15 @@
+  - name: pre-function
+    config:
+      access:
+        - |
+          local authorization = kong.request.get_header("authorization")
+          if authorization and not string.match(
+            authorization,
+            "^[Bb][Ee][Aa][Rr][Ee][Rr]%s+[A-Za-z0-9_%-%.]+$"
+          ) then
+            return kong.response.exit(
+              401,
+              { error = "invalid_access_token" },
+              { ["Content-Type"] = "application/json" }
+            )
+          end

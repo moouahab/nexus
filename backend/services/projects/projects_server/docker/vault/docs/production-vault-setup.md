@@ -71,6 +71,7 @@ Expected keys:
 postgres_password
 redis_password
 service_secret
+project_authorization_grant_secret
 ```
 
 Example:
@@ -79,8 +80,13 @@ Example:
 vault kv put secret/nexus/projects/production \
   postgres_password='<production-postgres-password>' \
   redis_password='<production-redis-password>' \
-  service_secret='<production-serverpod-service-secret>'
+  service_secret='<production-serverpod-service-secret>' \
+  project_authorization_grant_secret="$PROJECT_AUTHORIZATION_GRANT_SECRET"
 ```
+
+`PROJECT_AUTHORIZATION_GRANT_SECRET` must be the same deployment-managed value
+written to Identity's production KV payload. Generate it once, distribute it to
+both Vault paths, and rotate both paths as one operation.
 
 ## 3. Create A Production Policy
 

@@ -1,0 +1,6 @@
+include:
+  - docker/compose/resources.yaml
+  - docker/compose/dev.yaml
+  - docker/compose/debug.yaml
+  - docker/compose/test.yaml
+  - docker/compose/vault-agent.yaml

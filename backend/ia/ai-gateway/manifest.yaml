@@ -1,0 +1,37 @@
+name: ai-gateway
+kind: nexus-serverpod-service
+status: implementation-foundation
+owner: backend
+implementation: ../../services/ai_gateway
+public_base_path: /v1/ai
+planned_upstream:
+  local_api_port: 8580
+  local_insights_port: 8581
+  local_web_port: 8582
+auth:
+  user_tokens:
+    issuer: nexus-identity
+    audience: nexus-services
+  service_tokens:
+    audience: ai-gateway
+    required_claims:
+      - typ
+      - sub
+      - aud
+      - scope
+      - iat
+      - exp
+    scopes:
+      - ai.context.preview
+      - ai.run.create
+      - ai.run.read
+      - ai.run.cancel
+observability:
+  correlation_header: x-request-id
+  log_raw_prompts: false
+  log_tokens: false
+  log_provider_secrets: false
+dependencies:
+  required_before_runtime:
+    - projects project authorization contract
+provider_integrations: []

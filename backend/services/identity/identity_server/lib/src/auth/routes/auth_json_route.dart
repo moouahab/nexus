@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:nexus_auth/nexus_auth.dart';
 import 'package:serverpod/serverpod.dart';
 
 import '../application/exceptions/authentication_required_exception.dart';
@@ -20,7 +21,15 @@ abstract class AuthJsonRoute extends Route {
   );
 
   @override
-  FutureOr<Result> handleCall(Session session, Request request) async {
+  FutureOr<Result> handleCall(Session session, Request request) =>
+      NexusObservability.observeHttp(
+        session,
+        request,
+        () => _handleCall(session, request),
+        service: 'identity',
+      );
+
+  Future<Result> _handleCall(Session session, Request request) async {
     try {
       _requireAllowedOrigin(session, request);
 
@@ -119,10 +128,14 @@ abstract class AuthJsonRoute extends Route {
 
   String readStringBodyField(
     Map<String, dynamic> body,
-    String fieldName,
-  ) {
+    String fieldName, {
+    int? maxLength,
+  }) {
     final value = body[fieldName];
-    if (value is! String || value.isEmpty) {
+    if (value is! String ||
+        value.isEmpty ||
+        value.contains('\u0000') ||
+        (maxLength != null && value.length > maxLength)) {
       throw FormatException('Expected non-empty string field "$fieldName".');
     }
 
@@ -189,7 +202,7 @@ abstract class AuthJsonRoute extends Route {
     return Response(
       statusCode,
       body: Body.fromString(jsonEncode(body), mimeType: MimeType.json),
-      headers: Headers.fromMap(headers),
+      headers: Headers.fromMap(NexusObservability.responseHeaders(headers)),
     );
   }
 
@@ -248,7 +261,7 @@ abstract class AuthJsonRoute extends Route {
       AuthUseCaseExceptionCode.invalidPasswordResetCode => 401,
       AuthUseCaseExceptionCode.tooManyAttempts => 429,
       AuthUseCaseExceptionCode.invalidCsrfToken => 403,
-      AuthUseCaseExceptionCode.identityNotFound => 500,
+      AuthUseCaseExceptionCode.identityNotFound => 404,
       AuthUseCaseExceptionCode.oauthProviderNotConfigured => 400,
       AuthUseCaseExceptionCode.missingGeneratedId => 500,
     };

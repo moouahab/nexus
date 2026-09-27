@@ -1,0 +1,30 @@
+apiServer:
+  port: 8080
+  publicHost: api.example.invalid
+  publicPort: 443
+  publicScheme: https
+insightsServer:
+  port: 8081
+  publicHost: localhost
+  publicPort: 8081
+  publicScheme: http
+webServer:
+  port: 8082
+  publicHost: localhost
+  publicPort: 8082
+  publicScheme: http
+database:
+  host: database.private-production.example.invalid
+  port: 5432
+  name: ai_gateway
+  user: postgres
+redis:
+  enabled: false
+  host: redis.private-production.example.invalid
+  port: 6379
+maxRequestSize: 262144
+futureCall:
+  concurrencyLimit: 4
+  scanInterval: 1000
+sessionLogs:
+  consoleEnabled: false

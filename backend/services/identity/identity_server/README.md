@@ -132,6 +132,26 @@ OAuth provider keys are prepared but disabled by default:
 Set a provider's `_enabled` value to `true` only after its external OAuth app,
 secret, and redirect URI are ready.
 
+For local Google login, write the Google web/server OAuth client values to Identity
+secrets, then re-run the setup so Vault and the containers receive them:
+
+```bash
+printf '%s' 'true' > secrets/google_oauth_enabled
+printf '%s' '<web-client-id>' > secrets/google_oauth_client_id
+printf '%s' '<web-client-secret>' > secrets/google_oauth_client_secret
+./docker/script/setup_vault_approle.sh
+```
+
+Restart the frontend with the same server client id:
+
+```bash
+flutter run \
+  --dart-define=GOOGLE_OAUTH_ANDROID_CLIENT_ID='<android-client-id>' \
+  --dart-define=GOOGLE_OAUTH_IOS_CLIENT_ID='<ios-client-id>' \
+  --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID='<web-client-id>' \
+  --dart-define=GOOGLE_OAUTH_SERVER_CLIENT_ID='<web-client-id>'
+```
+
 Set `auth_allowed_origins` to a comma-separated browser origin allowlist, for
 example `https://app.nexus.example`. Auth requests with an `Origin` header
 outside this allowlist are rejected by the API.

@@ -86,3 +86,55 @@ projects -> users database
 legal -> projects database
 identity -> central database for every service
 ```
+
+## Service-to-Service Auth Rule
+
+User access tokens and service tokens are distinct contracts.
+
+User access tokens:
+
+- use `typ=access`;
+- use `sub=<identityId>`;
+- include `sid`, `email_verified`, and `amr`;
+- target the public API audience, currently `nexus-api`.
+
+Service tokens:
+
+- use `typ=service`;
+- use `sub=service:<service-name>`;
+- target the called service as `aud`, for example `projects-service`;
+- include a space-separated or list `scope` claim;
+- are accepted only when the target service validates issuer, audience, expiry,
+  token type, and required scopes.
+
+Services must not treat `session.request == null` as an authorization boundary.
+Internal-only operations should require an explicit service token and scope once
+they are exposed through a service API.
+
+## Cross-Platform API Rule
+
+Public capabilities must not require Flutter, Dart, browser cookies, or a
+platform-specific SDK. A public API is exposed as versioned HTTPS JSON and is
+described by an OpenAPI contract.
+
+Serverpod RPC endpoints may remain available for generated Dart clients, but
+they must call the same application services as the public HTTP routes. They
+must not contain a second implementation of business rules or authorization.
+
+Public contracts use:
+
+- `Authorization: Bearer <token>` as the portable authentication mechanism;
+- UUID strings for identifiers;
+- UTC ISO-8601 timestamps;
+- explicit request size limits;
+- stable machine-readable error codes;
+- cursor or bounded offset pagination for collections;
+- `/v1` versioned paths.
+
+Cookie transport may be offered to web applications as an additional security
+mechanism, but must not be the only way to authenticate. Native, desktop, CLI,
+and server clients must be able to use bearer tokens without emulating a web
+browser.
+
+An HTTP route and its Serverpod RPC equivalent must enforce the same audience,
+scope, tenant, and resource authorization checks.

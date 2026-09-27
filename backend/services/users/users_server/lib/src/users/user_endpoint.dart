@@ -3,10 +3,27 @@ import 'package:nexus_auth/nexus_auth.dart';
 
 import '../generated/protocol.dart';
 import 'application/user_profile_service.dart';
+import 'application/party_access_validator.dart';
+import 'infrastructure/party_access_validator_factory.dart';
 
 class UserEndpoint extends Endpoint {
+  UserEndpoint({
+    AuthContextResolver userAuth = const AuthContextResolver(),
+    AuthContextResolver serviceAuth = const AuthContextResolver(
+      audience: 'users-service',
+    ),
+    PartyAccessValidator? partyAccess,
+  }) : _userAuth = userAuth,
+       _serviceAuth = serviceAuth,
+       _partyAccess =
+           partyAccess ?? PartyAccessValidatorFactory.fromEnvironment();
+
   static const _profiles = UserProfileService();
-  static const _auth = AuthContextResolver();
+  final AuthContextResolver _userAuth;
+  final AuthContextResolver _serviceAuth;
+  final PartyAccessValidator _partyAccess;
+  static const _readScope = 'users.profile.read';
+  static const _writeScope = 'users.profile.write';
 
   Future<UserProfile> completeMyProfile(
     Session session, {
@@ -19,8 +36,9 @@ class UserEndpoint extends Endpoint {
     String? locale,
     String? timezone,
     Map<String, String>? metadata,
-  }) {
-    final auth = _auth.requireContext(session);
+  }) async {
+    final auth = _requireAuthContext(session);
+    await _requirePartyAccess(session, primaryPartyId);
     return _profiles.completeProfile(
       session,
       identityId: auth.identityId,
@@ -37,7 +55,7 @@ class UserEndpoint extends Endpoint {
   }
 
   Future<UserProfile> getMyProfile(Session session) {
-    final auth = _auth.requireContext(session);
+    final auth = _requireAuthContext(session);
     return _profiles.getProfileByIdentity(session, auth.identityId);
   }
 
@@ -53,11 +71,23 @@ class UserEndpoint extends Endpoint {
     String? locale,
     String? timezone,
     Map<String, String>? metadata,
-  }) {
-    final auth = _authContextForHttp(session);
+  }) async {
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    if (caller.serviceContext case final context?) {
+      _requireServiceIdentityBoundary(context, identityId);
+    }
+    if (primaryPartyId != null) {
+      if (caller.identityId == null) {
+        throw NotAuthorizedException(
+          reason: AuthenticationFailureReason.insufficientAccess,
+          message: 'Delegated user authorization is required.',
+        );
+      }
+      await _requirePartyAccess(session, primaryPartyId);
+    }
     return _profiles.completeProfile(
       session,
-      identityId: auth?.identityId ?? identityId,
+      identityId: caller.identityId ?? identityId,
       displayName: displayName,
       kind: kind,
       primaryPartyId: primaryPartyId,
@@ -75,7 +105,8 @@ class UserEndpoint extends Endpoint {
     UuidValue userProfileId,
   ) async {
     final profile = await _profiles.getProfile(session, userProfileId);
-    _ensureOwnProfileForHttp(session, profile);
+    final caller = _requireCaller(session, serviceScopes: const [_readScope]);
+    _ensureProfileAccess(caller, profile);
     return profile;
   }
 
@@ -83,9 +114,15 @@ class UserEndpoint extends Endpoint {
     Session session,
     UuidValue identityId,
   ) {
-    final auth = _authContextForHttp(session);
-    if (auth != null && auth.identityId != identityId) {
-      throw StateError('User profile access is not allowed.');
+    final caller = _requireCaller(session, serviceScopes: const [_readScope]);
+    if (caller.identityId != null && caller.identityId != identityId) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'User profile access is not allowed.',
+      );
+    }
+    if (caller.serviceContext case final context?) {
+      _requireServiceIdentityBoundary(context, identityId);
     }
     return _profiles.getProfileByIdentity(session, identityId);
   }
@@ -96,7 +133,9 @@ class UserEndpoint extends Endpoint {
     required UuidValue? primaryPartyId,
   }) async {
     final profile = await _profiles.getProfile(session, userProfileId);
-    _ensureOwnProfileForHttp(session, profile);
+    final caller = _requireCaller(session, serviceScopes: const [_writeScope]);
+    _ensureProfileAccess(caller, profile);
+    await _requirePartyAccess(session, primaryPartyId);
     return _profiles.setPrimaryParty(
       session,
       userProfileId: userProfileId,
@@ -104,15 +143,126 @@ class UserEndpoint extends Endpoint {
     );
   }
 
-  AuthContext? _authContextForHttp(Session session) {
-    if (session.request == null) return null;
-    return _auth.requireContext(session);
-  }
-
-  void _ensureOwnProfileForHttp(Session session, UserProfile profile) {
-    final auth = _authContextForHttp(session);
-    if (auth != null && profile.identityId != auth.identityId) {
-      throw StateError('User profile access is not allowed.');
+  Future<void> _requirePartyAccess(
+    Session session,
+    UuidValue? partyId,
+  ) async {
+    if (partyId == null) return;
+    final allowed = await _partyAccess.canUseParty(
+      partyId: partyId,
+      bearerToken: _bearerToken(session),
+    );
+    if (!allowed) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'Primary party access denied.',
+      );
     }
   }
+
+  String? _bearerToken(Session session) {
+    final request = session.request;
+    if (request == null) return null;
+    return const BearerAccessTokenReader().read({
+      for (final entry in request.headers.entries)
+        entry.key.toLowerCase(): entry.value.toList(growable: false),
+    });
+  }
+
+  void _ensureProfileAccess(_UserCaller caller, UserProfile profile) {
+    if (caller.identityId != null && profile.identityId != caller.identityId) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'User profile access is not allowed.',
+      );
+    }
+    final context = caller.serviceContext;
+    if (context != null &&
+        !context.globalAccess &&
+        context.resourceId != profile.id.toString() &&
+        context.delegatedIdentityId != profile.identityId.toString()) {
+      throw NotAuthorizedException(
+        reason: AuthenticationFailureReason.insufficientAccess,
+        message: 'User profile access is not allowed.',
+      );
+    }
+  }
+
+  void _requireServiceIdentityBoundary(
+    ServiceAuthContext context,
+    UuidValue identityId,
+  ) {
+    if (context.globalAccess ||
+        context.delegatedIdentityId == identityId.toString() ||
+        context.resourceId == identityId.toString()) {
+      return;
+    }
+    throw NotAuthorizedException(
+      reason: AuthenticationFailureReason.insufficientAccess,
+      message: 'User profile access is not allowed.',
+    );
+  }
+
+  AuthContext _requireAuthContext(Session session) {
+    try {
+      return _userAuth.requireContext(session);
+    } on NexusAuthException catch (error) {
+      throw NotAuthorizedException(
+        reason: _authFailureReason(error),
+        message: 'Authentication failed.',
+      );
+    }
+  }
+
+  _UserCaller _requireCaller(
+    Session session, {
+    required Iterable<String> serviceScopes,
+  }) {
+    try {
+      return _UserCaller.user(_userAuth.requireContext(session));
+    } on NexusAuthException catch (error) {
+      if (error.code != NexusAuthExceptionCode.invalidAccessToken) {
+        throw _notAuthorized(error);
+      }
+      try {
+        return _UserCaller.service(
+          _serviceAuth.requireServiceContext(
+            session,
+            requiredScopes: serviceScopes,
+          ),
+        );
+      } on NexusAuthException catch (serviceError) {
+        throw _notAuthorized(serviceError);
+      }
+    }
+  }
+
+  NotAuthorizedException _notAuthorized(NexusAuthException error) {
+    return NotAuthorizedException(
+      reason: _authFailureReason(error),
+      message: 'Authentication failed.',
+    );
+  }
+
+  AuthenticationFailureReason _authFailureReason(NexusAuthException error) {
+    return switch (error.code) {
+      NexusAuthExceptionCode.missingAccessToken ||
+      NexusAuthExceptionCode.invalidAccessToken =>
+        AuthenticationFailureReason.unauthenticated,
+      NexusAuthExceptionCode.missingAuthSecret ||
+      NexusAuthExceptionCode.missingRequest =>
+        AuthenticationFailureReason.insufficientAccess,
+    };
+  }
+}
+
+class _UserCaller {
+  _UserCaller.user(AuthContext context)
+    : identityId = context.identityId,
+      serviceContext = null;
+
+  _UserCaller.service(this.serviceContext) : identityId = null;
+
+  final UuidValue? identityId;
+  final ServiceAuthContext? serviceContext;
 }

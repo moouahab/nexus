@@ -1,0 +1,29 @@
+### Internal durable payload for an AI run. Cleared when processing finishes.
+class: AiRunJob
+table: ai_run_job
+serverOnly: true
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  runId: UuidValue
+  inputJson: String
+  ### Dedicated short-lived Projects token-exchange grant; cleared on finish.
+  projectAuthorizationGrant: String?
+  bearerToken: String?
+  idempotencyKey: String?
+  requestFingerprint: String?
+  requesterScope: String
+  tenantPartyId: UuidValue
+  status: AiRunJobStatus, default=queued
+  attemptCount: int, default=0
+  claimedAt: DateTime?
+  completedAt: DateTime?
+  lastErrorCode: String?
+  createdAt: DateTime, default=now
+  updatedAt: DateTime?
+indexes:
+  ai_run_job_run_idx:
+    fields: runId
+    unique: true
+  ai_run_job_idempotency_idx:
+    fields: tenantPartyId, requesterScope, idempotencyKey
+    unique: true

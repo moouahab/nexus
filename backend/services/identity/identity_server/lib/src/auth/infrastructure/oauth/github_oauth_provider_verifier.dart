@@ -25,7 +25,7 @@ class GitHubOAuthProviderVerifier implements OAuthProviderVerifier {
   Future<OAuthProviderProfile> verify(
     Session session, {
     required String code,
-    required String redirectUri,
+    String? redirectUri,
     String? codeVerifier,
   }) async {
     final tokenResponse = await _httpClient.postForm(
@@ -34,7 +34,7 @@ class GitHubOAuthProviderVerifier implements OAuthProviderVerifier {
         'client_id': _clientId,
         'client_secret': _clientSecret,
         'code': code,
-        'redirect_uri': redirectUri,
+        'redirect_uri': ?redirectUri,
         'code_verifier': ?codeVerifier,
       },
       headers: {'Accept': 'application/json'},

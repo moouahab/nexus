@@ -1,0 +1,322 @@
+openapi: 3.1.0
+info:
+  title: NEXUS AI Gateway
+  version: 0.3.0
+  description: Cross-platform HTTP JSON API with evidence-backed reasoning, verification, and validation.
+servers:
+  - url: /v1/ai
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getAiGatewayHealth
+      security: []
+      responses:
+        "200":
+          description: AI Gateway contract health.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /capabilities:
+    get:
+      operationId: listAiCapabilities
+      responses:
+        "200":
+          description: Available AI capabilities.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [capabilities]
+                properties:
+                  capabilities:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AiCapability"
+        "401":
+          $ref: "#/components/responses/AuthRequired"
+  /context/preview:
+    post:
+      operationId: previewAiContext
+      description: Validate and preview which context sources would be used.
+      responses:
+        "200":
+          description: Context preview result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContextPreviewResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthRequired"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContextPreviewRequest"
+  /runs:
+    post:
+      operationId: createAiRun
+      description: Authorize and enqueue an AI run, returning immediately. Initial implementations must fail closed if project authorization is unavailable.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: AI run accepted or queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiRun"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthRequired"
+        "403":
+          $ref: "#/components/responses/AccessDenied"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAiRunRequest"
+  /runs/{runId}:
+    get:
+      operationId: getAiRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: AI run status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiRun"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthRequired"
+        "403":
+          $ref: "#/components/responses/AccessDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /runs/{runId}/cancel:
+    post:
+      operationId: cancelAiRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "202":
+          description: Cancellation requested.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiRun"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "401":
+          $ref: "#/components/responses/AuthRequired"
+        "403":
+          $ref: "#/components/responses/AccessDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Run cannot be cancelled from its current state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Optional key scoped to the authenticated requester and tenant. Reuse returns the original run.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    InvalidRequest:
+      description: Invalid JSON payload or parameter.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    AuthRequired:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    AccessDenied:
+      description: Caller cannot access the requested project resource.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: AI run does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    HealthResponse:
+      type: object
+      required: [service, status]
+      properties:
+        service:
+          type: string
+          const: ai-gateway
+        status:
+          type: string
+          enum: [ok]
+    AiCapability:
+      type: object
+      required: [name, status]
+      properties:
+        name:
+          type: string
+          examples: [context.preview]
+        status:
+          type: string
+          enum: [unavailable, available]
+        reason:
+          type: string
+    ContextPreviewRequest:
+      type: object
+      required: [projectId, tenantPartyId, requestedContext, purpose]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        tenantPartyId:
+          type: string
+          format: uuid
+        missionId:
+          type: string
+          format: uuid
+        requestedContext:
+          type: array
+          items:
+            type: string
+        purpose:
+          type: string
+    ContextPreviewResponse:
+      type: object
+      required: [requestId, allowed, resolvedSources, missingSources, warnings]
+      properties:
+        requestId:
+          type: string
+        allowed:
+          type: boolean
+        resolvedSources:
+          type: array
+          items:
+            type: string
+        missingSources:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+    CreateAiRunRequest:
+      type: object
+      required: [projectId, tenantPartyId, capability, input]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        tenantPartyId:
+          type: string
+          format: uuid
+        missionId:
+          type: string
+          format: uuid
+        capability:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+          description: Requires `prompt`; optionally accepts `reasoningLevel` (`direct`, `standard`, `deep`, or `highRisk`).
+        toolPermissions:
+          type: array
+          items:
+            type: string
+    AiRun:
+      type: object
+      required: [id, requestId, capability, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        requestId:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        tenantPartyId:
+          type: string
+          format: uuid
+        capability:
+          type: string
+        status:
+          type: string
+          enum: [queued, planning, collectingEvidence, drafting, verifying, criticizing, revising, validating, running, completed, needsInformation, needsHumanApproval, rejected, failed, cancelled, unsupported]
+        failureCode:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        output:
+          type: string
+        reasoningLevel:
+          type: string
+          enum: [direct, standard, deep, highRisk]
+        currentIteration:
+          type: integer
+          minimum: 0
+        maxIterations:
+          type: integer
+          minimum: 1
+          maximum: 3
+        validated:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

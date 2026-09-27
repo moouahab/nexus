@@ -1,10 +1,12 @@
 import 'package:serverpod/serverpod.dart';
+import 'package:nexus_auth/nexus_auth.dart' show ProjectAuthorizationGrantCodec;
 
 import '../../generated/protocol.dart' as protocol;
 import '../application/services/auth_token_issuer.dart';
 import '../application/services/email_verification_service.dart';
 import '../application/services/password_reset_service.dart';
 import '../application/services/require_auth.dart';
+import '../application/services/service_token_issuer.dart';
 import '../application/use_cases/change_email_use_case.dart';
 import '../application/use_cases/change_password_use_case.dart';
 import '../application/interfaces/auth_cookie_service.dart';
@@ -12,6 +14,7 @@ import '../application/interfaces/access_token_service.dart';
 import '../application/interfaces/email_verification_sender.dart';
 import '../application/interfaces/oauth_provider_verifier.dart';
 import '../application/interfaces/password_reset_sender.dart';
+import '../application/interfaces/service_token_service.dart';
 import '../application/use_cases/login_with_username_use_case.dart';
 import '../application/use_cases/login_with_oauth_use_case.dart';
 import '../application/use_cases/logout_use_case.dart';
@@ -46,6 +49,7 @@ import '../infrastructure/security/redis_login_attempt_limiter.dart';
 import '../infrastructure/security/redis_otp_rate_limiter.dart';
 import '../infrastructure/security/rs256_access_token_service.dart';
 import '../infrastructure/security/secure_refresh_token_secret_service.dart';
+import '../infrastructure/security/static_service_client_registry.dart';
 import '../infrastructure/validation/default_email_policy.dart';
 import '../infrastructure/validation/default_username_policy.dart';
 
@@ -63,6 +67,7 @@ class AuthDependencies {
     required this.authCookieService,
     required this.emailVerificationService,
     required this.passwordResetService,
+    required this.serviceTokenIssuer,
   });
 
   static const _loginAttemptLimiter = RedisLoginAttemptLimiter();
@@ -93,6 +98,7 @@ class AuthDependencies {
     final passwordHasher = Argon2PasswordHasher(pepper: passwordPepper);
     const passwordPolicy = DefaultPasswordPolicy();
     final accessTokenService = accessTokenServiceFromSession(session);
+    final serviceTokenService = accessTokenService as ServiceTokenService;
     final secretHasher = Argon2SecretHasher(pepper: refreshPepper);
     final emailVerificationCodeHasher = Argon2SecretHasher(
       pepper: refreshPepper,
@@ -204,6 +210,15 @@ class AuthDependencies {
       authCookieService: authCookieService,
       emailVerificationService: emailVerificationService,
       passwordResetService: passwordResetService,
+      serviceTokenIssuer: ServiceTokenIssuer(
+        clientRegistry: _serviceClientRegistry(session),
+        tokenService: serviceTokenService,
+        projectGrantCodec: ProjectAuthorizationGrantCodec(
+          secret:
+              _optionalPassword(session, 'projectAuthorizationGrantSecret') ??
+              '',
+        ),
+      ),
     );
   }
 
@@ -219,6 +234,7 @@ class AuthDependencies {
   final AuthCookieService authCookieService;
   final EmailVerificationService emailVerificationService;
   final PasswordResetService passwordResetService;
+  final ServiceTokenIssuer serviceTokenIssuer;
 
   static AccessTokenService accessTokenServiceFromSession(Session session) {
     final privateKey = _optionalPassword(
@@ -260,6 +276,14 @@ class AuthDependencies {
     }
 
     return AuthCookieOptions.development();
+  }
+
+  static StaticServiceClientRegistry _serviceClientRegistry(Session session) {
+    final registryJson = _optionalPassword(session, 'authServiceClients');
+    if (registryJson == null) {
+      return StaticServiceClientRegistry(const []);
+    }
+    return StaticServiceClientRegistry.fromJson(registryJson);
   }
 
   static EmailVerificationSender _emailVerificationSender(

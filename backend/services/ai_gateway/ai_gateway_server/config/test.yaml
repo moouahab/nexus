@@ -1,0 +1,30 @@
+apiServer:
+  port: 0
+  publicHost: localhost
+  publicPort: 0
+  publicScheme: http
+insightsServer:
+  port: 0
+  publicHost: localhost
+  publicPort: 0
+  publicScheme: http
+webServer:
+  port: 0
+  publicHost: localhost
+  publicPort: 0
+  publicScheme: http
+database:
+  host: localhost
+  port: 9590
+  name: ai_gateway_test
+  user: postgres
+redis:
+  enabled: false
+  host: localhost
+  port: 9591
+futureCall:
+  concurrencyLimit: 1
+  scanInterval: 100
+sessionLogs:
+  persistentEnabled: true
+  consoleEnabled: true

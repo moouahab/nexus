@@ -8,25 +8,48 @@ fi
 
 POSTGRES_TEST_PORT="${POSTGRES_TEST_PORT:-9290}"
 REDIS_TEST_PORT="${REDIS_TEST_PORT:-9291}"
+TEST_REDIS_ENABLED="${SERVERPOD_TEST_REDIS_ENABLED:-true}"
+TEST_COMPOSE_PROJECT="${NEXUS_TEST_COMPOSE_PROJECT:-$(basename "$SERVER_ROOT")_test}"
 
 cd "$SERVER_ROOT"
+
+cleanup_test_stack() {
+  POSTGRES_TEST_PORT="$POSTGRES_TEST_PORT" \
+  REDIS_TEST_PORT="$REDIS_TEST_PORT" \
+  docker compose -p "$TEST_COMPOSE_PROJECT" --profile test \
+    down --volumes --remove-orphans >/dev/null 2>&1 || true
+}
+trap cleanup_test_stack EXIT INT TERM
 
 if [[ ! -s secrets/postgres_test_password ]]; then
   echo "Missing secrets/postgres_test_password" >&2
   exit 1
 fi
 
-if [[ ! -s secrets/redis_test_password ]]; then
+if [[ "$TEST_REDIS_ENABLED" == "true" && ! -s secrets/redis_test_password ]]; then
   echo "Missing secrets/redis_test_password" >&2
   exit 1
 fi
 
+compose_up=(--profile test up --wait)
+if [[ "${NEXUS_TEST_NO_BUILD:-false}" == "true" ]]; then
+  # Useful for deterministic/offline reruns once the disposable test images
+  # have already been built. Compose must never contact a registry here.
+  compose_up+=(--no-build)
+else
+  compose_up+=(--build)
+fi
+compose_up+=(postgres_test)
+if [[ "$TEST_REDIS_ENABLED" == "true" ]]; then
+  compose_up+=(redis_test)
+fi
+
 POSTGRES_TEST_PORT="$POSTGRES_TEST_PORT" \
 REDIS_TEST_PORT="$REDIS_TEST_PORT" \
-docker compose --profile test up --build --wait postgres_test redis_test
+docker compose -p "$TEST_COMPOSE_PROJECT" "${compose_up[@]}"
 
 export SERVERPOD_DATABASE_PORT="$POSTGRES_TEST_PORT"
-export SERVERPOD_REDIS_ENABLED=true
+export SERVERPOD_REDIS_ENABLED="$TEST_REDIS_ENABLED"
 export SERVERPOD_REDIS_PORT="$REDIS_TEST_PORT"
 export SERVERPOD_PASSWORD_database
 export SERVERPOD_PASSWORD_redis
@@ -44,8 +67,10 @@ fi
 SERVERPOD_PASSWORD_database="$(
   cat secrets/postgres_test_password
 )"
-SERVERPOD_PASSWORD_redis="$(
-  cat secrets/redis_test_password
-)"
+if [[ "$TEST_REDIS_ENABLED" == "true" ]]; then
+  SERVERPOD_PASSWORD_redis="$(cat secrets/redis_test_password)"
+else
+  SERVERPOD_PASSWORD_redis=""
+fi
 
 dart test "$@"

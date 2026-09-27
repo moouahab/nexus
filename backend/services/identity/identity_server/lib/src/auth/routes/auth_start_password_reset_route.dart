@@ -12,7 +12,7 @@ class AuthStartPasswordResetRoute extends AuthJsonRoute {
     AuthDependencies dependencies,
   ) async {
     final body = await readJsonBody(request);
-    final email = readStringBodyField(body, 'email');
+    final email = readStringBodyField(body, 'email', maxLength: 254);
 
     await dependencies.passwordResetService.start(
       session,

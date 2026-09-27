@@ -55,6 +55,15 @@ ensure_config_file() {
   success "$label created."
 }
 
+require_optional_config_file() {
+  local path="$1"
+
+  if [[ ! -f "$path" ]]; then
+    error "Missing config file: $path"
+    exit 1
+  fi
+}
+
 ensure_rsa_key_pair() {
   if [[ -s "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE" && -s "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE" ]]; then
     info "JWT access token RSA key pair already exists."
@@ -96,7 +105,9 @@ prepare_local_secrets() {
   ensure_config_file "$JWT_ACCESS_TOKEN_KEY_ID_FILE" "JWT access token key id" "identity-access-token-current"
   ensure_secret_file "$JWT_HMAC_PRIVATE_KEY_FILE" "JWT HMAC private key"
   ensure_secret_file "$JWT_REFRESH_HASH_PEPPER_FILE" "JWT refresh token hash pepper"
+  ensure_secret_file "$PROJECT_AUTHORIZATION_GRANT_SECRET_FILE" "Project authorization grant secret"
   ensure_config_file "$AUTH_ALLOWED_ORIGINS_FILE" "Auth allowed origins" ""
+  ensure_config_file "$AUTH_SERVICE_CLIENTS_FILE" "Auth service clients" "{}"
   ensure_config_file "$MAIL_FROM_ADDRESS_FILE" "Mail from address" "no-reply@nexus.example"
   ensure_config_file "$MAIL_FROM_NAME_FILE" "Mail from name" "Nexus"
   ensure_config_file "$MAIL_SUPPORT_ADDRESS_FILE" "Mail support address" "support@nexus.example"
@@ -104,6 +115,15 @@ prepare_local_secrets() {
   ensure_config_file "$SMTP_PORT_FILE" "SMTP port" "587"
   ensure_config_file "$SMTP_USERNAME_FILE" "SMTP username" ""
   ensure_config_file "$SMTP_PASSWORD_FILE" "SMTP password" ""
+  ensure_config_file "$GOOGLE_OAUTH_ENABLED_FILE" "Google OAuth enabled" "false"
+  ensure_config_file "$GOOGLE_OAUTH_CLIENT_ID_FILE" "Google OAuth client id" ""
+  ensure_config_file "$GOOGLE_OAUTH_CLIENT_SECRET_FILE" "Google OAuth client secret" ""
+  ensure_config_file "$GITHUB_OAUTH_ENABLED_FILE" "GitHub OAuth enabled" "false"
+  ensure_config_file "$GITHUB_OAUTH_CLIENT_ID_FILE" "GitHub OAuth client id" ""
+  ensure_config_file "$GITHUB_OAUTH_CLIENT_SECRET_FILE" "GitHub OAuth client secret" ""
+  ensure_config_file "$APPLE_OAUTH_ENABLED_FILE" "Apple OAuth enabled" "false"
+  ensure_config_file "$APPLE_OAUTH_CLIENT_ID_FILE" "Apple OAuth client id" ""
+  ensure_config_file "$APPLE_OAUTH_CLIENT_SECRET_FILE" "Apple OAuth client secret" ""
 
   require_file "$ROOT_TOKEN_FILE"
   require_file "$POSTGRES_PASSWORD_FILE"
@@ -115,10 +135,21 @@ prepare_local_secrets() {
   require_file "$JWT_ACCESS_TOKEN_KEY_ID_FILE"
   require_file "$JWT_HMAC_PRIVATE_KEY_FILE"
   require_file "$JWT_REFRESH_HASH_PEPPER_FILE"
+  require_file "$PROJECT_AUTHORIZATION_GRANT_SECRET_FILE"
+  require_file "$AUTH_SERVICE_CLIENTS_FILE"
   require_file "$MAIL_FROM_ADDRESS_FILE"
   require_file "$MAIL_FROM_NAME_FILE"
   require_file "$MAIL_SUPPORT_ADDRESS_FILE"
   require_file "$SMTP_PORT_FILE"
+  require_optional_config_file "$GOOGLE_OAUTH_ENABLED_FILE"
+  require_optional_config_file "$GOOGLE_OAUTH_CLIENT_ID_FILE"
+  require_optional_config_file "$GOOGLE_OAUTH_CLIENT_SECRET_FILE"
+  require_optional_config_file "$GITHUB_OAUTH_ENABLED_FILE"
+  require_optional_config_file "$GITHUB_OAUTH_CLIENT_ID_FILE"
+  require_optional_config_file "$GITHUB_OAUTH_CLIENT_SECRET_FILE"
+  require_optional_config_file "$APPLE_OAUTH_ENABLED_FILE"
+  require_optional_config_file "$APPLE_OAUTH_CLIENT_ID_FILE"
+  require_optional_config_file "$APPLE_OAUTH_CLIENT_SECRET_FILE"
 }
 
 print_success_summary() {
@@ -140,7 +171,9 @@ Runtime secret source files:
   - secrets/jwt_access_token_key_id
   - secrets/jwt_hmac_sha512_private_key
   - secrets/jwt_refresh_token_hash_pepper
+  - secrets/project_authorization_grant_secret (canonical Identity/Projects shared value)
   - secrets/auth_allowed_origins
+  - secrets/auth_service_clients
   - secrets/mail_from_address
   - secrets/mail_from_name
   - secrets/mail_support_address
@@ -159,9 +192,9 @@ Runtime secret source files:
   - secrets/apple_oauth_client_secret
 
 Files rendered by Vault Agent:
-  - /vault/secrets/postgres_password
-  - /vault/secrets/redis_password
-  - /vault/secrets/serverpod-passwords.yaml
+  - /vault/secrets/postgres/postgres_password
+  - /vault/secrets/redis/redis_password
+  - /vault/secrets/api/serverpod-passwords.yaml
 
 Important:
   - never commit the real secrets/ directory;

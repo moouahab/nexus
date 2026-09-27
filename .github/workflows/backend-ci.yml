@@ -1,0 +1,213 @@
+name: Backend CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: backend
+
+env:
+  FLUTTER_VERSION: '3.32.8'
+
+jobs:
+  quality:
+    name: Quality (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - backend/shared/nexus_auth
+          - backend/services/identity
+          - backend/services/users
+          - backend/services/parties
+          - backend/services/projects
+          - backend/services/ai_gateway
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Flutter and Dart
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
+        run: dart pub get
+
+      - name: Check formatting
+        working-directory: ${{ matrix.workspace }}
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        working-directory: ${{ matrix.workspace }}
+        run: dart analyze --fatal-infos
+
+  unit-tests:
+    name: Unit tests (${{ matrix.component }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: shared-auth
+            workspace: backend/shared/nexus_auth
+            test_directory: backend/shared/nexus_auth
+          - component: ai-gateway
+            workspace: backend/services/ai_gateway
+            test_directory: backend/services/ai_gateway/ai_gateway_server
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Flutter and Dart
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
+        run: dart pub get
+
+      - name: Run tests
+        working-directory: ${{ matrix.test_directory }}
+        run: dart test
+
+  serverpod-tests:
+    name: Serverpod tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: identity
+            workspace: backend/services/identity
+            server: backend/services/identity/identity_server
+          - service: users
+            workspace: backend/services/users
+            server: backend/services/users/users_server
+          - service: parties
+            workspace: backend/services/parties
+            server: backend/services/parties/parties_server
+          - service: projects
+            workspace: backend/services/projects
+            server: backend/services/projects/projects_server
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Flutter and Dart
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.workspace }}
+        run: dart pub get
+
+      - name: Create disposable test secrets
+        working-directory: ${{ matrix.server }}
+        run: |
+          mkdir -p secrets
+          printf '%s' 'ci-postgres-test-password' > secrets/postgres_test_password
+          printf '%s' 'ci-redis-test-password' > secrets/redis_test_password
+
+      - name: Run Serverpod tests
+        working-directory: ${{ matrix.server }}
+        env:
+          SERVERPOD_PASSWORD_database: ci-postgres-test-password
+          SERVERPOD_PASSWORD_redis: ci-redis-test-password
+        run: ./docker/script/run_serverpod_tests.sh
+
+      - name: Stop test containers
+        if: always()
+        working-directory: ${{ matrix.server }}
+        run: docker compose --profile test down --volumes --remove-orphans
+
+  ai-persistence-tests:
+    name: AI Gateway persistence tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Flutter and Dart
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        working-directory: backend/services/ai_gateway
+        run: dart pub get
+
+      - name: Create disposable test secret
+        working-directory: backend/services/ai_gateway/ai_gateway_server
+        run: |
+          mkdir -p secrets
+          printf '%s' 'ci-postgres-test-password' > secrets/postgres_test_password
+
+      - name: Start disposable PostgreSQL
+        working-directory: backend/services/ai_gateway/ai_gateway_server
+        run: >-
+          docker compose -p nexus-ai-persistence-ci --profile test
+          up --build --wait postgres_test
+
+      - name: Run mandatory AI persistence tests
+        working-directory: backend/services/ai_gateway/ai_gateway_server
+        env:
+          AI_GATEWAY_RUN_DATABASE_TESTS: 'true'
+          SERVERPOD_PASSWORD_database: ci-postgres-test-password
+        run: dart test test/ai/reasoning_persistence_database_test.dart
+
+      - name: Stop test containers
+        if: always()
+        working-directory: backend/services/ai_gateway/ai_gateway_server
+        run: >-
+          docker compose -p nexus-ai-persistence-ci --profile test
+          down --volumes --remove-orphans
+
+  infrastructure-and-contracts:
+    name: Infrastructure and API contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Validate Compose and Kong configuration
+        run: make infra-config
+
+      - name: Validate and bundle OpenAPI contracts
+        run: |
+          mkdir -p /tmp/nexus-openapi
+          npx --yes @redocly/cli@1.34.3 lint services/identity/openapi/openapi.yaml
+          npx --yes @redocly/cli@1.34.3 bundle services/identity/openapi/openapi.yaml --output /tmp/nexus-openapi/identity.yaml
+          npx --yes @redocly/cli@1.34.3 bundle services/users/openapi/openapi.yaml --output /tmp/nexus-openapi/users.yaml
+          npx --yes @redocly/cli@1.34.3 bundle services/parties/openapi/openapi.yaml --output /tmp/nexus-openapi/parties.yaml
+          npx --yes @redocly/cli@1.34.3 bundle services/projects/projects_server/openapi.yaml --output /tmp/nexus-openapi/projects.yaml
+          npx --yes @redocly/cli@1.34.3 bundle ia/ai-gateway/openapi.yaml --output /tmp/nexus-openapi/ai-gateway.yaml

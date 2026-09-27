@@ -58,6 +58,20 @@ void main() {
         throwsFormatException,
       );
       expect(
+        () => route.readStringBodyField(
+          {'username': 'too-long'},
+          'username',
+          maxLength: 4,
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => route.readStringBodyField({
+          'username': 'bad\u0000value',
+        }, 'username'),
+        throwsFormatException,
+      );
+      expect(
         () =>
             route.readUuidBodyField({'identityId': 'not-a-uuid'}, 'identityId'),
         throwsFormatException,

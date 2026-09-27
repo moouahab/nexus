@@ -22,7 +22,7 @@ abstract interface class OAuthProviderVerifier {
   Future<OAuthProviderProfile> verify(
     Session session, {
     required String code,
-    required String redirectUri,
+    String? redirectUri,
     String? codeVerifier,
   });
 }

@@ -42,6 +42,12 @@ read_secret_file_or_default() {
   printf '%s' "$default_value"
 }
 
+read_secret_file_escaped_newlines() {
+  local path="$1"
+
+  perl -0pe 's/\n/\\n/g; s/\\n$//' "$path"
+}
+
 write_identity_runtime_secrets() {
   info "Writing Identity runtime secrets to Vault..."
   docker compose exec -T vault \
@@ -50,12 +56,14 @@ write_identity_runtime_secrets() {
     redis_password="$(cat "$REDIS_PASSWORD_FILE")" \
     service_secret="$(cat "$SERVICE_SECRET_FILE")" \
     email_secret_hash_pepper="$(cat "$EMAIL_SECRET_HASH_PEPPER_FILE")" \
-    jwt_access_token_private_key_pem="$(cat "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE")" \
-    jwt_access_token_public_key_pem="$(cat "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE")" \
+    jwt_access_token_private_key_pem="$(read_secret_file_escaped_newlines "$JWT_ACCESS_TOKEN_PRIVATE_KEY_FILE")" \
+    jwt_access_token_public_key_pem="$(read_secret_file_escaped_newlines "$JWT_ACCESS_TOKEN_PUBLIC_KEY_FILE")" \
     jwt_access_token_key_id="$(read_secret_file_or_default "$JWT_ACCESS_TOKEN_KEY_ID_FILE" "identity-access-token-current")" \
     jwt_hmac_sha512_private_key="$(cat "$JWT_HMAC_PRIVATE_KEY_FILE")" \
     jwt_refresh_token_hash_pepper="$(cat "$JWT_REFRESH_HASH_PEPPER_FILE")" \
+    project_authorization_grant_secret="$(cat "$PROJECT_AUTHORIZATION_GRANT_SECRET_FILE")" \
     auth_allowed_origins="$(read_secret_file_or_default "$AUTH_ALLOWED_ORIGINS_FILE" "")" \
+    auth_service_clients="$(read_secret_file_or_default "$AUTH_SERVICE_CLIENTS_FILE" "{}")" \
     mail_from_address="$(read_secret_file_or_default "$MAIL_FROM_ADDRESS_FILE" "no-reply@nexus.example")" \
     mail_from_name="$(read_secret_file_or_default "$MAIL_FROM_NAME_FILE" "Nexus")" \
     mail_support_address="$(read_secret_file_or_default "$MAIL_SUPPORT_ADDRESS_FILE" "support@nexus.example")" \
@@ -77,19 +85,7 @@ write_identity_runtime_secrets() {
 }
 
 configure_identity_policy() {
-  info "Creating or updating Vault policy: $VAULT_POLICY"
-
-  docker compose exec -T vault sh -c \
-    'cat > /tmp/identity-policy.hcl' <<'EOF'
-path "secret/data/nexus/identity" {
-  capabilities = ["read"]
-}
-EOF
-
-  docker compose exec -T vault \
-    vault policy write -address="$VAULT_ADDRESS" \
-    "$VAULT_POLICY" /tmp/identity-policy.hcl >/dev/null
-  success "Vault policy is ready."
+  configure_vault_policy
 }
 
 ensure_approle_auth_enabled() {
@@ -108,14 +104,7 @@ ensure_approle_auth_enabled() {
 }
 
 configure_identity_approle() {
-  info "Creating or updating AppRole role: $VAULT_ROLE"
-  docker compose exec -T vault \
-    vault write -address="$VAULT_ADDRESS" \
-    "auth/approle/role/$VAULT_ROLE" \
-    policies="$VAULT_POLICY" \
-    token_ttl=1h \
-    token_max_ttl=4h >/dev/null
-  success "AppRole role is ready."
+  configure_vault_approle
 }
 
 generate_approle_credentials() {
