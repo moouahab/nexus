@@ -106,7 +106,9 @@ specs=(
   "ia/ai-gateway/openapi.yaml|/v1/ai"
 )
 
+spec_index=0
 for entry in "${specs[@]}"; do
+  spec_index=$((spec_index + 1))
   spec="${entry%%|*}"
   base_path="${entry#*|}"
 
@@ -117,6 +119,10 @@ for entry in "${specs[@]}"; do
     --workers 1
     --rate-limit 60/m
     --phases examples,coverage,fuzzing
+    --checks not_a_server_error
+    --report junit,ndjson
+    --report-junit-path "/reports/schemathesis-$spec_index.xml"
+    --report-ndjson-path "/reports/schemathesis-$spec_index.ndjson"
   )
 
   # Permet éventuellement de tester les routes authentifiées.
@@ -130,6 +136,7 @@ for entry in "${specs[@]}"; do
   docker run --rm \
     --network host \
     -v "$ROOT:/repo:ro" \
+    -v "$REPORTS:/reports:rw" \
     "$SCHEMATHESIS_IMAGE" \
     "${args[@]}"
 done

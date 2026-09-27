@@ -128,10 +128,14 @@ abstract class AuthJsonRoute extends Route {
 
   String readStringBodyField(
     Map<String, dynamic> body,
-    String fieldName,
-  ) {
+    String fieldName, {
+    int? maxLength,
+  }) {
     final value = body[fieldName];
-    if (value is! String || value.isEmpty) {
+    if (value is! String ||
+        value.isEmpty ||
+        value.contains('\u0000') ||
+        (maxLength != null && value.length > maxLength)) {
       throw FormatException('Expected non-empty string field "$fieldName".');
     }
 
@@ -257,7 +261,7 @@ abstract class AuthJsonRoute extends Route {
       AuthUseCaseExceptionCode.invalidPasswordResetCode => 401,
       AuthUseCaseExceptionCode.tooManyAttempts => 429,
       AuthUseCaseExceptionCode.invalidCsrfToken => 403,
-      AuthUseCaseExceptionCode.identityNotFound => 500,
+      AuthUseCaseExceptionCode.identityNotFound => 404,
       AuthUseCaseExceptionCode.oauthProviderNotConfigured => 400,
       AuthUseCaseExceptionCode.missingGeneratedId => 500,
     };
