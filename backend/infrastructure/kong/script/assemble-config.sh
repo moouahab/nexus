@@ -22,7 +22,7 @@ trap 'rm -f "$temporary"' EXIT HUP INT TERM
   done
   printf 'plugins:\n'
   cat "$root_dir/config/plugins/observability.yaml"
-  for fragment in cors.yaml rate-limits.yaml
+  for fragment in auth-header-guard.yaml cors.yaml rate-limits.yaml
   do
     printf '\n'
     cat "$root_dir/config/plugins/$fragment"
