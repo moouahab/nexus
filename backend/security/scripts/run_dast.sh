@@ -117,7 +117,7 @@ for entry in "${specs[@]}"; do
     "/repo/$spec"
     --url "$TARGET$base_path"
     --workers 1
-    --rate-limit 60/m
+    --rate-limit 300/m
     --phases examples,coverage,fuzzing
     --checks not_a_server_error
     --report junit,ndjson
