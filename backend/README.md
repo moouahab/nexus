@@ -1,5 +1,20 @@
 # NEXUS Backend
 
+## V0 status
+
+The secured backend foundation is **V0 READY**. The fail-closed release verdict
+passed all 7 required gates on commit `4c309b5` in the complete manual security
+workflow:
+
+- GitHub Actions run: <https://github.com/moouahab/nexus/actions/runs/36305955442>
+- release evidence and remaining production limits: [V0-READINESS.md](V0-READINESS.md)
+- defensive test-chain operations: [security/README.md](security/README.md)
+
+`V0 READY` means that the repository's V0 security and recovery evidence is
+green. It does not mean that the local configuration is ready for direct
+Internet exposure; the production requirements are recorded in the readiness
+document.
+
 The backend is organized as separated services with explicit shared and
 infrastructure boundaries.
 

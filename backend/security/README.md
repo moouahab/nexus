@@ -122,6 +122,20 @@ the business proofs for AI job recovery after restart and absence of
 prompt/token canaries from logs and traces. Both proofs run in the weekly and
 manual full-security workflow; a missing or failed artifact blocks the job.
 
+The final V0 validation passed **7/7 gates** on commit `4c309b5`:
+
+<https://github.com/moouahab/nexus/actions/runs/36305955442>
+
+The seven release gates prove:
+
+1. PostgreSQL backup and restore preserve table and row inventories;
+2. temporary PostgreSQL loss is recovered;
+3. temporary Redis loss is recovered;
+4. deterministic API security probes pass;
+5. no confirmed High or Critical normalized finding remains;
+6. an orphaned AI job is recovered from real PostgreSQL state at startup;
+7. prompt and token canaries do not appear in exported logs or traces.
+
 ### Safe probe
 
 `security-probe` never authenticates and never mutates data. It checks:
@@ -151,6 +165,16 @@ NEXUS_PENTEST_TARGET=http://127.0.0.1:8000 make security-probe
 The full scan adds the ZAP passive baseline and Schemathesis-generated requests
 for every OpenAPI contract. These requests can create, update or delete test
 data. Run it only against a disposable local stack and database.
+
+ZAP exit code 2 means that the passive baseline produced warnings. Those
+warnings remain in the JSON/HTML evidence and do not stop the rest of the scan;
+ZAP confirmed failures and incomplete scans still fail immediately.
+
+Schemathesis runs examples, coverage and fuzzing at a bounded 300 requests per
+minute. Its CI gate is `not_a_server_error`: every generated request must avoid
+a 5xx response. Contract-conformance differences remain visible as warnings
+for OpenAPI triage instead of being confused with confirmed security defects.
+Each contract produces JUnit XML and NDJSON evidence in `security/reports/`.
 
 ```bash
 NEXUS_DISPOSABLE_STACK=I_UNDERSTAND_THIS_IS_DISPOSABLE make security-full
@@ -201,3 +225,8 @@ job. The workflow deliberately does not fall back to a remote host: both probe
 and full scans use `local.scope.yaml` and fail closed when the local gateway is
 absent. The full level additionally requires the explicit disposable-stack
 acknowledgement.
+
+The disposable runner contract also requires a working `dart` executable on
+`PATH`. The workflow verifies the preinstalled SDK instead of downloading the
+full Flutter archive for every security run. An ephemeral runner is preferred:
+GitHub removes its credentials and registration after the single job.

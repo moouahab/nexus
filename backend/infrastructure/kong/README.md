@@ -49,6 +49,27 @@ of date.
 The Kong Admin API is disabled. The status endpoint is bound to localhost and
 is intended for health monitoring only.
 
+## Authorization header guard
+
+The global `pre-function` plugin validates `Authorization` before forwarding a
+request. Only a non-empty, ASCII, Bearer-shaped token is accepted. A malformed
+scheme, whitespace-only token, control character or non-ASCII token is rejected
+by Kong with HTTP 401 and `{"error":"invalid_access_token"}`.
+
+This boundary is required because Serverpod parses the authorization header in
+middleware before application routes run. Without the gateway guard, hostile
+header bytes could trigger an uncaught parser error and a 500 response. A
+syntactically valid but forged JWT is still forwarded to the service, where
+signature, expiry, audience and scope validation reject it normally.
+
+The source fragment is
+`config/plugins/auth-header-guard.yaml`. After changing any fragment, regenerate
+and validate the assembled configuration:
+
+```bash
+make gateway-config
+```
+
 Kong joins one external private network per API (`nexus_identity_gateway`,
 `nexus_users_gateway`, `nexus_parties_gateway`, `nexus_projects_gateway`, and
 `nexus_ai_gateway`). An API therefore cannot discover every other API through a
